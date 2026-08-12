@@ -1,0 +1,7 @@
+description = 'Modality Spring Boot open api support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api libs.springdoc.openapi.starter.webmvc.ui
+}

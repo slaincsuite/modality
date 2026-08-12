@@ -1,0 +1,6 @@
+description = 'Modality Spring Boot storage support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api libs.minio
+}

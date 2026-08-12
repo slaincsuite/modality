@@ -1,0 +1,7 @@
+description = 'Modality Spring Boot datasource support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api libs.spring.boot.starter.jdbc
+    api libs.dynamic.datasource.spring.boot4.starter
+}

@@ -1,0 +1,8 @@
+description = 'Modality Spring Boot utils support'
+
+dependencies {
+    api libs.commons.lang3
+    api libs.commons.io
+    api libs.commons.codec
+    api libs.caffeine
+}

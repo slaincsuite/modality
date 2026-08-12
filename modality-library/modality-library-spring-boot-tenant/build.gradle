@@ -1,0 +1,7 @@
+description = 'Modality Spring Boot tenant support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
+    api project(':modality-library:modality-library-spring-boot-redis')
+}

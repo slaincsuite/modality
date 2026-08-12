@@ -1,0 +1,8 @@
+description = 'Modality Spring Boot redis support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api libs.spring.boot.starter.data.redis
+    api libs.spring.boot.starter.cache
+    api libs.redisson
+}

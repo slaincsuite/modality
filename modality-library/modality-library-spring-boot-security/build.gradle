@@ -1,0 +1,9 @@
+description = 'Modality Spring Boot security support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-redis')
+    api libs.sa.token.spring.boot4.starter
+    api libs.sa.token.redis.template
+}

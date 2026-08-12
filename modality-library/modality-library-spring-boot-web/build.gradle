@@ -1,0 +1,9 @@
+description = 'Modality Spring Boot web support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api libs.spring.boot.starter.webmvc
+    api libs.spring.boot.starter.validation
+    api libs.spring.boot.starter.jackson
+    implementation libs.ipaddress
+}

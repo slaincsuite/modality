@@ -1,0 +1,7 @@
+description = 'Modality Spring Boot jwt support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-crypto')
+}

@@ -1,0 +1,64 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        maven { url = 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url = 'https://maven.aliyun.com/repository/public' }
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+        exclusiveContent {
+            forRepository { mavenCentral() }
+            filter {
+                includeGroup 'io.minio'
+                includeGroup 'com.googlecode.owasp-java-html-sanitizer'
+                includeGroup 'com.github.ben-manes.caffeine'
+                includeGroupByRegex 'com\\.fasterxml\\.jackson.*'
+            }
+        }
+        maven { url = 'https://maven.aliyun.com/repository/public' }
+        maven { url = 'https://maven.aliyun.com/repository/central' }
+    }
+}
+
+rootProject.name = 'modality'
+
+include 'modality-boot'
+
+include 'modality-library:modality-library-spring-boot-bom'
+include 'modality-library:modality-library-spring-boot-utils'
+include 'modality-library:modality-library-spring-boot-crypto'
+include 'modality-library:modality-library-spring-boot-core'
+include 'modality-library:modality-library-spring-boot-web'
+include 'modality-library:modality-library-spring-boot-excel'
+include 'modality-library:modality-library-spring-boot-datasource'
+include 'modality-library:modality-library-spring-boot-mybatis'
+include 'modality-library:modality-library-spring-boot-redis'
+include 'modality-library:modality-library-spring-boot-tenant'
+include 'modality-library:modality-library-spring-boot-idempotent'
+include 'modality-library:modality-library-spring-boot-storage'
+include 'modality-library:modality-library-spring-boot-logger'
+include 'modality-library:modality-library-spring-boot-monitor'
+include 'modality-library:modality-library-spring-boot-security'
+include 'modality-library:modality-library-spring-boot-jwt'
+include 'modality-library:modality-library-spring-boot-oauth2'
+include 'modality-library:modality-library-spring-boot-sso'
+include 'modality-library:modality-library-spring-boot-api-key'
+include 'modality-library:modality-library-spring-boot-captcha'
+include 'modality-library:modality-library-spring-boot-sign'
+include 'modality-library:modality-library-spring-boot-session'
+include 'modality-library:modality-library-spring-boot-sensitive'
+include 'modality-library:modality-library-spring-boot-open-api'
+include 'modality-library:modality-library-spring-boot-policy'
+include 'modality-library:modality-library-spring-boot-thirdauth'
+
+include 'modality-modules:modality-modules-upms'
+include 'modality-modules:modality-modules-auth'
+include 'modality-modules:modality-modules-open'
+include 'modality-modules:modality-modules-audit'
+include 'modality-modules:modality-modules-policy'
+include 'modality-modules:modality-modules-infra'

@@ -1,0 +1,10 @@
+description = 'Modality Spring Boot core support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-utils')
+    api libs.spring.boot.starter
+    compileOnly libs.spring.boot.starter.validation
+    compileOnly libs.spring.tx
+    compileOnly libs.spring.boot.starter.actuator
+    compileOnly libs.springdoc.openapi.starter.webmvc.ui
+}

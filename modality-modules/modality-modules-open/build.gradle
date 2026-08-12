@@ -1,0 +1,13 @@
+description = 'Modality modules open platform'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-open-api')
+    api project(':modality-library:modality-library-spring-boot-api-key')
+    api project(':modality-library:modality-library-spring-boot-sign')
+    api project(':modality-library:modality-library-spring-boot-redis')
+    api project(':modality-library:modality-library-spring-boot-policy')
+    api project(':modality-library:modality-library-spring-boot-idempotent')
+    compileOnly libs.springdoc.openapi.starter.webmvc.ui
+}

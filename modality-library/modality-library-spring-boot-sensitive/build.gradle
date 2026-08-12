@@ -1,0 +1,6 @@
+description = 'Modality Spring Boot sensitive support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-web')
+    implementation libs.owasp.html.sanitizer
+}

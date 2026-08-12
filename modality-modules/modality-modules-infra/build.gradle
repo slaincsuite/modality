@@ -1,0 +1,17 @@
+description = 'Modality modules infrastructure'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
+    api project(':modality-library:modality-library-spring-boot-redis')
+    api project(':modality-library:modality-library-spring-boot-datasource')
+    api project(':modality-library:modality-library-spring-boot-monitor')
+    api project(':modality-library:modality-library-spring-boot-storage')
+    api project(':modality-library:modality-library-spring-boot-logger')
+    api project(':modality-library:modality-library-spring-boot-excel')
+    api project(':modality-library:modality-library-spring-boot-idempotent')
+    api project(':modality-library:modality-library-spring-boot-policy')
+    api project(':modality-library:modality-library-spring-boot-sensitive')
+    compileOnly libs.springdoc.openapi.starter.webmvc.ui
+}

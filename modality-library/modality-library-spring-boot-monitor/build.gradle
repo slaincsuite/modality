@@ -1,0 +1,7 @@
+description = 'Modality Spring Boot monitor support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api libs.spring.boot.starter.actuator
+    implementation libs.oshi.core
+}

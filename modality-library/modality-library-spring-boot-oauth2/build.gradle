@@ -1,0 +1,7 @@
+description = 'Modality Spring Boot oauth2 support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-redis')
+}

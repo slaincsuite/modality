@@ -1,0 +1,9 @@
+description = 'Modality Spring Boot logger support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-web')
+    api libs.spring.boot.starter.aspectj
+    compileOnly libs.spring.boot.starter.actuator
+    compileOnly libs.springdoc.openapi.starter.webmvc.ui
+}

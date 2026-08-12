@@ -1,0 +1,7 @@
+description = 'Modality Spring Boot captcha support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-web')
+    api libs.easy.captcha
+}

@@ -1,0 +1,9 @@
+description = 'Modality Spring Boot mybatis support'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-datasource')
+    api libs.mybatis.plus.spring.boot4.starter
+    api libs.mybatis.plus.extension
+    api libs.mybatis.plus.jsqlparser
+    api libs.spring.boot.starter.aspectj
+}

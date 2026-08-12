@@ -1,0 +1,57 @@
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
+plugins {
+    id 'java-platform'
+}
+
+description = 'Modality Spring Boot library bill of materials'
+
+def catalog = extensions.getByType(VersionCatalogsExtension).named('libs')
+
+javaPlatform {
+    allowDependencies()
+}
+
+def publicModulePrefixes = ['modality-library-spring-boot-', 'modality-modules-']
+
+def publicModules = rootProject.allprojects
+        .collect { it.name }
+        .findAll { name -> name != project.name && publicModulePrefixes.any { prefix -> name.startsWith(prefix) } }
+        .sort()
+
+def thirdPartyAliases = [
+        'sa-token-spring-boot4-starter',
+        'sa-token-redis-template',
+        'sa-token-apikey',
+        'mybatis-plus-spring-boot4-starter',
+        'mybatis-plus-extension',
+        'mybatis-plus-jsqlparser',
+        'dynamic-datasource-spring-boot4-starter',
+        'redisson',
+        'fastexcel',
+        'springdoc-openapi-starter-webmvc-ui',
+        'easy-captcha',
+        'minio',
+        'oshi-core',
+        'resilience4j-circuitbreaker',
+        'resilience4j-timelimiter',
+        'resilience4j-bulkhead',
+        'resilience4j-retry',
+        'bouncycastle',
+        'ipaddress',
+        'owasp-html-sanitizer',
+]
+
+dependencies {
+    api platform(catalog.findLibrary('spring-boot-dependencies').get())
+
+    constraints {
+        publicModules.each { moduleName ->
+            api "${project.group}:${moduleName}:${project.version}"
+        }
+        thirdPartyAliases.each { alias ->
+            def library = catalog.findLibrary(alias).get().get()
+            api "${library.module.group}:${library.module.name}:${library.versionConstraint.requiredVersion}"
+        }
+    }
+}

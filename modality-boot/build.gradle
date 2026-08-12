@@ -1,0 +1,53 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+description = 'Modality application'
+
+springBoot {
+    mainClass.set('cn.slainc.boot.ModalityApplication')
+}
+
+tasks.named('jar') {
+    enabled = false
+}
+
+dependencies {
+    implementation libs.spring.boot.starter
+
+    implementation project(':modality-library:modality-library-spring-boot-utils')
+    implementation project(':modality-library:modality-library-spring-boot-crypto')
+    implementation project(':modality-library:modality-library-spring-boot-core')
+    implementation project(':modality-library:modality-library-spring-boot-web')
+    implementation project(':modality-library:modality-library-spring-boot-excel')
+    implementation project(':modality-library:modality-library-spring-boot-datasource')
+    implementation project(':modality-library:modality-library-spring-boot-mybatis')
+    implementation project(':modality-library:modality-library-spring-boot-redis')
+    implementation project(':modality-library:modality-library-spring-boot-tenant')
+    implementation project(':modality-library:modality-library-spring-boot-idempotent')
+    implementation project(':modality-library:modality-library-spring-boot-storage')
+    implementation project(':modality-library:modality-library-spring-boot-logger')
+    implementation project(':modality-library:modality-library-spring-boot-monitor')
+    implementation project(':modality-library:modality-library-spring-boot-security')
+    implementation project(':modality-library:modality-library-spring-boot-jwt')
+    implementation project(':modality-library:modality-library-spring-boot-oauth2')
+    implementation project(':modality-library:modality-library-spring-boot-sso')
+    implementation project(':modality-library:modality-library-spring-boot-api-key')
+    implementation project(':modality-library:modality-library-spring-boot-captcha')
+    implementation project(':modality-library:modality-library-spring-boot-sign')
+    implementation project(':modality-library:modality-library-spring-boot-session')
+    implementation project(':modality-library:modality-library-spring-boot-sensitive')
+    implementation project(':modality-library:modality-library-spring-boot-open-api')
+    implementation project(':modality-library:modality-library-spring-boot-policy')
+    implementation project(':modality-library:modality-library-spring-boot-thirdauth')
+    implementation project(':modality-modules:modality-modules-upms')
+    implementation project(':modality-modules:modality-modules-auth')
+    implementation project(':modality-modules:modality-modules-open')
+    implementation project(':modality-modules:modality-modules-audit')
+    implementation project(':modality-modules:modality-modules-policy')
+    implementation project(':modality-modules:modality-modules-infra')
+
+    runtimeOnly libs.mysql.connector.j
+    runtimeOnly libs.spring.boot.starter.actuator
+    runtimeOnly libs.micrometer.registry.prometheus
+}
