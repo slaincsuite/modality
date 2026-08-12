@@ -7,4 +7,5 @@ description = 'Modality Spring Boot crypto support'
 dependencies {
     api project(':modality-library:modality-library-spring-boot-utils')
     api libs.bouncycastle
+    api libs.bouncycastle.pkix
 }

@@ -21,6 +21,7 @@ spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gra
 spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 spring-boot-starter-jackson = { module = "org.springframework.boot:spring-boot-starter-jackson" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
 spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
@@ -31,6 +32,7 @@ spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-star
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
 spring-boot-autoconfigure-processor = { module = "org.springframework.boot:spring-boot-autoconfigure-processor" }
 spring-tx = { module = "org.springframework:spring-tx" }
+jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 sa-token-spring-boot4-starter = { module = "cn.dev33:sa-token-spring-boot4-starter", version.ref = "sa-token" }
@@ -51,6 +53,7 @@ resilience4j-timelimiter = { module = "io.github.resilience4j:resilience4j-timel
 resilience4j-bulkhead = { module = "io.github.resilience4j:resilience4j-bulkhead", version.ref = "resilience4j" }
 resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version.ref = "resilience4j" }
 bouncycastle = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bouncycastle-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 ipaddress = { module = "com.github.seancfoley:ipaddress", version.ref = "ipaddress" }
 owasp-html-sanitizer = { module = "com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer", version.ref = "owasp-sanitizer" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }

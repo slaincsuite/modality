@@ -9,4 +9,8 @@ dependencies {
     api libs.commons.io
     api libs.commons.codec
     api libs.caffeine
+    api libs.jackson.databind
+    compileOnly libs.jakarta.validation.api
+    compileOnly libs.spring.boot.starter
+    testImplementation libs.spring.boot.starter.validation
 }

@@ -38,6 +38,7 @@ def thirdPartyAliases = [
         'resilience4j-bulkhead',
         'resilience4j-retry',
         'bouncycastle',
+        'bouncycastle-pkix',
         'ipaddress',
         'owasp-html-sanitizer',
 ]
