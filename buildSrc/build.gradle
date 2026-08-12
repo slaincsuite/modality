@@ -1,0 +1,11 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+group = 'cn.slainc.modality'
+
+layout.buildDirectory.set(file('../build/buildSrc'))
+
+dependencies {
+    implementation libs.spring.boot.gradle.plugin
+}

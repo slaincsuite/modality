@@ -1,3 +1,7 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
 description = 'Modality Spring Boot third party auth support'
 
 dependencies {

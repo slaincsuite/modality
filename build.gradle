@@ -1,60 +1,13 @@
-import org.gradle.api.artifacts.VersionCatalogsExtension
-
 plugins {
     id 'base'
-    alias(libs.plugins.spring.boot) apply false
 }
-
-def catalog = extensions.getByType(VersionCatalogsExtension).named('libs')
-def configurationProcessor = catalog.findLibrary('spring-boot-configuration-processor').get()
-def autoconfigureProcessor = catalog.findLibrary('spring-boot-autoconfigure-processor').get()
-def starterTest = catalog.findLibrary('spring-boot-starter-test').get()
-def junitLauncher = catalog.findLibrary('junit-platform-launcher').get()
 
 allprojects {
     group = 'cn.slainc'
     version = '0.0.1-SNAPSHOT'
 }
 
-def libraryPlatformPath = ':modality-library:modality-library-spring-boot-bom'
-
 subprojects { sub ->
     sub.layout.buildDirectory.set(
             rootProject.layout.buildDirectory.dir(sub.path.replaceFirst('^:', '').replace(':', '/')))
-
-    if (sub.path == libraryPlatformPath || !sub.buildFile.exists()) {
-        return
-    }
-
-    apply plugin: 'java-library'
-
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
-        }
-        withSourcesJar()
-    }
-
-    dependencies {
-        api platform(project(libraryPlatformPath))
-        annotationProcessor platform(project(libraryPlatformPath))
-        annotationProcessor configurationProcessor
-        annotationProcessor autoconfigureProcessor
-        testImplementation starterTest
-        testRuntimeOnly junitLauncher
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = 'UTF-8'
-        options.compilerArgs.add('-parameters')
-    }
-
-    tasks.withType(Javadoc).configureEach {
-        options.encoding = 'UTF-8'
-    }
-
-    tasks.withType(Test).configureEach {
-        useJUnitPlatform()
-        systemProperty 'file.encoding', 'UTF-8'
-    }
 }

@@ -1,0 +1,8 @@
+plugins {
+    id 'modality.spring-library-conventions'
+    id 'org.springframework.boot'
+}
+
+tasks.named('jar') {
+    enabled = false
+}

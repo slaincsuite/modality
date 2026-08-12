@@ -1,0 +1,16 @@
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
+plugins {
+    id 'modality.java-conventions'
+}
+
+def catalog = extensions.getByType(VersionCatalogsExtension).named('libs')
+
+dependencies {
+    api platform(project(':modality-library:modality-library-spring-boot-bom'))
+    annotationProcessor platform(project(':modality-library:modality-library-spring-boot-bom'))
+    annotationProcessor catalog.findLibrary('spring-boot-configuration-processor').get()
+    annotationProcessor catalog.findLibrary('spring-boot-autoconfigure-processor').get()
+    testImplementation catalog.findLibrary('spring-boot-starter-test').get()
+    testRuntimeOnly catalog.findLibrary('junit-platform-launcher').get()
+}

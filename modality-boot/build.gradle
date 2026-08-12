@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot'
+    id 'modality.spring-boot-application-conventions'
 }
 
 description = 'Modality application'
@@ -8,8 +8,8 @@ springBoot {
     mainClass.set('cn.slainc.boot.ModalityApplication')
 }
 
-tasks.named('jar') {
-    enabled = false
+tasks.named('bootRun') {
+    systemProperty 'spring.profiles.active', System.getProperty('spring.profiles.active', 'dev')
 }
 
 dependencies {
@@ -46,6 +46,10 @@ dependencies {
     implementation project(':modality-modules:modality-modules-audit')
     implementation project(':modality-modules:modality-modules-policy')
     implementation project(':modality-modules:modality-modules-infra')
+
+    developmentOnly platform(project(':modality-library:modality-library-spring-boot-bom'))
+    developmentOnly libs.h2
+    testRuntimeOnly libs.h2
 
     runtimeOnly libs.mysql.connector.j
     runtimeOnly libs.spring.boot.starter.actuator
