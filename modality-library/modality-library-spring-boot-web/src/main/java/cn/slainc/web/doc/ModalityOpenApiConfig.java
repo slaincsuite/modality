@@ -1,0 +1,60 @@
+package cn.slainc.web.doc;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+
+@AutoConfiguration
+@ConditionalOnClass(name = "io.swagger.v3.oas.models.OpenAPI")
+@ConditionalOnProperty(prefix = "modality.web.open-api", name = "enabled", havingValue = "true",
+        matchIfMissing = true)
+@EnableConfigurationProperties(OpenApiProperties.class)
+public class ModalityOpenApiConfig {
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OpenAPI modalityOpenApi(OpenApiProperties properties) {
+        Components components = new Components().addSecuritySchemes(properties.getBearerSchemeName(),
+                new SecurityScheme()
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("bearer")
+                        .bearerFormat("JWT")
+                        .in(SecurityScheme.In.HEADER)
+                        .name("Authorization"));
+        OpenAPI openApi = new OpenAPI()
+                .info(new Info()
+                        .title(properties.getTitle())
+                        .description(properties.getDescription())
+                        .version(properties.getVersion()))
+                .components(components);
+        if (properties.isSecurityRequired()) {
+            openApi.addSecurityItem(new SecurityRequirement().addList(properties.getBearerSchemeName()));
+        }
+        properties.getServers().forEach((url, description) ->
+                openApi.addServersItem(new Server().url(url).description(description)));
+        return openApi;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(GroupedOpenApi.class)
+    public GroupedOpenApi modalityGroupedOpenApi(OpenApiProperties properties) {
+        GroupedOpenApi.Builder builder = GroupedOpenApi.builder().group(properties.getGroup());
+        if (!properties.getPaths().isEmpty()) {
+            builder.pathsToMatch(properties.getPaths().toArray(new String[0]));
+        }
+        if (!properties.getPackages().isEmpty()) {
+            builder.packagesToScan(properties.getPackages().toArray(new String[0]));
+        }
+        return builder.build();
+    }
+}
