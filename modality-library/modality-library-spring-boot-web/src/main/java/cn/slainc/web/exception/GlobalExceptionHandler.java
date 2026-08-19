@@ -7,6 +7,7 @@ import cn.slainc.core.exception.ValidationException;
 import cn.slainc.core.result.Result;
 import cn.slainc.core.result.ResultCode;
 import cn.slainc.web.config.WebExceptionProperties;
+import cn.slainc.web.timeout.RequestTimeoutFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -26,6 +27,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -175,6 +178,38 @@ public class GlobalExceptionHandler {
         return build(status * 1000, status, message);
     }
 
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public ResponseEntity<Result<Void>> handleAsyncTimeout(AsyncRequestTimeoutException exception,
+                                                           HttpServletRequest request) {
+        log.warn("异步请求处理超时 [{} {}]", request.getMethod(), request.getRequestURI());
+        return build(ResultCode.SERVICE_UNAVAILABLE.code(), ResultCode.SERVICE_UNAVAILABLE.httpStatus(),
+                "请求处理超时");
+    }
+
+    // Spring 在 Callable 异步超时时会先取消并发任务，InterruptedException 可能先于超时异常成为并发结果
+    @ExceptionHandler(InterruptedException.class)
+    public ResponseEntity<Result<Void>> handleInterrupted(InterruptedException exception, HttpServletRequest request) {
+        if (request.getAttribute(RequestTimeoutFilter.TIMEOUT_ATTRIBUTE) == null) {
+            return handleUnexpected(exception, request);
+        }
+        log.warn("异步请求处理超时并中断执行线程 [{} {}]", request.getMethod(), request.getRequestURI());
+        return build(ResultCode.SERVICE_UNAVAILABLE.code(), ResultCode.SERVICE_UNAVAILABLE.httpStatus(),
+                "请求处理超时");
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<Result<Void>> handleMultipart(MultipartException exception, HttpServletRequest request) {
+        if (isSizeExceeded(exception)) {
+            log.warn("上传内容超过限制 [{} {}] {}", request.getMethod(), request.getRequestURI(),
+                    ExceptionUtils.getMessage(exception));
+            return build(ResultCode.PAYLOAD_TOO_LARGE.code(), ResultCode.PAYLOAD_TOO_LARGE.httpStatus(),
+                    ResultCode.PAYLOAD_TOO_LARGE.message());
+        }
+        log.warn("文件上传失败 [{} {}] {}", request.getMethod(), request.getRequestURI(),
+                ExceptionUtils.getMessage(exception));
+        return build(ResultCode.BAD_REQUEST.code(), ResultCode.BAD_REQUEST.httpStatus(), "文件上传失败");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Result<Void>> handleUnexpected(Exception exception, HttpServletRequest request) {
         if (properties.isLogStackTrace()) {
@@ -194,6 +229,19 @@ public class GlobalExceptionHandler {
         String message = messages.isEmpty() ? ResultCode.BAD_REQUEST.message() : String.join("；", messages);
         log.warn("参数校验失败 [{} {}] {}", request.getMethod(), request.getRequestURI(), message);
         return build(ResultCode.BAD_REQUEST.code(), ResultCode.BAD_REQUEST.httpStatus(), message);
+    }
+
+    private boolean isSizeExceeded(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            String name = current.getClass().getSimpleName();
+            if (name.contains("SizeLimitExceeded") || name.contains("MaxUploadSizeExceeded")) {
+                return true;
+            }
+            Throwable cause = current.getCause();
+            current = cause == current ? null : cause;
+        }
+        return false;
     }
 
     private ResponseEntity<Result<Void>> build(int code, int httpStatus, String message) {
