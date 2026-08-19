@@ -6,7 +6,7 @@ import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.cfg.DateTimeFeature;
 import tools.jackson.databind.module.SimpleModule;
 
-public class ModalityJacksonCustomizer implements JsonMapperBuilderCustomizer {
+public class JacksonCustomizer implements JsonMapperBuilderCustomizer {
 
     @Override
     public void customize(tools.jackson.databind.json.JsonMapper.Builder builder) {

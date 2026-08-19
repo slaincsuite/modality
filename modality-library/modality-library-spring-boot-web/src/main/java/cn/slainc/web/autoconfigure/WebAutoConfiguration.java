@@ -1,13 +1,13 @@
 package cn.slainc.web.autoconfigure;
 
 import cn.slainc.web.async.AsyncProperties;
-import cn.slainc.web.async.ModalityAsyncConfig;
+import cn.slainc.web.async.AsyncConfig;
 import cn.slainc.web.config.ResponseWrapProperties;
 import cn.slainc.web.config.TraceProperties;
 import cn.slainc.web.config.WebExceptionProperties;
 import cn.slainc.web.cors.CorsFilterConfig;
 import cn.slainc.web.cors.CorsProperties;
-import cn.slainc.web.error.ModalityErrorController;
+import cn.slainc.web.error.ApiErrorController;
 import cn.slainc.web.exception.GlobalExceptionHandler;
 import cn.slainc.web.filter.FilterOrder;
 import cn.slainc.web.header.SecurityHeadersFilter;
@@ -16,10 +16,10 @@ import cn.slainc.web.limit.ConcurrencyLimitInterceptor;
 import cn.slainc.web.limit.RequestLimitProperties;
 import cn.slainc.web.log.RequestLogFilter;
 import cn.slainc.web.log.RequestLogProperties;
-import cn.slainc.web.resource.ModalityResourceConfig;
+import cn.slainc.web.resource.StaticResourceConfig;
 import cn.slainc.web.resource.StaticResourceProperties;
 import cn.slainc.web.result.ApiResponseAdvice;
-import cn.slainc.web.serialize.ModalityJacksonCustomizer;
+import cn.slainc.web.serialize.JacksonCustomizer;
 import cn.slainc.web.trace.TraceIdFilter;
 import cn.slainc.web.trace.TraceIdGenerator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -43,7 +43,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableConfigurationProperties({WebExceptionProperties.class, ResponseWrapProperties.class, TraceProperties.class,
         RequestLogProperties.class, CorsProperties.class, SecurityHeadersProperties.class, AsyncProperties.class,
         StaticResourceProperties.class, RequestLimitProperties.class})
-public class ModalityWebAutoConfiguration {
+public class WebAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
@@ -103,30 +103,30 @@ public class ModalityWebAutoConfiguration {
     @ConditionalOnMissingBean(ErrorController.class)
     @ConditionalOnProperty(prefix = "modality.web.error-page", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    public ModalityErrorController modalityErrorController() {
-        return new ModalityErrorController();
+    public ApiErrorController modalityErrorController() {
+        return new ApiErrorController();
     }
 
     @Bean
     @ConditionalOnMissingBean
     public JsonMapperBuilderCustomizer modalityJsonMapperCustomizer() {
-        return new ModalityJacksonCustomizer();
+        return new JacksonCustomizer();
     }
 
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "modality.web.async", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    public ModalityAsyncConfig modalityAsyncConfig(AsyncProperties properties) {
-        return new ModalityAsyncConfig(properties);
+    public AsyncConfig modalityAsyncConfig(AsyncProperties properties) {
+        return new AsyncConfig(properties);
     }
 
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "modality.web.static-resource", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    public ModalityResourceConfig modalityResourceConfig(StaticResourceProperties properties) {
-        return new ModalityResourceConfig(properties);
+    public StaticResourceConfig modalityResourceConfig(StaticResourceProperties properties) {
+        return new StaticResourceConfig(properties);
     }
 
     @Bean

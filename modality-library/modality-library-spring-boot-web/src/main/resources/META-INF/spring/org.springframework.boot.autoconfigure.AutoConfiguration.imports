@@ -1,2 +1,10 @@
-cn.slainc.web.autoconfigure.ModalityWebAutoConfiguration
-cn.slainc.web.doc.ModalityOpenApiConfig
+cn.slainc.web.autoconfigure.WebAutoConfiguration
+cn.slainc.web.autoconfigure.WebServerDefaultsAutoConfiguration
+cn.slainc.web.autoconfigure.RequestBodyLimitAutoConfiguration
+cn.slainc.web.autoconfigure.RequestTimeoutAutoConfiguration
+cn.slainc.web.autoconfigure.BrotliCompressionAutoConfiguration
+cn.slainc.web.autoconfigure.OpenApiDisabledAutoConfiguration
+cn.slainc.web.autoconfigure.SaTokenWebSocketAutoConfiguration
+cn.slainc.web.autoconfigure.WebSocketAutoConfiguration
+cn.slainc.web.autoconfigure.RedisWebSocketBroadcasterAutoConfiguration
+cn.slainc.web.doc.OpenApiConfig

@@ -18,7 +18,7 @@ class JacksonCustomizerTest {
 
     private JsonMapper mapper() {
         JsonMapper.Builder builder = JsonMapper.builder();
-        new ModalityJacksonCustomizer().customize(builder);
+        new JacksonCustomizer().customize(builder);
         return builder.build();
     }
 
