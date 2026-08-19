@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -15,11 +16,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
-@ConditionalOnClass(name = "io.swagger.v3.oas.models.OpenAPI")
+@ConditionalOnClass(name = {"io.swagger.v3.oas.models.OpenAPI", "org.springdoc.core.models.GroupedOpenApi",
+        "org.springdoc.core.customizers.OpenApiCustomizer"})
 @ConditionalOnProperty(prefix = "modality.web.open-api", name = "enabled", havingValue = "true",
         matchIfMissing = true)
 @EnableConfigurationProperties(OpenApiProperties.class)
-public class ModalityOpenApiConfig {
+public class OpenApiConfig {
 
     @Bean
     @ConditionalOnMissingBean
@@ -46,8 +48,26 @@ public class ModalityOpenApiConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean(EnumSchemaCustomizer.class)
+    @ConditionalOnProperty(prefix = "modality.web.open-api", name = "enum-display", havingValue = "true",
+            matchIfMissing = true)
+    public EnumSchemaCustomizer enumSchemaCustomizer() {
+        return new EnumSchemaCustomizer();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ErrorCodeSchemaCustomizer.class)
+    @ConditionalOnProperty(prefix = "modality.web.open-api", name = "error-codes", havingValue = "true",
+            matchIfMissing = true)
+    public ErrorCodeSchemaCustomizer errorCodeSchemaCustomizer() {
+        return new ErrorCodeSchemaCustomizer();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(GroupedOpenApi.class)
-    public GroupedOpenApi modalityGroupedOpenApi(OpenApiProperties properties) {
+    public GroupedOpenApi modalityGroupedOpenApi(OpenApiProperties properties,
+                                                 ObjectProvider<EnumSchemaCustomizer> enumSchemaCustomizer,
+                                                 ObjectProvider<ErrorCodeSchemaCustomizer> errorCodeSchemaCustomizer) {
         GroupedOpenApi.Builder builder = GroupedOpenApi.builder().group(properties.getGroup());
         if (!properties.getPaths().isEmpty()) {
             builder.pathsToMatch(properties.getPaths().toArray(new String[0]));
@@ -55,6 +75,8 @@ public class ModalityOpenApiConfig {
         if (!properties.getPackages().isEmpty()) {
             builder.packagesToScan(properties.getPackages().toArray(new String[0]));
         }
+        enumSchemaCustomizer.ifAvailable(builder::addOpenApiCustomizer);
+        errorCodeSchemaCustomizer.ifAvailable(builder::addOpenApiCustomizer);
         return builder.build();
     }
 }

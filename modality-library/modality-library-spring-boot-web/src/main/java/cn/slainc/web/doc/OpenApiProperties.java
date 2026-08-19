@@ -28,6 +28,10 @@ public class OpenApiProperties {
 
     private boolean securityRequired = true;
 
+    private boolean enumDisplay = true;
+
+    private boolean errorCodes = true;
+
     private Map<String, String> servers = new LinkedHashMap<>();
 
     public boolean isEnabled() {
@@ -100,6 +104,22 @@ public class OpenApiProperties {
 
     public void setSecurityRequired(boolean securityRequired) {
         this.securityRequired = securityRequired;
+    }
+
+    public boolean isEnumDisplay() {
+        return enumDisplay;
+    }
+
+    public void setEnumDisplay(boolean enumDisplay) {
+        this.enumDisplay = enumDisplay;
+    }
+
+    public boolean isErrorCodes() {
+        return errorCodes;
+    }
+
+    public void setErrorCodes(boolean errorCodes) {
+        this.errorCodes = errorCodes;
     }
 
     public Map<String, String> getServers() {
