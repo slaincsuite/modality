@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot sensitive support'
+description = '敏感数据'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')

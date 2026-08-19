@@ -2,13 +2,22 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot web support'
+description = 'Web 支持'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
     api libs.spring.boot.starter.webmvc
     api libs.spring.boot.starter.validation
     api libs.spring.boot.starter.jackson
+    api libs.spring.boot.starter.websocket
     implementation libs.ipaddress
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    compileOnly libs.brotli4j
+    compileOnly libs.sa.token.core
+    compileOnly libs.spring.boot.starter.data.redis
+    testImplementation libs.spring.boot.starter.data.redis
+    testRuntimeOnly libs.brotli4j
+    testRuntimeOnly libs.brotli4j.native.osx.aarch64
+    testRuntimeOnly libs.brotli4j.native.linux.x64
+    testRuntimeOnly libs.springdoc.openapi.starter.webmvc.ui
 }

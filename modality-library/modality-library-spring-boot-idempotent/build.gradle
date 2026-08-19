@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot idempotent support'
+description = '幂等'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')

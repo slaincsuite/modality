@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-boot-application-conventions'
 }
 
-description = 'Modality application'
+description = '启动模块'
 
 springBoot {
     mainClass.set('cn.slainc.boot.ModalityApplication')
@@ -52,6 +52,7 @@ dependencies {
     testRuntimeOnly libs.h2
 
     runtimeOnly libs.mysql.connector.j
+    runtimeOnly libs.springdoc.openapi.starter.webmvc.ui
     runtimeOnly libs.spring.boot.starter.actuator
     runtimeOnly libs.micrometer.registry.prometheus
 }

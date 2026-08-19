@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot sign support'
+description = '签名'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')

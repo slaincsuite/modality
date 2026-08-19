@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot mybatis support'
+description = 'MyBatis 增强'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-datasource')
@@ -10,4 +10,10 @@ dependencies {
     api libs.mybatis.plus.extension
     api libs.mybatis.plus.jsqlparser
     api libs.spring.boot.starter.aspectj
+    implementation project(':modality-library:modality-library-spring-boot-crypto')
+    implementation libs.caffeine
+    compileOnly libs.micrometer.core
+    compileOnly libs.jakarta.validation.api
+    testRuntimeOnly libs.h2
+    testRuntimeOnly libs.mysql.connector.j
 }

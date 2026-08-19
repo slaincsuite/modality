@@ -14,6 +14,10 @@ bouncycastle = "1.81"
 ipaddress = "5.6.2"
 owasp-sanitizer = "20260102.1"
 commons-io = "2.22.0"
+druid = "1.2.28"
+atomikos = "6.0.0"
+brotli4j = "1.23.0"
+poi = "5.4.1"
 
 [libraries]
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -27,14 +31,18 @@ spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-star
 spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
 spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache" }
 spring-boot-starter-aspectj = { module = "org.springframework.boot:spring-boot-starter-aspectj" }
+spring-boot-starter-websocket = { module = "org.springframework.boot:spring-boot-starter-websocket" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
 spring-boot-autoconfigure-processor = { module = "org.springframework.boot:spring-boot-autoconfigure-processor" }
 spring-tx = { module = "org.springframework:spring-tx" }
 jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api" }
+jakarta-transaction-api = { module = "jakarta.transaction:jakarta.transaction-api" }
+micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+sa-token-core = { module = "cn.dev33:sa-token-core", version.ref = "sa-token" }
 sa-token-spring-boot4-starter = { module = "cn.dev33:sa-token-spring-boot4-starter", version.ref = "sa-token" }
 sa-token-redis-template = { module = "cn.dev33:sa-token-redis-template", version.ref = "sa-token" }
 sa-token-apikey = { module = "cn.dev33:sa-token-apikey", version.ref = "sa-token" }
@@ -60,6 +68,17 @@ caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 commons-lang3 = { module = "org.apache.commons:commons-lang3" }
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
 commons-codec = { module = "commons-codec:commons-codec" }
+druid = { module = "com.alibaba:druid", version.ref = "druid" }
+atomikos-transactions = { module = "com.atomikos:transactions", version.ref = "atomikos" }
+atomikos-transactions-jta = { module = "com.atomikos:transactions-jta", version.ref = "atomikos" }
+atomikos-transactions-jdbc = { module = "com.atomikos:transactions-jdbc", version.ref = "atomikos" }
+brotli4j = { module = "com.aayushatharva.brotli4j:brotli4j", version.ref = "brotli4j" }
+brotli4j-native-osx-aarch64 = { module = "com.aayushatharva.brotli4j:native-osx-aarch64", version.ref = "brotli4j" }
+brotli4j-native-osx-x64 = { module = "com.aayushatharva.brotli4j:native-osx-x86_64", version.ref = "brotli4j" }
+brotli4j-native-linux-x64 = { module = "com.aayushatharva.brotli4j:native-linux-x86_64", version.ref = "brotli4j" }
+brotli4j-native-windows-x64 = { module = "com.aayushatharva.brotli4j:native-windows-x86_64", version.ref = "brotli4j" }
+poi = { module = "org.apache.poi:poi", version.ref = "poi" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 mysql-connector-j = { module = "com.mysql:mysql-connector-j" }
 h2 = { module = "com.h2database:h2" }
 

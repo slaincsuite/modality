@@ -2,10 +2,24 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot datasource support'
+description = '动态数据源'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
     api libs.spring.boot.starter.jdbc
     api libs.dynamic.datasource.spring.boot4.starter
+    api libs.spring.boot.starter.aspectj
+    implementation project(':modality-library:modality-library-spring-boot-crypto')
+    compileOnly libs.spring.boot.starter.actuator
+    compileOnly libs.druid
+    compileOnly libs.jakarta.transaction.api
+    testRuntimeOnly libs.jakarta.transaction.api
+    compileOnly libs.atomikos.transactions
+    compileOnly group: 'com.atomikos', name: 'transactions-jta', version: libs.versions.atomikos.get(), classifier: 'jakarta'
+    compileOnly group: 'com.atomikos', name: 'transactions-jdbc', version: libs.versions.atomikos.get(), classifier: 'jakarta'
+    testRuntimeOnly libs.druid
+    testRuntimeOnly libs.atomikos.transactions
+    testRuntimeOnly group: 'com.atomikos', name: 'transactions-jta', version: libs.versions.atomikos.get(), classifier: 'jakarta'
+    testRuntimeOnly group: 'com.atomikos', name: 'transactions-jdbc', version: libs.versions.atomikos.get(), classifier: 'jakarta'
+    testRuntimeOnly libs.h2
 }

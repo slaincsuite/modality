@@ -2,10 +2,15 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot excel support'
+description = 'Excel 导入导出'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
     api project(':modality-library:modality-library-spring-boot-web')
     api libs.fastexcel
+    implementation libs.poi
+    implementation libs.poi.ooxml
+    compileOnly libs.spring.boot.starter.jdbc
+    testImplementation libs.spring.boot.starter.jdbc
+    testRuntimeOnly libs.h2
 }

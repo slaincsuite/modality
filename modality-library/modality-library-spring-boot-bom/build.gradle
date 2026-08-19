@@ -20,6 +20,7 @@ def publicModules = rootProject.allprojects
         .sort()
 
 def thirdPartyAliases = [
+        'sa-token-core',
         'sa-token-spring-boot4-starter',
         'sa-token-redis-template',
         'sa-token-apikey',
@@ -28,6 +29,13 @@ def thirdPartyAliases = [
         'mybatis-plus-jsqlparser',
         'dynamic-datasource-spring-boot4-starter',
         'redisson',
+        'druid',
+        'atomikos-transactions',
+        'atomikos-transactions-jta',
+        'atomikos-transactions-jdbc',
+        'brotli4j',
+        'poi',
+        'poi-ooxml',
         'fastexcel',
         'springdoc-openapi-starter-webmvc-ui',
         'easy-captcha',

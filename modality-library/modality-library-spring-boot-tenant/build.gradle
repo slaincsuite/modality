@@ -2,10 +2,16 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot tenant support'
+description = '多租户'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-mybatis')
     api project(':modality-library:modality-library-spring-boot-redis')
+    implementation libs.caffeine
+    compileOnly libs.sa.token.core
+    compileOnly libs.micrometer.core
+    testImplementation libs.sa.token.core
+    testImplementation libs.micrometer.core
+    testRuntimeOnly libs.h2
 }

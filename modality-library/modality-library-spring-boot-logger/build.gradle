@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot logger support'
+description = '日志'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')

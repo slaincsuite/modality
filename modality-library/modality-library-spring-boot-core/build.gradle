@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot core support'
+description = '核心模型'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-utils')

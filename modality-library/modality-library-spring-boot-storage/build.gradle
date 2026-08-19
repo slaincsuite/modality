@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot storage support'
+description = '对象存储'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')

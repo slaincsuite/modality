@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot policy support'
+description = '策略'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')

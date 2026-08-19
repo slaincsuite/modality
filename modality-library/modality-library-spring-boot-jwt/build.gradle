@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot jwt support'
+description = 'JWT'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')

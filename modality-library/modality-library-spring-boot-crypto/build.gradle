@@ -2,10 +2,11 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot crypto support'
+description = '加解密'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-utils')
     api libs.bouncycastle
     api libs.bouncycastle.pkix
+    compileOnly libs.spring.boot.starter
 }

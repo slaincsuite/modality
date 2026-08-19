@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot utils support'
+description = '通用工具'
 
 dependencies {
     api libs.commons.lang3

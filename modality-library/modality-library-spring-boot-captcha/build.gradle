@@ -2,7 +2,7 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot captcha support'
+description = '验证码'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
