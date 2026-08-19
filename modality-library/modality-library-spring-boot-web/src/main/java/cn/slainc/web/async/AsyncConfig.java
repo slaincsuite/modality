@@ -14,12 +14,12 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class ModalityAsyncConfig implements WebMvcConfigurer {
+public class AsyncConfig implements WebMvcConfigurer {
 
     private final AsyncProperties properties;
     private final ExecutorService executor;
 
-    public ModalityAsyncConfig(AsyncProperties properties) {
+    public AsyncConfig(AsyncProperties properties) {
         this.properties = properties;
         this.executor = createExecutor(properties);
     }
