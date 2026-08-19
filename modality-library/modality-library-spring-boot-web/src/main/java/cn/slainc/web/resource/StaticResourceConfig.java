@@ -5,11 +5,11 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistra
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-public class ModalityResourceConfig implements WebMvcConfigurer {
+public class StaticResourceConfig implements WebMvcConfigurer {
 
     private final StaticResourceProperties properties;
 
-    public ModalityResourceConfig(StaticResourceProperties properties) {
+    public StaticResourceConfig(StaticResourceProperties properties) {
         this.properties = properties;
     }
 

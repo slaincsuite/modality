@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class ModalityErrorController implements ErrorController {
+public class ApiErrorController implements ErrorController {
 
     @RequestMapping("/error")
     public ResponseEntity<Result<Void>> handleError(HttpServletRequest request) {
