@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CsvUtilsTest {
@@ -57,6 +58,48 @@ class CsvUtilsTest {
         assertEquals((byte) 0xEF, bytes[0]);
         assertEquals((byte) 0xBB, bytes[1]);
         assertEquals((byte) 0xBF, bytes[2]);
+    }
+
+    @Test
+    void supportsBomControlAndGbkWithSemicolon() {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        CsvUtils.write(output, List.of("姓名"), List.of(List.of("张三")), CsvOptions.defaults().bom(false));
+        byte[] bytes = output.toByteArray();
+        assertTrue(bytes[0] != (byte) 0xEF, "关闭 BOM 后不应写入 UTF-8 BOM");
+        assertEquals("张三", CsvUtils.read(new ByteArrayInputStream(bytes), CsvOptions.defaults()).get(1).get(0));
+
+        ByteArrayOutputStream gbk = new ByteArrayOutputStream();
+        CsvUtils.write(gbk, List.of("姓名", "备注"), List.of(List.of("张三", "含,逗号")),
+                CsvOptions.of(';', Charset.forName("GBK")));
+        byte[] gbkBytes = gbk.toByteArray();
+        assertTrue(gbkBytes[0] != (byte) 0xEF, "GBK 不写 BOM");
+        List<List<String>> rows = CsvUtils.read(new ByteArrayInputStream(gbkBytes),
+                CsvOptions.of(';', Charset.forName("GBK")));
+        assertEquals("张三", rows.get(1).get(0));
+        assertEquals("含,逗号", rows.get(1).get(1));
+    }
+
+    @Test
+    void writesAndReadsUtf16Bom() {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        CsvUtils.write(output, List.of("姓名"), List.of(List.of("张三")),
+                CsvOptions.defaults().charset(StandardCharsets.UTF_16LE).delimiter('\t'));
+        byte[] bytes = output.toByteArray();
+        assertEquals((byte) 0xFF, bytes[0]);
+        assertEquals((byte) 0xFE, bytes[1]);
+
+        List<List<String>> rows = CsvUtils.read(new ByteArrayInputStream(bytes),
+                CsvOptions.defaults().charset(StandardCharsets.UTF_16LE).delimiter('\t'));
+        assertEquals(List.of("姓名"), rows.get(0));
+        assertEquals("张三", rows.get(1).get(0));
+    }
+
+    @Test
+    void validatesOptions() {
+        assertThrows(IllegalArgumentException.class, () -> CsvOptions.defaults().delimiter('"'));
+        assertThrows(IllegalArgumentException.class, () -> CsvOptions.defaults().delimiter('\n'));
+        assertEquals(';', CsvOptions.of(';', StandardCharsets.UTF_8).getDelimiter());
+        assertEquals(StandardCharsets.UTF_8, CsvOptions.defaults().charset(null).getCharset());
     }
 
     @Test

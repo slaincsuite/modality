@@ -27,9 +27,20 @@ public final class CsvUtils {
 
     public static void write(OutputStream outputStream, List<String> headers, List<List<String>> rows,
                              char delimiter, Charset charset) {
+        write(outputStream, headers, rows, delimiter, charset, true);
+    }
+
+    public static void write(OutputStream outputStream, List<String> headers, List<List<String>> rows,
+                             CsvOptions options) {
+        CsvOptions actual = options == null ? CsvOptions.defaults() : options;
+        write(outputStream, headers, rows, actual.getDelimiter(), actual.getCharset(), actual.isBom());
+    }
+
+    private static void write(OutputStream outputStream, List<String> headers, List<List<String>> rows,
+                              char delimiter, Charset charset, boolean bom) {
         Charset actualCharset = charset == null ? StandardCharsets.UTF_8 : charset;
         try {
-            outputStream.write(charset == null ? new byte[0] : bom(actualCharset));
+            outputStream.write(bom ? bom(actualCharset) : new byte[0]);
             Writer writer = new OutputStreamWriter(outputStream, actualCharset);
             if (headers != null) {
                 writeRow(writer, headers, delimiter);
@@ -47,6 +58,11 @@ public final class CsvUtils {
 
     public static List<List<String>> read(InputStream inputStream) {
         return read(inputStream, DEFAULT_DELIMITER, StandardCharsets.UTF_8);
+    }
+
+    public static List<List<String>> read(InputStream inputStream, CsvOptions options) {
+        CsvOptions actual = options == null ? CsvOptions.defaults() : options;
+        return read(inputStream, actual.getDelimiter(), actual.getCharset());
     }
 
     public static List<List<String>> read(InputStream inputStream, char delimiter, Charset charset) {
@@ -147,9 +163,19 @@ public final class CsvUtils {
     }
 
     private static byte[] bom(Charset charset) {
-        return StandardCharsets.UTF_8.equals(charset)
-                ? new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}
-                : new byte[0];
+        if (StandardCharsets.UTF_8.equals(charset)) {
+            return new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+        }
+        if (StandardCharsets.UTF_16BE.equals(charset)) {
+            return new byte[]{(byte) 0xFE, (byte) 0xFF};
+        }
+        if (StandardCharsets.UTF_16LE.equals(charset)) {
+            return new byte[]{(byte) 0xFF, (byte) 0xFE};
+        }
+        if (StandardCharsets.UTF_16.equals(charset)) {
+            return new byte[]{(byte) 0xFE, (byte) 0xFF};
+        }
+        return new byte[0];
     }
 
     private static String readAll(Reader reader) throws IOException {
