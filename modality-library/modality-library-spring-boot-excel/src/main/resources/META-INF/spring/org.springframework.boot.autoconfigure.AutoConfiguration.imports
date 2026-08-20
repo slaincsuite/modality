@@ -1,0 +1,2 @@
+cn.slainc.excel.autoconfigure.ExcelAutoConfiguration
+cn.slainc.excel.autoconfigure.ExcelJdbcExportStoreAutoConfiguration
