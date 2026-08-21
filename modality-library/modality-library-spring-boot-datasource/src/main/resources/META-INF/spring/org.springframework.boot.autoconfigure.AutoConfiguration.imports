@@ -1,0 +1,3 @@
+cn.slainc.datasource.autoconfigure.RoutingDataSourceAutoConfiguration
+cn.slainc.datasource.autoconfigure.DataSourceHealthAutoConfiguration
+cn.slainc.datasource.autoconfigure.JtaAutoConfiguration
