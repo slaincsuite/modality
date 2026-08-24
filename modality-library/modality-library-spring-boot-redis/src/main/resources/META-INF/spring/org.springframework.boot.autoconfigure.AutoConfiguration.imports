@@ -1,0 +1,10 @@
+cn.slainc.redis.autoconfigure.RedisAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisJdbcConfigAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisConfigAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisCacheAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisLockAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisRateLimitAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisPubSubAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisStructureAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisSaTokenAutoConfiguration
+cn.slainc.redis.autoconfigure.RedisMonitorAutoConfiguration
