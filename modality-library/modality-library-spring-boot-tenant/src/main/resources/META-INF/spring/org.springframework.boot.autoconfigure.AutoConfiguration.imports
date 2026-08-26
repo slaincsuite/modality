@@ -1,0 +1,3 @@
+cn.slainc.tenant.autoconfigure.TenantAutoConfiguration
+cn.slainc.tenant.autoconfigure.TenantSaTokenAutoConfiguration
+cn.slainc.tenant.autoconfigure.TenantMetricsAutoConfiguration
