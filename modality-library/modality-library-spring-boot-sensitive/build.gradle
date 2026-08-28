@@ -5,6 +5,10 @@ plugins {
 description = '敏感数据'
 
 dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
     api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-crypto')
     implementation libs.owasp.html.sanitizer
+    compileOnly libs.micrometer.core
+    testImplementation libs.micrometer.core
 }

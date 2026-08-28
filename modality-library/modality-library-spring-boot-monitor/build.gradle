@@ -6,6 +6,15 @@ description = '监控'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-web')
     api libs.spring.boot.starter.actuator
     implementation libs.oshi.core
+    compileOnly project(':modality-library:modality-library-spring-boot-redis')
+    compileOnly libs.spring.boot.starter.jdbc
+    compileOnly libs.druid
+    testImplementation project(':modality-library:modality-library-spring-boot-redis')
+    testImplementation libs.spring.boot.starter.jdbc
+    testImplementation libs.druid
+    testRuntimeOnly libs.h2
+    testRuntimeOnly libs.micrometer.registry.prometheus
 }

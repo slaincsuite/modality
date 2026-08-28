@@ -7,7 +7,10 @@ description = '日志'
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
     api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-redis')
     api libs.spring.boot.starter.aspectj
     compileOnly libs.spring.boot.starter.actuator
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    compileOnly libs.micrometer.core
+    testImplementation libs.micrometer.core
 }

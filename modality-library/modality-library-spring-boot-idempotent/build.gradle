@@ -8,4 +8,9 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-redis')
     api libs.spring.boot.starter.aspectj
+    compileOnly libs.spring.boot.starter.jdbc
+    compileOnly libs.micrometer.core
+    testImplementation libs.spring.boot.starter.jdbc
+    testImplementation libs.micrometer.core
+    testRuntimeOnly libs.h2
 }
