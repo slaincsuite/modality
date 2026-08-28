@@ -19,16 +19,38 @@ public class JdbcExportTaskStore implements ExportTaskStore {
 
     private final JdbcTemplate jdbcTemplate;
     private final RowMapper<ExportTask> rowMapper = this::mapRow;
+    private volatile boolean schemaReady;
 
     public JdbcExportTaskStore(JdbcTemplate jdbcTemplate) {
         if (jdbcTemplate == null) {
             throw new IllegalArgumentException("JdbcTemplate 不能为空");
         }
         this.jdbcTemplate = jdbcTemplate;
-        initSchema();
+    }
+
+    private void ensureSchema() {
+        if (schemaReady) {
+            return;
+        }
+        synchronized (this) {
+            if (schemaReady) {
+                return;
+            }
+            initSchema();
+            schemaReady = true;
+        }
     }
 
     public void initSchema() {
+        try {
+            doInitSchema();
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException("导出任务表初始化失败，请确认数据源可用，"
+                    + "或关闭 modality.excel.export-center.jdbc-store-enabled 改用内存存储", exception);
+        }
+    }
+
+    private void doInitSchema() {
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + TABLE + " ("
                 + "task_id VARCHAR(64) PRIMARY KEY, "
                 + "task_name VARCHAR(200), "
@@ -46,6 +68,7 @@ public class JdbcExportTaskStore implements ExportTaskStore {
 
     @Override
     public ExportTask save(ExportTask task) {
+        ensureSchema();
         requireTask(task);
         jdbcTemplate.update("INSERT INTO " + TABLE + " (" + COLUMNS + ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 task.getTaskId(), task.getTaskName(), task.getStatus().name(), task.getSheetName(),
@@ -57,6 +80,7 @@ public class JdbcExportTaskStore implements ExportTaskStore {
 
     @Override
     public ExportTask update(ExportTask task) {
+        ensureSchema();
         requireTask(task);
         int updated = jdbcTemplate.update("UPDATE " + TABLE + " SET task_name = ?, status = ?, sheet_name = ?, "
                         + "head_class = ?, file_name = ?, file_path = ?, total_rows = ?, processed_rows = ?, "
@@ -72,6 +96,7 @@ public class JdbcExportTaskStore implements ExportTaskStore {
 
     @Override
     public ExportTask find(String taskId) {
+        ensureSchema();
         if (taskId == null || taskId.isBlank()) {
             return null;
         }
@@ -82,6 +107,7 @@ public class JdbcExportTaskStore implements ExportTaskStore {
 
     @Override
     public List<ExportTask> list(ExportTaskQuery query) {
+        ensureSchema();
         ExportTaskQuery actual = query == null ? ExportTaskQuery.all() : query;
         StringBuilder sql = new StringBuilder("SELECT " + COLUMNS + " FROM " + TABLE + " WHERE 1 = 1");
         List<Object> arguments = new ArrayList<>();
@@ -107,17 +133,20 @@ public class JdbcExportTaskStore implements ExportTaskStore {
 
     @Override
     public boolean delete(String taskId) {
+        ensureSchema();
         return taskId != null && jdbcTemplate.update("DELETE FROM " + TABLE + " WHERE task_id = ?", taskId) > 0;
     }
 
     @Override
     public long clearFinished() {
+        ensureSchema();
         return jdbcTemplate.update("DELETE FROM " + TABLE + " WHERE status IN (?,?,?)",
                 ExportTaskStatus.SUCCEEDED.name(), ExportTaskStatus.FAILED.name(), ExportTaskStatus.CANCELED.name());
     }
 
     @Override
     public List<ExportTask> findResumable() {
+        ensureSchema();
         return jdbcTemplate.query("SELECT " + COLUMNS + " FROM " + TABLE + " WHERE status IN (?,?,?) ORDER BY created_at",
                 rowMapper, ExportTaskStatus.PENDING.name(), ExportTaskStatus.RUNNING.name(),
                 ExportTaskStatus.FAILED.name());
