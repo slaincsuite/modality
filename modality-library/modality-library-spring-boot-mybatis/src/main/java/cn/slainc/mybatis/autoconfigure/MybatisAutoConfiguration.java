@@ -118,7 +118,7 @@ public class MybatisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "modality.mybatis.fill", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public MetaObjectHandler modalityMetaObjectHandler(MybatisProperties properties) {
+    public MetaObjectHandler metaObjectHandler(MybatisProperties properties) {
         return new DefaultMetaObjectHandler(properties);
     }
 

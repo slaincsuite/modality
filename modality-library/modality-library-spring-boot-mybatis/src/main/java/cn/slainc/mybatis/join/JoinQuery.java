@@ -144,7 +144,7 @@ public final class JoinQuery {
     }
 
     public String countSql() {
-        return "SELECT COUNT(*) FROM (" + render(false) + ") modality_count";
+        return "SELECT COUNT(*) FROM (" + render(false) + ") join_count";
     }
 
     private String render(boolean withOrderAndLimit) {
