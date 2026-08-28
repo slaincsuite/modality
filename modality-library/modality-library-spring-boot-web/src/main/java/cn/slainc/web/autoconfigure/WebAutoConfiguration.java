@@ -103,13 +103,13 @@ public class WebAutoConfiguration {
     @ConditionalOnMissingBean(ErrorController.class)
     @ConditionalOnProperty(prefix = "modality.web.error-page", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    public ApiErrorController modalityErrorController() {
+    public ApiErrorController errorController() {
         return new ApiErrorController();
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public JsonMapperBuilderCustomizer modalityJsonMapperCustomizer() {
+    public JsonMapperBuilderCustomizer jsonMapperCustomizer() {
         return new JacksonCustomizer();
     }
 
@@ -117,7 +117,7 @@ public class WebAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "modality.web.async", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    public AsyncConfig modalityAsyncConfig(AsyncProperties properties) {
+    public AsyncConfig asyncConfig(AsyncProperties properties) {
         return new AsyncConfig(properties);
     }
 
@@ -125,7 +125,7 @@ public class WebAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "modality.web.static-resource", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    public StaticResourceConfig modalityResourceConfig(StaticResourceProperties properties) {
+    public StaticResourceConfig staticResourceConfig(StaticResourceProperties properties) {
         return new StaticResourceConfig(properties);
     }
 
@@ -136,8 +136,8 @@ public class WebAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(name = "modalityRequestLimitConfigurer")
-    public WebMvcConfigurer modalityRequestLimitConfigurer(ConcurrencyLimitInterceptor interceptor) {
+    @ConditionalOnMissingBean(name = "requestLimitConfigurer")
+    public WebMvcConfigurer requestLimitConfigurer(ConcurrencyLimitInterceptor interceptor) {
         return new WebMvcConfigurer() {
             @Override
             public void addInterceptors(InterceptorRegistry registry) {

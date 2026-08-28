@@ -25,7 +25,7 @@ public class OpenApiConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public OpenAPI modalityOpenApi(OpenApiProperties properties) {
+    public OpenAPI openApi(OpenApiProperties properties) {
         Components components = new Components().addSecuritySchemes(properties.getBearerSchemeName(),
                 new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP)
@@ -65,7 +65,7 @@ public class OpenApiConfig {
 
     @Bean
     @ConditionalOnMissingBean(GroupedOpenApi.class)
-    public GroupedOpenApi modalityGroupedOpenApi(OpenApiProperties properties,
+    public GroupedOpenApi groupedOpenApi(OpenApiProperties properties,
                                                  ObjectProvider<EnumSchemaCustomizer> enumSchemaCustomizer,
                                                  ObjectProvider<ErrorCodeSchemaCustomizer> errorCodeSchemaCustomizer) {
         GroupedOpenApi.Builder builder = GroupedOpenApi.builder().group(properties.getGroup());

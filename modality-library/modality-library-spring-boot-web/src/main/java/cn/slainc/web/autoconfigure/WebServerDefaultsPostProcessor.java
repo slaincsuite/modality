@@ -20,7 +20,7 @@ import java.util.Map;
 
 public class WebServerDefaultsPostProcessor implements BeanFactoryPostProcessor {
 
-    public static final String PROPERTY_SOURCE_NAME = "modalityWebServerDefaults";
+    public static final String PROPERTY_SOURCE_NAME = "webServerDefaults";
 
     private final Environment environment;
 
