@@ -7,7 +7,6 @@ import cn.slainc.web.config.TraceProperties;
 import cn.slainc.web.config.WebExceptionProperties;
 import cn.slainc.web.cors.CorsFilterConfig;
 import cn.slainc.web.cors.CorsProperties;
-import cn.slainc.web.error.ApiErrorController;
 import cn.slainc.web.exception.GlobalExceptionHandler;
 import cn.slainc.web.filter.FilterOrder;
 import cn.slainc.web.header.SecurityHeadersFilter;
@@ -31,7 +30,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.webmvc.autoconfigure.error.ErrorMvcAutoConfiguration;
-import org.springframework.boot.webmvc.error.ErrorController;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -97,14 +95,6 @@ public class WebAutoConfiguration {
     public FilterRegistrationBean<RequestLogFilter> requestLogFilter(RequestLogProperties properties) {
         return registration(new RequestLogFilter(properties, FilterOrder.REQUEST_LOG), FilterOrder.REQUEST_LOG,
                 "requestLogFilter");
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(ErrorController.class)
-    @ConditionalOnProperty(prefix = "modality.web.error-page", name = "enabled", havingValue = "true",
-            matchIfMissing = true)
-    public ApiErrorController errorController() {
-        return new ApiErrorController();
     }
 
     @Bean
