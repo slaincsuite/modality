@@ -1,6 +1,7 @@
 package cn.slainc.crypto.autoconfigure;
 
 import cn.slainc.crypto.key.CryptoKeyProvider;
+import cn.slainc.crypto.key.EncryptedData;
 import cn.slainc.crypto.key.EnvelopeEncryption;
 import cn.slainc.crypto.key.SecretKeyUtils;
 import org.junit.jupiter.api.DisplayName;
@@ -45,9 +46,10 @@ class CryptoAutoConfigurationTest {
                     assertThat(provider.currentKeyId()).isEqualTo("prod-1");
 
                     EnvelopeEncryption encryption = context.getBean(EnvelopeEncryption.class);
-                    byte[] cipher = encryption.encrypt("国密信封加密".getBytes(StandardCharsets.UTF_8));
+                    EncryptedData cipher = encryption.encrypt("国密信封加密".getBytes(StandardCharsets.UTF_8));
                     byte[] plain = encryption.decrypt(cipher);
                     assertThat(new String(plain, StandardCharsets.UTF_8)).isEqualTo("国密信封加密");
+                    assertThat(cipher.keyId()).isEqualTo("prod-1");
                 });
     }
 
