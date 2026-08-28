@@ -75,7 +75,7 @@ class PortableRedisCommandsTest {
     @Test
     @DisplayName("RedisKeyManager 复用可移植实现读取内存占用")
     void keyManagerUsesPortablePath() {
-        cn.slainc.redis.key.RedisKeyManager keyManager = new cn.slainc.redis.key.RedisKeyManager(template,
+        cn.slainc.redis.key.RedisKeyManager keyManager = new cn.slainc.redis.key.RedisKeyManager(template, null,
                 new cn.slainc.redis.autoconfigure.RedisProperties());
         String key = "portable:keymgr:" + UUID.randomUUID();
         template.opsForValue().set(key, "value");

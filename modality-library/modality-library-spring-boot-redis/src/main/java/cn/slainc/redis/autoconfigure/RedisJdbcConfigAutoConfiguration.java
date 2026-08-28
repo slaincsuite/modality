@@ -2,6 +2,8 @@ package cn.slainc.redis.autoconfigure;
 
 import cn.slainc.redis.config.DynamicConfigRepository;
 import cn.slainc.redis.config.JdbcDynamicConfigRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -21,13 +23,19 @@ import org.springframework.jdbc.core.JdbcTemplate;
         matchIfMissing = true)
 public class RedisJdbcConfigAutoConfiguration {
 
+    private static final Logger log = LoggerFactory.getLogger(RedisJdbcConfigAutoConfiguration.class);
+
     @Bean
     @ConditionalOnMissingBean
     public DynamicConfigRepository jdbcDynamicConfigRepository(JdbcTemplate jdbcTemplate,
                                                               RedisProperties properties) {
         JdbcDynamicConfigRepository repository = new JdbcDynamicConfigRepository(jdbcTemplate,
                 properties.getConfig().getTable());
-        repository.initSchema();
+        try {
+            repository.initSchema();
+        } catch (RuntimeException exception) {
+            log.warn("动态配置表初始化失败，将在首次使用时重试：{}", exception.getMessage());
+        }
         return repository;
     }
 }

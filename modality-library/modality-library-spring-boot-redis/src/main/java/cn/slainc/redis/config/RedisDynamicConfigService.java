@@ -107,7 +107,16 @@ public class RedisDynamicConfigService implements DynamicConfigService {
             this.snapshotCache = Caffeine.newBuilder().maximumSize(0L).build();
         }
         this.localVersions = Caffeine.newBuilder().maximumSize(maxSize).build();
-        this.knownVersion.set(readVersion());
+        this.knownVersion.set(readInitialVersion());
+    }
+
+    private long readInitialVersion() {
+        try {
+            return readVersion();
+        } catch (RuntimeException exception) {
+            log.warn("启动时读取动态配置版本失败，将在首次访问时重试：{}", exception.getMessage());
+            return 0L;
+        }
     }
 
     public static String channelOf(RedisProperties properties) {

@@ -33,7 +33,12 @@ public class RedisLockAutoConfiguration {
         if (dataRedisProperties.getUsername() != null && !dataRedisProperties.getUsername().isBlank()) {
             server.setUsername(dataRedisProperties.getUsername());
         }
-        return Redisson.create(config);
+        try {
+            return Redisson.create(config);
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException("Redisson 客户端创建失败，请确认 " + server.getAddress()
+                    + " 可达且账号密码正确；不需要分布式锁时可关闭 modality.redis.lock.enabled", exception);
+        }
     }
 
     @Bean
