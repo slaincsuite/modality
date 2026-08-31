@@ -1,0 +1,7 @@
+cn.slainc.idempotent.autoconfigure.IdempotentAutoConfiguration
+cn.slainc.idempotent.autoconfigure.IdempotentRedisStoreAutoConfiguration
+cn.slainc.idempotent.autoconfigure.IdempotentDatabaseStoreAutoConfiguration
+cn.slainc.idempotent.autoconfigure.IdempotentLocalStoreAutoConfiguration
+cn.slainc.idempotent.autoconfigure.IdempotentMissingStoreAutoConfiguration
+cn.slainc.idempotent.autoconfigure.IdempotentMetricsAutoConfiguration
+cn.slainc.idempotent.autoconfigure.IdempotentTokenAutoConfiguration
