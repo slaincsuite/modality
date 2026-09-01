@@ -1,0 +1,4 @@
+cn.slainc.storage.autoconfigure.StorageAutoConfiguration
+cn.slainc.storage.autoconfigure.StorageMetricsAutoConfiguration
+cn.slainc.storage.autoconfigure.S3StorageAutoConfiguration
+cn.slainc.storage.autoconfigure.MinioStorageAutoConfiguration
