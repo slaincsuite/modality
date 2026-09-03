@@ -1,0 +1,4 @@
+cn.slainc.logger.autoconfigure.LoggerAutoConfiguration
+cn.slainc.logger.autoconfigure.LoggerWebAutoConfiguration
+cn.slainc.logger.autoconfigure.LoggerLogbackAutoConfiguration
+cn.slainc.logger.autoconfigure.LoggerMetricsAutoConfiguration
