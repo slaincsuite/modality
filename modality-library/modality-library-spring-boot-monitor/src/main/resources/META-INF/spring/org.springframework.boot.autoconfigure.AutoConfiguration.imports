@@ -1,0 +1,10 @@
+cn.slainc.monitor.autoconfigure.MonitorAutoConfiguration
+cn.slainc.monitor.autoconfigure.HttpMetricsAutoConfiguration
+cn.slainc.monitor.autoconfigure.OshiSystemMetricsAutoConfiguration
+cn.slainc.monitor.autoconfigure.JvmSupplementMetricsAutoConfiguration
+cn.slainc.monitor.autoconfigure.DruidPoolMetricsAutoConfiguration
+cn.slainc.monitor.autoconfigure.RedisMetricsSupplementAutoConfiguration
+cn.slainc.monitor.autoconfigure.SaTokenMetricsAutoConfiguration
+cn.slainc.monitor.autoconfigure.MonitorHealthAutoConfiguration
+cn.slainc.monitor.autoconfigure.ApplicationInfoEndpointAutoConfiguration
+cn.slainc.monitor.autoconfigure.AlertAutoConfiguration
