@@ -1,0 +1,3 @@
+cn.slainc.sensitive.autoconfigure.SensitiveMetricsAutoConfiguration
+cn.slainc.sensitive.autoconfigure.SensitiveAutoConfiguration
+cn.slainc.sensitive.autoconfigure.SensitiveXssAutoConfiguration
