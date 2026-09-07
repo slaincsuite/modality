@@ -25,6 +25,8 @@ public final class RedisTestSupport {
 
     public static final String PASSWORD = "omni-redis-pass";
 
+    public static final int DATABASE = 1;
+
     public static final String SKIP_REASON = "本地 127.0.0.1:6379 没有可用的 Redis，已跳过集成测试";
 
     private static volatile Boolean available;
@@ -60,6 +62,8 @@ public final class RedisTestSupport {
     public static LettuceConnectionFactory newConnectionFactory() {
         RedisStandaloneConfiguration server = new RedisStandaloneConfiguration(HOST, PORT);
         server.setPassword(RedisPassword.of(PASSWORD));
+        // 与 boot 验收测试（database 0）隔离，避免并行构建时互相清键
+        server.setDatabase(DATABASE);
         LettuceClientConfiguration client = LettuceClientConfiguration.builder()
                 .commandTimeout(Duration.ofSeconds(5))
                 .build();
