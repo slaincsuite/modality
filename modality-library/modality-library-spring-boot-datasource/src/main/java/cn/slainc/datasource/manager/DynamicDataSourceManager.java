@@ -12,6 +12,7 @@ import cn.slainc.datasource.properties.DataSourceProperties;
 import cn.slainc.datasource.routing.RoutingDataSource;
 import cn.slainc.datasource.strategy.WeightedDynamicDataSourceStrategy;
 import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
+import com.baomidou.dynamic.datasource.creator.druid.DruidConfig;
 import com.baomidou.dynamic.datasource.creator.DefaultDataSourceCreator;
 import com.baomidou.dynamic.datasource.creator.hikaricp.HikariCpConfig;
 import org.slf4j.Logger;
@@ -216,6 +217,12 @@ public class DynamicDataSourceManager {
     private void applyPoolType(DataSourceProperty property, DataSourceDefinition definition, DatabaseType databaseType) {
         PoolType poolType = definition.getPoolType() == null
                 ? properties.getPoolType() : definition.getPoolType();
+        // 无条件预置：property.type 为空时 creator 仍可能选中 Druid，一旦选中而 maxWait 为默认 -1 就会永久阻塞
+        DruidConfig druid = property.getDruid() == null ? new DruidConfig() : property.getDruid();
+        if (druid.getMaxWait() == null) {
+            druid.setMaxWait(properties.getPool().getMaxWaitMillis());
+        }
+        property.setDruid(druid);
         if (poolType == null || poolType == PoolType.HIKARI) {
             return;
         }

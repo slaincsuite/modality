@@ -211,6 +211,9 @@ public class DataSourceProperties {
 
     public static class Pool {
 
+        // Druid 的 maxWait 默认是 -1（无限等待），池不可用时会把调用线程永久挂住，必须给上限
+        private Integer maxWaitMillis = 10000;
+
         private Integer minimumIdle;
 
         private Integer maximumPoolSize;
@@ -222,6 +225,14 @@ public class DataSourceProperties {
         private Long maxLifetime;
 
         private Long leakDetectionThreshold;
+
+        public Integer getMaxWaitMillis() {
+            return maxWaitMillis;
+        }
+
+        public void setMaxWaitMillis(Integer maxWaitMillis) {
+            this.maxWaitMillis = maxWaitMillis;
+        }
 
         public Integer getMinimumIdle() {
             return minimumIdle;
