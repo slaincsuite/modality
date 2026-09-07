@@ -52,6 +52,12 @@ class DynamicConfigDatabaseBroadcastAcceptanceTest {
 
     private static final String REDIS_PASSWORD = "omni-redis-pass";
 
+    // 与其它模块以及 boot 自身的应用上下文（database 0）隔离，避免并行构建时共享版本号键
+    private static final int REDIS_DATABASE = 7;
+
+    // Redis 的 Pub/Sub 频道不随 database 隔离，必须用独立频道，否则会收到其它测试进程的广播
+    private static final String BROADCAST_CHANNEL = "acceptance-" + java.util.UUID.randomUUID();
+
     private static final String SKIP = "本地 Docker 的 MySQL 或 Redis 不可用，已跳过端到端验收";
 
     private static final long TIMEOUT_MILLIS = 10_000L;
@@ -244,6 +250,7 @@ class DynamicConfigDatabaseBroadcastAcceptanceTest {
     private static LettuceConnectionFactory newConnectionFactory() {
         RedisStandaloneConfiguration server = new RedisStandaloneConfiguration(REDIS_HOST, REDIS_PORT);
         server.setPassword(RedisPassword.of(REDIS_PASSWORD));
+        server.setDatabase(REDIS_DATABASE);
         LettuceClientConfiguration client = LettuceClientConfiguration.builder()
                 .commandTimeout(Duration.ofSeconds(5))
                 .build();
@@ -277,6 +284,7 @@ class DynamicConfigDatabaseBroadcastAcceptanceTest {
             RedisProperties properties = new RedisProperties();
             properties.getConfig().setPublishEnabled(publish);
             properties.getConfig().setSubscribeEnabled(subscribe);
+            properties.getConfig().setBroadcastChannel(BROADCAST_CHANNEL);
 
             JdbcDynamicConfigRepository repository = new JdbcDynamicConfigRepository(jdbcTemplate,
                     properties.getConfig().getTable());
