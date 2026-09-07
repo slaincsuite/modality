@@ -22,11 +22,7 @@ public class AlertEvaluationScheduler implements SmartLifecycle {
 
     private final MonitorProperties properties;
 
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "alert-evaluator");
-        thread.setDaemon(true);
-        return thread;
-    });
+    private volatile ScheduledExecutorService executor;
 
     private volatile boolean running;
 
@@ -46,14 +42,28 @@ public class AlertEvaluationScheduler implements SmartLifecycle {
             return;
         }
         running = true;
-        executor.scheduleWithFixedDelay(this::tick, 1000L, 1000L, TimeUnit.MILLISECONDS);
+        // 上下文 pause/restart 会 stop() 之后再 start()，这里必须能重建已被关闭的线程池
+        ScheduledExecutorService current = executor;
+        if (current == null || current.isShutdown()) {
+            current = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "alert-evaluator");
+                thread.setDaemon(true);
+                return thread;
+            });
+            executor = current;
+        }
+        current.scheduleWithFixedDelay(this::tick, 1000L, 1000L, TimeUnit.MILLISECONDS);
         log.info("告警评估调度已启动，基础扫描间隔 1 秒");
     }
 
     @Override
     public void stop() {
         running = false;
-        executor.shutdownNow();
+        ScheduledExecutorService current = executor;
+        executor = null;
+        if (current != null) {
+            current.shutdownNow();
+        }
     }
 
     @Override
