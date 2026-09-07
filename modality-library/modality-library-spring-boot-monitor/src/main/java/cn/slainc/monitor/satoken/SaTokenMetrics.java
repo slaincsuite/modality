@@ -54,7 +54,11 @@ public class SaTokenMetrics {
     }
 
     public double loginCount() {
-        return metrics.registry().find(metrics.name(LOGIN)).timers().stream().mapToDouble(Timer::count).sum();
+        double counters = metrics.registry().find(metrics.name(LOGIN)).counters().stream()
+                .mapToDouble(io.micrometer.core.instrument.Counter::count).sum();
+        double timers = metrics.registry().find(metrics.name(LOGIN)).timers().stream()
+                .mapToDouble(Timer::count).sum();
+        return counters + timers;
     }
 
     public double authorizationCount() {
