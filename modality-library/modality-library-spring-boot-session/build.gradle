@@ -8,4 +8,7 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-security')
     api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-redis')
+    compileOnly project(':modality-library:modality-library-spring-boot-monitor')
+    testImplementation project(':modality-library:modality-library-spring-boot-monitor')
+    testImplementation libs.micrometer.core
 }

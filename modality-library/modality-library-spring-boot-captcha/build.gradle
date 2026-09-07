@@ -8,4 +8,8 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
     api project(':modality-library:modality-library-spring-boot-web')
     api libs.easy.captcha
+    api project(':modality-library:modality-library-spring-boot-redis')
+    api project(':modality-library:modality-library-spring-boot-crypto')
+    compileOnly libs.micrometer.core
+    testImplementation libs.micrometer.core
 }

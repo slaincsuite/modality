@@ -48,6 +48,7 @@ sa-token-core = { module = "cn.dev33:sa-token-core", version.ref = "sa-token" }
 sa-token-spring-boot4-starter = { module = "cn.dev33:sa-token-spring-boot4-starter", version.ref = "sa-token" }
 sa-token-redis-template = { module = "cn.dev33:sa-token-redis-template", version.ref = "sa-token" }
 sa-token-apikey = { module = "cn.dev33:sa-token-apikey", version.ref = "sa-token" }
+sa-token-jwt = { module = "cn.dev33:sa-token-jwt", version.ref = "sa-token" }
 mybatis-plus-spring-boot4-starter = { module = "com.baomidou:mybatis-plus-spring-boot4-starter", version.ref = "mybatis-plus" }
 mybatis-plus-extension = { module = "com.baomidou:mybatis-plus-extension", version.ref = "mybatis-plus" }
 mybatis-plus-jsqlparser = { module = "com.baomidou:mybatis-plus-jsqlparser", version.ref = "mybatis-plus" }

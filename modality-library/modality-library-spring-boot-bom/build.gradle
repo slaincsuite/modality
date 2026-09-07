@@ -24,6 +24,7 @@ def thirdPartyAliases = [
         'sa-token-spring-boot4-starter',
         'sa-token-redis-template',
         'sa-token-apikey',
+        'sa-token-jwt',
         'mybatis-plus-spring-boot4-starter',
         'mybatis-plus-extension',
         'mybatis-plus-jsqlparser',
