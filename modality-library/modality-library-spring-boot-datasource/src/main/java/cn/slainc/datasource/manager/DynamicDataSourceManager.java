@@ -111,7 +111,9 @@ public class DynamicDataSourceManager {
         DataSourceDefinition saved = repository.save(definition);
         try {
             apply(saved);
+            requireReachable(saved);
         } catch (RuntimeException exception) {
+            detach(saved.getName());
             repository.deleteByName(saved.getName());
             throw exception;
         }
@@ -126,8 +128,11 @@ public class DynamicDataSourceManager {
         DataSourceDefinition saved = repository.update(definition);
         try {
             apply(saved);
+            requireReachable(saved);
         } catch (RuntimeException exception) {
+            detach(saved.getName());
             repository.update(existing);
+            apply(existing);
             throw exception;
         }
         return saved;
@@ -249,6 +254,15 @@ public class DynamicDataSourceManager {
 
     public void recordHealth(DataSourceHealth health) {
         healthStates.put(health.name(), health);
+    }
+
+    private void requireReachable(DataSourceDefinition definition) {
+        DataSource dataSource = routingDataSource.getDataSource(definition.getName());
+        DataSourceHealth health = new DataSourceHealthChecker(properties).check(definition.getName(), dataSource);
+        recordHealth(health);
+        if (!health.healthy()) {
+            throw new DataSourceException("数据源连通性校验失败: " + health.message());
+        }
     }
 
     private void apply(DataSourceDefinition definition) {
