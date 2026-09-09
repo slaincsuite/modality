@@ -1,0 +1,248 @@
+package cn.slainc.jwt.key;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import cn.slainc.crypto.jwt.JwtCodec;
+import cn.slainc.crypto.jwt.JwtAlgorithm;
+import cn.slainc.jwt.KeyFixtures;
+import cn.slainc.jwt.InMemoryJwtKeyPersistence;
+import cn.slainc.jwt.config.JwtProperties;
+import cn.slainc.jwt.verify.JwtVerifyException;
+import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class JwtKeyManagerTest {
+
+    private JwtProperties baseProperties() {
+        return new JwtProperties();
+    }
+
+    @Test
+    void 无任何配置时自动生成密钥并输出指定警告文案() {
+        Logger logger = (Logger) LoggerFactory.getLogger(JwtKeyManager.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            JwtKeyManager manager = new JwtKeyManager(baseProperties());
+            assertThat(manager.currentKid()).isNotBlank();
+            assertThat(manager.current().algorithm()).isEqualTo(JwtAlgorithm.HS256);
+            assertThat(appender.list)
+                    .anySatisfy(event -> {
+                        assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                        assertThat(event.getFormattedMessage())
+                                .contains("未配置 jwt 密钥")
+                                .contains("进程重启后旧令牌全部失效")
+                                .contains("生产环境请配置持久化");
+                    });
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @Test
+    void 自动生成的_HS256_密钥可直接签发并验签() {
+        JwtKeyManager manager = new JwtKeyManager(baseProperties());
+        String token = JwtCodec.encode(JwtAlgorithm.HS256, manager.current().signingKey(),
+                Map.of("sub", "1001"));
+        JwtCodec.decode(token, manager.current().signingKey());
+        assertThat(JwtCodec.verify(token, manager.current().signingKey())).isTrue();
+    }
+
+    @Test
+    void 配置_PEM_私钥可解析并导出公钥() {
+        JwtProperties properties = baseProperties();
+        JwtProperties.KeySpec spec = new JwtProperties.KeySpec();
+        spec.setKid("pem-rsa");
+        spec.setAlgorithm(JwtAlgorithm.RS256);
+        spec.setPrivateKeyPem(KeyFixtures.rsaPrivateKeyPem(cn.slainc.crypto.asymmetric.RsaKeySize.RSA_2048));
+        properties.getKeys().add(spec);
+        JwtKeyManager manager = new JwtKeyManager(properties);
+
+        JwtKeyEntry entry = manager.requireByKid("pem-rsa");
+        assertThat(entry.kid()).isEqualTo("pem-rsa");
+        assertThat(entry.publicKey()).isNotNull();
+        assertThat(entry.publicJwk().toMap())
+                .containsEntry("kty", "RSA")
+                .containsEntry("kid", "pem-rsa")
+                .containsKeys("n", "e");
+    }
+
+    @Test
+    void 配置_secretBase64_的对称密钥生效() {
+        JwtProperties properties = baseProperties();
+        JwtProperties.KeySpec spec = new JwtProperties.KeySpec();
+        spec.setKid("hs-a");
+        spec.setAlgorithm(JwtAlgorithm.HS256);
+        spec.setSecretBase64(KeyFixtures.secretBase64(32));
+        properties.getKeys().add(spec);
+        JwtKeyManager manager = new JwtKeyManager(properties);
+
+        JwtKeyEntry entry = manager.requireByKid("hs-a");
+        assertThat(entry.isSymmetric()).isTrue();
+        assertThat(entry.signingKey().getEncoded()).hasSize(32);
+        String token = JwtCodec.encode(JwtAlgorithm.HS256, entry.signingKey(), Map.of("sub", "1"));
+        assertThat(JwtCodec.verify(token, entry.signingKey())).isTrue();
+    }
+
+    @Test
+    void 短于_32_字节的对称密钥被拒绝() {
+        JwtProperties properties = baseProperties();
+        JwtProperties.KeySpec spec = new JwtProperties.KeySpec();
+        spec.setKid("hs-short");
+        spec.setAlgorithm(JwtAlgorithm.HS256);
+        spec.setSecretBase64(KeyFixtures.secretBase64(16));
+        properties.getKeys().add(spec);
+        assertThatThrownBy(() -> new JwtKeyManager(properties))
+                .isInstanceOf(JwtVerifyException.class)
+                .hasMessageContaining("16 字节")
+                .hasMessageContaining("32 字节");
+    }
+
+    @Test
+    void RSA1024_私钥被拒绝() {
+        JwtProperties properties = baseProperties();
+        JwtProperties.KeySpec spec = new JwtProperties.KeySpec();
+        spec.setKid("rsa-weak");
+        spec.setAlgorithm(JwtAlgorithm.RS256);
+        spec.setPrivateKeyPem(KeyFixtures.rsaPrivateKeyPem(cn.slainc.crypto.asymmetric.RsaKeySize.RSA_1024));
+        properties.getKeys().add(spec);
+        assertThatThrownBy(() -> new JwtKeyManager(properties))
+                .isInstanceOf(JwtVerifyException.class)
+                .hasMessageContaining("1024")
+                .hasMessageContaining("2048");
+    }
+
+    @Test
+    void EC_P192密钥被拒绝() {
+        JwtProperties properties = baseProperties();
+        JwtProperties.KeySpec spec = new JwtProperties.KeySpec();
+        spec.setKid("ec-weak");
+        spec.setAlgorithm(JwtAlgorithm.ES256);
+        spec.setPrivateKeyPem(KeyFixtures.ecP192PrivateKeyPem());
+        properties.getKeys().add(spec);
+        assertThatThrownBy(() -> new JwtKeyManager(properties))
+                .isInstanceOf(JwtVerifyException.class)
+                .hasMessageContaining("P-256");
+    }
+
+    @Test
+    void retainedKeys上限保留最新密钥() {
+        JwtProperties properties = baseProperties();
+        properties.setRetainedKeys(3);
+        JwtKeyManager manager = new JwtKeyManager(properties);
+        String initialKid = manager.currentKid();
+        manager.rotate("k1");
+        manager.rotate("k2");
+        manager.rotate("k3");
+        manager.rotate("k4");
+
+        assertThat(manager.allEntries()).hasSize(3);
+        assertThat(manager.currentKid()).isEqualTo("k4");
+        assertThat(manager.findByKid("k3")).isNotNull();
+        assertThat(manager.findByKid("k2")).isNotNull();
+        assertThat(manager.findByKid("k1")).isNull();
+        assertThat(manager.findByKid(initialKid)).isNull();
+    }
+
+    @Test
+    void rotate切换当前密钥并保留旧密钥验签() {
+        JwtKeyManager manager = new JwtKeyManager(baseProperties());
+        String oldKid = manager.currentKid();
+        javax.crypto.SecretKey oldKey = (javax.crypto.SecretKey) manager.current().signingKey();
+        String oldToken = JwtCodec.encode(JwtAlgorithm.HS256, oldKey, Map.of("sub", "1001"));
+
+        JwtKeyEntry rotated = manager.rotate("rotated-kid");
+        assertThat(manager.currentKid()).isEqualTo("rotated-kid");
+        assertThat(rotated.kid()).isEqualTo("rotated-kid");
+        assertThat(manager.findByKid(oldKid)).isNotNull();
+        assertThat(JwtCodec.verify(oldToken, manager.findByKid(oldKid).signingKey())).isTrue();
+    }
+
+    @Test
+    void rotate指定已存在的kid被拒绝() {
+        JwtKeyManager manager = new JwtKeyManager(baseProperties());
+        manager.rotate("dup-kid");
+        assertThatThrownBy(() -> manager.rotate("dup-kid"))
+                .isInstanceOf(JwtVerifyException.class)
+                .hasMessageContaining("已存在")
+                .hasMessageContaining("dup-kid");
+    }
+
+    @Test
+    void rotate无参自动生成新kid() {
+        JwtKeyManager manager = new JwtKeyManager(baseProperties());
+        String before = manager.currentKid();
+        manager.rotate();
+        assertThat(manager.currentKid()).isNotEqualTo(before).isNotBlank();
+    }
+
+    @Test
+    void 持久化SPI轮换后保存并可重建() {
+        InMemoryJwtKeyPersistence persistence = new InMemoryJwtKeyPersistence();
+        JwtProperties properties = baseProperties();
+        JwtKeyManager manager = new JwtKeyManager(properties, persistence);
+        String firstKid = manager.currentKid();
+        manager.rotate("persistent-kid");
+        assertThat(persistence.size()).isEqualTo(2);
+        assertThat(persistence.saveCount).isGreaterThanOrEqualTo(2);
+
+        JwtKeyManager rebuilt = new JwtKeyManager(baseProperties(), persistence);
+        assertThat(rebuilt.currentKid()).isEqualTo("persistent-kid");
+        assertThat(rebuilt.findByKid(firstKid)).isNotNull();
+    }
+
+    @Test
+    void 持久化重建后旧令牌仍验签通过() {
+        InMemoryJwtKeyPersistence persistence = new InMemoryJwtKeyPersistence();
+        JwtProperties properties = baseProperties();
+        JwtKeyManager manager = new JwtKeyManager(properties, persistence);
+        String oldToken = JwtCodec.encode(JwtAlgorithm.HS256, manager.current().signingKey(),
+                java.util.Map.of("typ", "JWT", "kid", manager.currentKid()),
+                java.util.Map.of("sub", "1001"));
+        manager.rotate("new-kid");
+
+        JwtKeyManager rebuilt = new JwtKeyManager(baseProperties(), persistence);
+        assertThat(JwtCodec.verify(oldToken, rebuilt.requireByKid(
+                JwtCodec.decodeUnverified(oldToken).keyId()).signingKey())).isTrue();
+    }
+
+    @Test
+    void 持久化加载失败时按配置重建不阻塞启动() {
+        JwtKeyPersistence broken = new JwtKeyPersistence() {
+            @Override
+            public void saveAll(List<JwtKeyRecord> records) {
+                throw new IllegalStateException("存储不可用");
+            }
+
+            @Override
+            public List<JwtKeyRecord> loadAll() {
+                throw new IllegalStateException("存储不可用");
+            }
+        };
+        JwtKeyManager manager = new JwtKeyManager(baseProperties(), broken);
+        assertThat(manager.currentKid()).isNotBlank();
+        assertThat(manager.allEntries()).hasSize(1);
+    }
+
+    @Test
+    void 私钥PEM与算法不一致被拒绝() {
+        JwtProperties properties = baseProperties();
+        JwtProperties.KeySpec spec = new JwtProperties.KeySpec();
+        spec.setKid("mismatch");
+        spec.setAlgorithm(JwtAlgorithm.ES256);
+        spec.setPrivateKeyPem(KeyFixtures.rsaPrivateKeyPem(cn.slainc.crypto.asymmetric.RsaKeySize.RSA_2048));
+        properties.getKeys().add(spec);
+        assertThatThrownBy(() -> new JwtKeyManager(properties))
+                .isInstanceOf(JwtVerifyException.class)
+                .hasMessageContaining("不一致");
+    }
+}
