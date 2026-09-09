@@ -1,0 +1,5 @@
+cn.slainc.security.autoconfigure.SecurityAutoConfiguration
+cn.slainc.security.autoconfigure.SecurityDaoAutoConfiguration
+cn.slainc.security.autoconfigure.SecurityMetricsAutoConfiguration
+cn.slainc.security.autoconfigure.SecurityCountersAutoConfiguration
+cn.slainc.security.autoconfigure.SecurityWebAutoConfiguration
