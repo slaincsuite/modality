@@ -1,0 +1,2 @@
+cn.slainc.jwt.autoconfigure.JwtRedisStoreAutoConfiguration
+cn.slainc.jwt.autoconfigure.JwtAutoConfiguration
