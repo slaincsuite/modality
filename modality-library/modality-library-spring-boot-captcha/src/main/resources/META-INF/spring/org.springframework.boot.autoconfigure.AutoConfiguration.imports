@@ -1,0 +1,3 @@
+cn.slainc.captcha.autoconfigure.CaptchaStoreAutoConfiguration
+cn.slainc.captcha.autoconfigure.CaptchaAutoConfiguration
+cn.slainc.captcha.autoconfigure.CaptchaMicrometerAutoConfiguration
