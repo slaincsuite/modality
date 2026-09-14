@@ -1,0 +1,5 @@
+cn.slainc.session.autoconfigure.SessionAutoConfiguration
+cn.slainc.session.autoconfigure.SessionKickAutoConfiguration
+cn.slainc.session.autoconfigure.SessionWebSocketNotifyAutoConfiguration
+cn.slainc.session.autoconfigure.SessionCleanupAutoConfiguration
+cn.slainc.session.autoconfigure.SessionMetricsAutoConfiguration
