@@ -1,0 +1,3 @@
+cn.slainc.oauth2.autoconfigure.Oauth2ClientJdbcAutoConfiguration
+cn.slainc.oauth2.autoconfigure.Oauth2FallbackAutoConfiguration
+cn.slainc.oauth2.autoconfigure.Oauth2AutoConfiguration
