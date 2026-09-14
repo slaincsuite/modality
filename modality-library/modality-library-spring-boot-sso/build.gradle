@@ -5,7 +5,13 @@ plugins {
 description = '单点登录'
 
 dependencies {
-    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-core')
     api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-oauth2')
     api project(':modality-library:modality-library-spring-boot-redis')
+    api libs.sa.token.sso
+    compileOnly libs.spring.boot.starter.jdbc
+    testImplementation libs.spring.boot.starter.jdbc
+    testRuntimeOnly libs.h2
 }
