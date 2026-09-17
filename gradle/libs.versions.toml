@@ -20,6 +20,7 @@ brotli4j = "1.23.0"
 poi = "5.4.1"
 awssdk = "2.55.14"
 s3mock = "5.2.3"
+justauth = "1.16.7"
 
 [libraries]
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -63,6 +64,7 @@ minio = { module = "io.minio:minio", version.ref = "minio" }
 aws-sdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awssdk" }
 s3mock = { module = "com.adobe.testing:s3mock", version.ref = "s3mock" }
 s3mock-junit5 = { module = "com.adobe.testing:s3mock-junit5", version.ref = "s3mock" }
+justauth = { module = "me.zhyd.oauth:JustAuth", version.ref = "justauth" }
 oshi-core = { module = "com.github.oshi:oshi-core", version.ref = "oshi" }
 resilience4j-circuitbreaker = { module = "io.github.resilience4j:resilience4j-circuitbreaker", version.ref = "resilience4j" }
 resilience4j-timelimiter = { module = "io.github.resilience4j:resilience4j-timelimiter", version.ref = "resilience4j" }

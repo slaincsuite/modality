@@ -53,6 +53,7 @@ def thirdPartyAliases = [
         'bouncycastle-pkix',
         'ipaddress',
         'owasp-html-sanitizer',
+        'justauth',
 ]
 
 dependencies {
