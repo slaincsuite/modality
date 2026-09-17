@@ -2,11 +2,16 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot api key support'
+description = 'API Key'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
     api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
     api project(':modality-library:modality-library-spring-boot-redis')
     api libs.sa.token.apikey
+    implementation libs.ipaddress
+    testImplementation libs.spring.boot.starter.jdbc
+    testRuntimeOnly libs.h2
 }
