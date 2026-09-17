@@ -1,0 +1,3 @@
+cn.slainc.sso.autoconfigure.SsoClientJdbcAutoConfiguration
+cn.slainc.sso.autoconfigure.SsoFallbackAutoConfiguration
+cn.slainc.sso.autoconfigure.SsoAutoConfiguration
