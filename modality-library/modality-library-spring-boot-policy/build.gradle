@@ -2,14 +2,17 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = '策略'
+description = '策略引擎'
 
 dependencies {
-    api project(':modality-library:modality-library-spring-boot-web')
-    api project(':modality-library:modality-library-spring-boot-redis')
+    api project(':modality-library:modality-library-spring-boot-core')
     api libs.spring.boot.starter.aspectj
-    implementation libs.resilience4j.circuitbreaker
-    implementation libs.resilience4j.timelimiter
-    implementation libs.resilience4j.bulkhead
-    implementation libs.resilience4j.retry
+    implementation libs.ipaddress
+    compileOnly project(':modality-library:modality-library-spring-boot-security')
+    compileOnly libs.spring.boot.starter.jdbc
+    testImplementation project(':modality-library:modality-library-spring-boot-web')
+    testImplementation project(':modality-library:modality-library-spring-boot-security')
+    testImplementation project(':modality-library:modality-library-spring-boot-redis')
+    testImplementation libs.spring.boot.starter.jdbc
+    testRuntimeOnly libs.h2
 }
