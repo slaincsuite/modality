@@ -1,1 +1,2 @@
+cn.slainc.policy.autoconfigure.PolicyAutoConfiguration
 cn.slainc.policy.autoconfigure.PolicyJdbcAutoConfiguration
