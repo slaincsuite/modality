@@ -2,11 +2,13 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality Spring Boot third party auth support'
+description = '第三方登录'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
-    api project(':modality-library:modality-library-spring-boot-web')
-    api project(':modality-library:modality-library-spring-boot-security')
     api project(':modality-library:modality-library-spring-boot-redis')
+    implementation libs.justauth
+    compileOnly libs.spring.boot.starter.jdbc
+    testImplementation libs.spring.boot.starter.jdbc
+    testImplementation libs.h2
 }
