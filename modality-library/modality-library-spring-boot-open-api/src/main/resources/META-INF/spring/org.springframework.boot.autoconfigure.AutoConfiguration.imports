@@ -1,0 +1,3 @@
+cn.slainc.openapi.autoconfigure.OpenApiAutoConfiguration
+cn.slainc.openapi.autoconfigure.Oauth2BridgeAutoConfiguration
+cn.slainc.openapi.autoconfigure.ApiKeyBridgeAutoConfiguration
