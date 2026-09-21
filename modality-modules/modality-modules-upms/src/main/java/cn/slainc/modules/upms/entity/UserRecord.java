@@ -1,0 +1,237 @@
+package cn.slainc.modules.upms.entity;
+
+import cn.slainc.modules.upms.UpmsKeys;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+@TableName(UserRecord.TABLE_NAME)
+public class UserRecord {
+
+    public static final String TABLE_NAME = UpmsKeys.USER_TABLE;
+
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
+
+    private Long tenantId;
+
+    private String username;
+
+    private String nickname;
+
+    private String passwordHash;
+
+    private String email;
+
+    private String phone;
+
+    private String avatarUrl;
+
+    private Long deptId;
+
+    private String loginType;
+
+    private String status = UpmsKeys.STATUS_ENABLED;
+
+    private Boolean mustChangePassword = false;
+
+    private Long passwordChangedAt;
+
+    private String allowedIps;
+
+    private String allowedTimeRange;
+
+    private String allowedDevices;
+
+    private String tags;
+
+    private String extJson;
+
+    private Long mergedTo;
+
+    private Boolean deleted = false;
+
+    private Long createTime;
+
+    private Long updateTime;
+
+    public boolean enabled() {
+        return UpmsKeys.STATUS_ENABLED.equals(status);
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public Long getDeptId() {
+        return deptId;
+    }
+
+    public void setDeptId(Long deptId) {
+        this.deptId = deptId;
+    }
+
+    public String getLoginType() {
+        return loginType;
+    }
+
+    public void setLoginType(String loginType) {
+        this.loginType = loginType;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Boolean getMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
+    }
+
+    public Long getPasswordChangedAt() {
+        return passwordChangedAt;
+    }
+
+    public void setPasswordChangedAt(Long passwordChangedAt) {
+        this.passwordChangedAt = passwordChangedAt;
+    }
+
+    public String getAllowedIps() {
+        return allowedIps;
+    }
+
+    public void setAllowedIps(String allowedIps) {
+        this.allowedIps = allowedIps;
+    }
+
+    public String getAllowedTimeRange() {
+        return allowedTimeRange;
+    }
+
+    public void setAllowedTimeRange(String allowedTimeRange) {
+        this.allowedTimeRange = allowedTimeRange;
+    }
+
+    public String getAllowedDevices() {
+        return allowedDevices;
+    }
+
+    public void setAllowedDevices(String allowedDevices) {
+        this.allowedDevices = allowedDevices;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
+    public String getExtJson() {
+        return extJson;
+    }
+
+    public void setExtJson(String extJson) {
+        this.extJson = extJson;
+    }
+
+    public Long getMergedTo() {
+        return mergedTo;
+    }
+
+    public void setMergedTo(Long mergedTo) {
+        this.mergedTo = mergedTo;
+    }
+
+    public Boolean getDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
+    }
+
+    public Long getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(Long createTime) {
+        this.createTime = createTime;
+    }
+
+    public Long getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Long updateTime) {
+        this.updateTime = updateTime;
+    }
+}
