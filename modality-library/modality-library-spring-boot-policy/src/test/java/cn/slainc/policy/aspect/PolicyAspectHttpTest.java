@@ -40,9 +40,9 @@ class PolicyAspectHttpTest {
     void setUp() throws Exception {
         PolicyStatement read = statement(Effect.ALLOW, List.of("modality:policy-test:read"), List.of("*"));
         PolicyStatement doc = statement(Effect.ALLOW, List.of("modality:policy-test:doc"), List.of("modality:doc/7"));
-        adminService.create("用户读权限", PolicySubjectType.USER, "10001", "USER",
+        adminService.create("用户读权限", PolicySubjectType.USER, "10001", "TENANT_USER",
                 PolicyDocument.of(read), null, "测试");
-        adminService.create("文档七权限", PolicySubjectType.USER, "10001", "USER",
+        adminService.create("文档七权限", PolicySubjectType.USER, "10001", "TENANT_USER",
                 PolicyDocument.of(doc), null, "测试");
         adminService.create("全局禁写", PolicySubjectType.GLOBAL, null, null,
                 PolicyDocument.of(statement(Effect.DENY, List.of("modality:policy-test:write"), List.of("*"))),
@@ -61,7 +61,7 @@ class PolicyAspectHttpTest {
     }
 
     @Test
-    void deny策略返回真实403与403000() throws Exception {
+    void denyPolicyReturnsReal403With403000() throws Exception {
         HttpResponse<String> response = exchange("/policy-test/write", token);
         assertEquals(403, response.statusCode());
         assertEquals(403000, (int) JsonPath.read(response.body(), "$.code"));
@@ -99,7 +99,7 @@ class PolicyAspectHttpTest {
     private HttpResponse<String> exchange(String path, String tokenValue) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).GET();
         if (tokenValue != null) {
-            builder.header("satoken", tokenValue).header("X-Login-Type", "USER");
+            builder.header("satoken", tokenValue).header("X-Login-Type", "TENANT_USER");
         }
         return httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }

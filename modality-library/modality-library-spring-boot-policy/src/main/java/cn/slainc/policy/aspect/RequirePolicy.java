@@ -13,5 +13,5 @@ public @interface RequirePolicy {
 
     String resource();
 
-    String loginType() default "USER";
+    String loginType() default "TENANT_USER";
 }

@@ -73,7 +73,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 字符串与基础类型读写及默认值() {
+    void stringAndPrimitiveReadWithDefaults() {
         service.set(scope + "文本", "模态平台", "基础组");
         service.set(scope + "整数", "42", "基础组");
         service.set(scope + "长整数", "9007199254740993", "基础组");
@@ -100,7 +100,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 对象与列表反序列化() {
+    void objectAndListDeserialization() {
         service.set(scope + "对象", "{\"名称\":\"模态\",\"数量\":5}", "基础组");
         Map<String, Object> map = service.getObject(scope + "对象", Map.class);
         assertThat(map).containsEntry("名称", "模态").containsEntry("数量", 5);
@@ -116,7 +116,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 加密配置写入后可解密读取() {
+    void encryptedConfigRoundTrip() {
         service.setEncrypted(scope + "密钥", "明文口令", "安全组");
         assertThat(service.getEncrypted(scope + "密钥")).isEqualTo("明文口令");
         assertThat(service.getString(scope + "密钥", null)).isEqualTo("明文口令");
@@ -128,7 +128,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 分组查询按分组过滤并跳过节用项() {
+    void groupQueryFiltersAndSkipsHolidayItems() {
         service.set(scope + "组内一", "1", "分组甲");
         service.set(scope + "组内二", "2", "分组甲");
         service.set(scope + "组外", "3", "分组乙");
@@ -154,7 +154,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 版本号随每次变更单调递增() {
+    void versionMonotonicPerChange() {
         long before = service.currentVersion();
         service.set(scope + "版本", "1", "版本组");
         long afterFirst = service.currentVersion();
@@ -167,7 +167,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 本地缓存命中与删除后失效() {
+    void localCacheHitAndInvalidation() {
         service.set(scope + "缓存", "初值", "缓存组");
         assertThat(service.isLocallyCached(scope + "缓存")).isTrue();
         assertThat(service.localCachedValue(scope + "缓存")).isEqualTo("初值");
@@ -178,7 +178,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 版本号乐观锁只接受更大版本的消息() {
+    void optimisticVersionAcceptsOnlyGreater() {
         RedisDynamicConfigService writer = newService(true, false);
         RedisDynamicConfigService reader = newService(false, false);
 
@@ -209,7 +209,7 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 刷新与全量刷新重建本地缓存() {
+    void refreshAndRefreshAllRebuildLocalCache() {
         service.set(scope + "刷新", "一", "刷新组");
         assertThat(service.isLocallyCached(scope + "刷新")).isTrue();
 
@@ -222,14 +222,14 @@ class RedisDynamicConfigServiceTest {
     }
 
     @Test
-    void 键为空时抛出中文异常() {
+    void blankKeyThrowsChinese() {
         assertThatThrownBy(() -> service.set("  ", "值", "组"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("动态配置的键不能为空");
     }
 
     @Test
-    void 存储键与频道命名符合约定() {
+    void keyAndChannelNamingConventions() {
         assertThat(service.storeKey()).isEqualTo("modality:config:store:" + SUFFIX);
         assertThat(service.channel()).isEqualTo("modality:config:broadcast:" + SUFFIX);
     }

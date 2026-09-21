@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JdbcDynamicConfigRepositoryTest {
 
     @Test
-    void JDBC实现具备完整仓储契约与建表初始化入口() throws Exception {
+    void jdbcRepositoryContractWithTableInit() throws Exception {
         RedisTestSupport.assumeClassPresent("org.springframework.jdbc.core.JdbcTemplate",
                 "spring-boot-starter-jdbc 是 compileOnly 坐标，测试运行期不存在，已跳过；补齐 testRuntimeOnly 后会真实执行");
 

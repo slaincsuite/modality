@@ -12,7 +12,7 @@ class ConfigChangeMessageTest {
     private final ObjectMapper mapper = RedisSerializers.plainMapper();
 
     @Test
-    void 消息对象可JSON往返并保留全部字段() {
+    void messageJsonRoundTripKeepsAllFields() {
         ConfigChangeMessage message = ConfigChangeMessage.of("order.timeout", ConfigChangeMessage.Operation.SET, 12L,
                 "节点甲");
         String json = mapper.writeValueAsString(message);
@@ -27,7 +27,7 @@ class ConfigChangeMessageTest {
     }
 
     @Test
-    void 操作类型与节点标识生成() {
+    void operationTypeAndNodeIdGenerated() {
         assertThat(ConfigChangeMessage.Operation.values()).containsExactly(
                 ConfigChangeMessage.Operation.SET,
                 ConfigChangeMessage.Operation.REMOVE,
@@ -49,7 +49,7 @@ class ConfigChangeMessageTest {
     }
 
     @Test
-    void 频道命名默认值符合验收要求() {
+    void channelNamingDefaultsAccepted() {
         RedisProperties properties = new RedisProperties();
         assertThat(RedisDynamicConfigService.channelOf(properties)).isEqualTo("modality:config:broadcast");
         assertThat(DynamicConfigSchema.DEFAULT_TABLE).isEqualTo("t_dynamic_config");

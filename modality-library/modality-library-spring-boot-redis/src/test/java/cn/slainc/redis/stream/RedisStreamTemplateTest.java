@@ -40,7 +40,7 @@ class RedisStreamTemplateTest {
     }
 
     @Test
-    void 生产消费确认全链路() {
+    void produceConsumeAckPipeline() {
         String stream = "modality:test:stream:" + UUID.randomUUID();
         String group = "验收组";
         String consumer = "消费者一";
@@ -69,7 +69,7 @@ class RedisStreamTemplateTest {
     }
 
     @Test
-    void 超过最大重试次数的消息转入死信队列() {
+    void deadLetterAfterMaxRetries() {
         String stream = "modality:test:stream:retry:" + UUID.randomUUID();
         String group = "重试组";
         String consumer = "消费者二";
@@ -98,7 +98,7 @@ class RedisStreamTemplateTest {
     }
 
     @Test
-    void 裁剪与批量确认以及名称为空校验() {
+    void trimBatchAckAndBlankNameValidation() {
         String stream = "modality:test:stream:trim:" + UUID.randomUUID();
         for (int i = 0; i < 5; i++) {
             streamTemplate.produce(stream, "消息" + i);

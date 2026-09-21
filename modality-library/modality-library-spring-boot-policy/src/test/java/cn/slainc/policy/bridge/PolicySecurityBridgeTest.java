@@ -43,24 +43,24 @@ class PolicySecurityBridgeTest {
 
     @Test
     void permissionResolutionReturnsAllowPatterns() {
-        savePolicy(PolicySubjectType.USER, "1001", "USER", Effect.ALLOW, List.of("modality:user:*"));
-        savePolicy(PolicySubjectType.USER, "1002", "USER", Effect.ALLOW, List.of("modality:order:*"));
-        assertEquals(List.of("modality:user:*"), bridge.getPermissions("1001", LoginType.USER));
-        assertEquals(List.of("modality:order:*"), bridge.getPermissions("1002", LoginType.USER));
-        assertEquals(List.of(), bridge.getPermissions("1003", LoginType.USER));
+        savePolicy(PolicySubjectType.USER, "1001", "TENANT_USER", Effect.ALLOW, List.of("modality:user:*"));
+        savePolicy(PolicySubjectType.USER, "1002", "TENANT_USER", Effect.ALLOW, List.of("modality:order:*"));
+        assertEquals(List.of("modality:user:*"), bridge.getPermissions("1001", LoginType.TENANT_USER));
+        assertEquals(List.of("modality:order:*"), bridge.getPermissions("1002", LoginType.TENANT_USER));
+        assertEquals(List.of(), bridge.getPermissions("1003", LoginType.TENANT_USER));
     }
 
     @Test
     void denyCoveredAllowPatternDropped() {
-        savePolicy(PolicySubjectType.USER, "1001", "USER", Effect.ALLOW, List.of("modality:user:*"));
-        savePolicy(PolicySubjectType.USER, "1001", "USER", Effect.DENY, List.of("modality:user:delete"));
-        List<String> permissions = bridge.getPermissions("1001", LoginType.USER);
+        savePolicy(PolicySubjectType.USER, "1001", "TENANT_USER", Effect.ALLOW, List.of("modality:user:*"));
+        savePolicy(PolicySubjectType.USER, "1001", "TENANT_USER", Effect.DENY, List.of("modality:user:delete"));
+        List<String> permissions = bridge.getPermissions("1001", LoginType.TENANT_USER);
         assertTrue(permissions.isEmpty());
     }
 
     @Test
     void emptyPolicyYieldsEmptyListsAndRolesAlwaysEmpty() {
-        assertEquals(List.of(), bridge.getPermissions("1001", LoginType.USER));
-        assertEquals(List.of(), bridge.getRoles("1001", LoginType.USER));
+        assertEquals(List.of(), bridge.getPermissions("1001", LoginType.TENANT_USER));
+        assertEquals(List.of(), bridge.getRoles("1001", LoginType.TENANT_USER));
     }
 }

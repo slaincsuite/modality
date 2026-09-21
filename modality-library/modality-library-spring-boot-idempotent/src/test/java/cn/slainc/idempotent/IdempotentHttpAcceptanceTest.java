@@ -50,7 +50,7 @@ class IdempotentHttpAcceptanceTest {
     }
 
     @Test
-    void 并发HTTP重复提交只有一次真正执行() throws Exception {
+    void concurrentHttpDuplicateExecutesOnce() throws Exception {
         orderService.resetBarrier();
         String orderNo = unique("HTTP-CONCURRENT-1");
         String json = JsonUtils.toJson(orderRequest(orderNo));
@@ -98,7 +98,7 @@ class IdempotentHttpAcceptanceTest {
     }
 
     @Test
-    void 拦截后重复HTTP请求返回首次结果() throws Exception {
+    void interceptedHttpReplayReturnsFirstResult() throws Exception {
         String json = JsonUtils.toJson(orderRequest(unique("HTTP-CACHE-1")));
         int before = orderService.normalExecutions().get();
         HttpResponse<String> first = post("/demo/create", json, Map.of());
@@ -110,7 +110,7 @@ class IdempotentHttpAcceptanceTest {
     }
 
     @Test
-    void Token端点由Bean方式注册无需组件扫描() throws Exception {
+    void tokenEndpointRegisteredByBeanWithoutComponentScan() throws Exception {
         HttpResponse<String> response = post("/idempotent/token",
                 JsonUtils.toJson(Map.of("ttlSeconds", 60)), Map.of());
         assertThat(response.statusCode()).isEqualTo(200);
@@ -123,7 +123,7 @@ class IdempotentHttpAcceptanceTest {
     }
 
     @Test
-    void Token模式首次提交成功二次提交返回首次结果() throws Exception {
+    void tokenModeReplayReturnsFirstResult() throws Exception {
         String token = issueToken();
         String orderNo = unique("HTTP-TOKEN-1");
         int before = tokenOrderService.tokenExecutions().get();
@@ -145,7 +145,7 @@ class IdempotentHttpAcceptanceTest {
     }
 
     @Test
-    void 请求头携带Token同样生效() throws Exception {
+    void tokenInHeaderAlsoWorks() throws Exception {
         String token = issueToken();
         String orderNo = unique("HTTP-HEADER-1");
         int before = tokenOrderService.tokenExecutions().get();
@@ -158,7 +158,7 @@ class IdempotentHttpAcceptanceTest {
     }
 
     @Test
-    void 不同参数的HTTP请求不会被拦截() throws Exception {
+    void httpRequestsWithDifferentParamsNotBlocked() throws Exception {
         String firstOrderNo = unique("HTTP-DIFF-1");
         String secondOrderNo = unique("HTTP-DIFF-2");
         int before = orderService.normalExecutions().get();

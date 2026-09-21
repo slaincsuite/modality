@@ -11,26 +11,26 @@ class LoginTypesResolverTest {
 
     @Test
     void resolvesKnownValuesIgnoringCase() {
-        assertThat(LoginTypes.resolve("ADMIN")).isEqualTo(LoginType.ADMIN);
-        assertThat(LoginTypes.resolve("user")).isEqualTo(LoginType.USER);
-        assertThat(LoginTypes.resolve("Client")).isEqualTo(LoginType.CLIENT);
+        assertThat(LoginTypes.resolve("PLATFORM_ADMIN")).isEqualTo(LoginType.PLATFORM_ADMIN);
+        assertThat(LoginTypes.resolve("tenant_user")).isEqualTo(LoginType.TENANT_USER);
+        assertThat(LoginTypes.resolve("app")).isEqualTo(LoginType.APP);
     }
 
     @Test
     void unknownValueThrowsChineseException() {
-        BizException exception = assertThrows(BizException.class, () -> LoginTypes.resolve("GUEST"));
-        assertThat(exception.getMessage()).contains("未知的账号体系").contains("GUEST");
+        BizException exception = assertThrows(BizException.class, () -> LoginTypes.resolve("bogus"));
+        assertThat(exception.getMessage()).contains("未知的账号体系").contains("bogus");
     }
 
     @Test
     void resolveOrDefaultFallsBackToConfiguredDefault() {
-        assertThat(LoginTypes.resolveOrDefault(null, "CLIENT")).isEqualTo(LoginType.CLIENT);
-        assertThat(LoginTypes.resolveOrDefault("bogus", "ADMIN")).isEqualTo(LoginType.ADMIN);
-        assertThat(LoginTypes.resolveOrDefault("USER", "ADMIN")).isEqualTo(LoginType.USER);
+        assertThat(LoginTypes.resolveOrDefault(null, "APP")).isEqualTo(LoginType.APP);
+        assertThat(LoginTypes.resolveOrDefault("bogus", "PLATFORM_ADMIN")).isEqualTo(LoginType.PLATFORM_ADMIN);
+        assertThat(LoginTypes.resolveOrDefault("TENANT_USER", "PLATFORM_ADMIN")).isEqualTo(LoginType.TENANT_USER);
     }
 
     @Test
     void resolveOrDefaultFallsBackToUserWhenDefaultUnknown() {
-        assertThat(LoginTypes.resolveOrDefault(null, "whatever")).isEqualTo(LoginType.USER);
+        assertThat(LoginTypes.resolveOrDefault(null, "whatever")).isEqualTo(LoginType.TENANT_USER);
     }
 }

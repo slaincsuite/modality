@@ -5,17 +5,33 @@ import cn.slainc.security.stp.SecurityStpLogic;
 
 public final class StpKit {
 
-    public static final String TYPE_ADMIN = "ADMIN";
+    public static final String TYPE_PLATFORM_ADMIN = "PLATFORM_ADMIN";
 
-    public static final String TYPE_USER = "USER";
+    public static final String TYPE_PLATFORM_USER = "PLATFORM_USER";
 
-    public static final String TYPE_CLIENT = "CLIENT";
+    public static final String TYPE_TENANT_ADMIN = "TENANT_ADMIN";
 
-    private static volatile SecurityStpLogic admin;
+    public static final String TYPE_TENANT_USER = "TENANT_USER";
 
-    private static volatile SecurityStpLogic user;
+    public static final String TYPE_APP = "APP";
 
-    private static volatile SecurityStpLogic client;
+    public static final String TYPE_SERVICE = "SERVICE";
+
+    public static final String TYPE_GUEST = "GUEST";
+
+    private static volatile SecurityStpLogic platformAdmin;
+
+    private static volatile SecurityStpLogic platformUser;
+
+    private static volatile SecurityStpLogic tenantAdmin;
+
+    private static volatile SecurityStpLogic tenantUser;
+
+    private static volatile SecurityStpLogic app;
+
+    private static volatile SecurityStpLogic service;
+
+    private static volatile SecurityStpLogic guest;
 
     private StpKit() {
     }
@@ -25,29 +41,53 @@ public final class StpKit {
             return;
         }
         switch (logic.getLoginType()) {
-            case TYPE_ADMIN -> admin = logic;
-            case TYPE_USER -> user = logic;
-            case TYPE_CLIENT -> client = logic;
+            case TYPE_PLATFORM_ADMIN -> platformAdmin = logic;
+            case TYPE_PLATFORM_USER -> platformUser = logic;
+            case TYPE_TENANT_ADMIN -> tenantAdmin = logic;
+            case TYPE_TENANT_USER -> tenantUser = logic;
+            case TYPE_APP -> app = logic;
+            case TYPE_SERVICE -> service = logic;
+            case TYPE_GUEST -> guest = logic;
             default -> throw new IllegalArgumentException("不支持的账号体系：" + logic.getLoginType());
         }
     }
 
     public static void clearAssignments() {
-        admin = null;
-        user = null;
-        client = null;
+        platformAdmin = null;
+        platformUser = null;
+        tenantAdmin = null;
+        tenantUser = null;
+        app = null;
+        service = null;
+        guest = null;
     }
 
-    public static SecurityStpLogic admin() {
-        return require(admin, TYPE_ADMIN);
+    public static SecurityStpLogic platformAdmin() {
+        return require(platformAdmin, TYPE_PLATFORM_ADMIN);
     }
 
-    public static SecurityStpLogic user() {
-        return require(user, TYPE_USER);
+    public static SecurityStpLogic platformUser() {
+        return require(platformUser, TYPE_PLATFORM_USER);
     }
 
-    public static SecurityStpLogic client() {
-        return require(client, TYPE_CLIENT);
+    public static SecurityStpLogic tenantAdmin() {
+        return require(tenantAdmin, TYPE_TENANT_ADMIN);
+    }
+
+    public static SecurityStpLogic tenantUser() {
+        return require(tenantUser, TYPE_TENANT_USER);
+    }
+
+    public static SecurityStpLogic app() {
+        return require(app, TYPE_APP);
+    }
+
+    public static SecurityStpLogic service() {
+        return require(service, TYPE_SERVICE);
+    }
+
+    public static SecurityStpLogic guest() {
+        return require(guest, TYPE_GUEST);
     }
 
     public static SecurityStpLogic of(LoginType type) {
@@ -55,9 +95,13 @@ public final class StpKit {
             throw new IllegalArgumentException("账号体系不能为空");
         }
         return switch (type) {
-            case ADMIN -> admin();
-            case USER -> user();
-            case CLIENT -> client();
+            case PLATFORM_ADMIN -> platformAdmin();
+            case PLATFORM_USER -> platformUser();
+            case TENANT_ADMIN -> tenantAdmin();
+            case TENANT_USER -> tenantUser();
+            case APP -> app();
+            case SERVICE -> service();
+            case GUEST -> guest();
         };
     }
 

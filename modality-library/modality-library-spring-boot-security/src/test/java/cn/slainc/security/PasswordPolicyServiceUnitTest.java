@@ -88,7 +88,7 @@ class PasswordPolicyServiceUnitTest {
     @Test
     void noUpdaterBeanThrowsChineseException() {
         PasswordPolicyService service = serviceWithoutUpdater();
-        BizException exception = assertThrows(BizException.class, () -> service.changePassword(LoginType.USER,
+        BizException exception = assertThrows(BizException.class, () -> service.changePassword(LoginType.TENANT_USER,
                 2001L, "old", "BrandNew#123"));
         assertThat(exception.getMessage()).isEqualTo("未接入账号存储，无法修改密码");
     }
@@ -117,7 +117,7 @@ class PasswordPolicyServiceUnitTest {
         };
         PasswordPolicyService service = new PasswordPolicyService(reader(), providerOf(provider),
                 providerOf(updater), new org.springframework.data.redis.core.StringRedisTemplate());
-        service.changePassword(LoginType.USER, 1L, "Old#Pass123", "New#Pass456");
+        service.changePassword(LoginType.TENANT_USER, 1L, "Old#Pass123", "New#Pass456");
         assertThat(BCryptUtils.verifyQuietly("New#Pass456", currentHash.get(1L))).isTrue();
     }
 

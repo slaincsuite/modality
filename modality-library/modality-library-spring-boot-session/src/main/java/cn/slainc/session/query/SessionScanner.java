@@ -111,7 +111,7 @@ public class SessionScanner {
     }
 
     public List<LoginType> typesOf(LoginType type) {
-        return type == null ? List.of(LoginType.ADMIN, LoginType.USER, LoginType.CLIENT) : List.of(type);
+        return type == null ? List.of(LoginType.PLATFORM_ADMIN, LoginType.TENANT_USER, LoginType.APP) : List.of(type);
     }
 
     public SessionInfo describe(LoginType type, String loginId, SaTerminalInfo terminal, String tokenValue,

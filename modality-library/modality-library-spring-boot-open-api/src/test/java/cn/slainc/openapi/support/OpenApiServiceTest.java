@@ -123,7 +123,7 @@ class OpenApiServiceTest {
     }
 
     @Test
-    void Scope命名约束() {
+    void scopeNamingConstraint() {
         OpenScope invalid = new OpenScope();
         invalid.setName("User-Read");
         invalid.setTitle("非法命名");

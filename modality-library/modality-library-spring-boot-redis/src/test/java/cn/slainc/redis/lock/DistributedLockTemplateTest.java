@@ -48,7 +48,7 @@ class DistributedLockTemplateTest {
     }
 
     @Test
-    void 可重入锁在同一线程内可重复获取() {
+    void reentrantLockAcquirableInSameThread() {
         String key = "modality:test:lock:" + UUID.randomUUID();
         try (LockHandle first = template.acquire(key, 2L, 10L, LockType.REENTRANT);
              LockHandle second = template.acquire(key, 2L, 10L, LockType.REENTRANT)) {
@@ -60,7 +60,7 @@ class DistributedLockTemplateTest {
     }
 
     @Test
-    void 互斥锁在其它线程占用时获取失败并可降级() throws Exception {
+    void mutexLockFailsWhenHeldByOtherThread() throws Exception {
         String key = "modality:test:lock:" + UUID.randomUUID();
         ExecutorService pool = Executors.newSingleThreadExecutor();
         try {
@@ -82,7 +82,7 @@ class DistributedLockTemplateTest {
     }
 
     @Test
-    void 执行器在获取失败时抛出中文异常() throws Exception {
+    void executorThrowsChineseOnAcquireFailure() throws Exception {
         String key = "modality:test:lock:" + UUID.randomUUID();
         ExecutorService pool = Executors.newSingleThreadExecutor();
         try (LockHandle lockHandle = template.acquire(key, 2L, 10L, LockType.REENTRANT)) {
@@ -99,7 +99,7 @@ class DistributedLockTemplateTest {
     }
 
     @Test
-    void 执行器返回业务结果并统计加锁指标() {
+    void executorReturnsResultAndTracksLockMetrics() {
         String key = "modality:test:lock:" + UUID.randomUUID();
         long before = template.getStats().getAcquireSuccess();
         String value = template.executeWithLock(key, 2L, 10L, () -> "业务结果");
@@ -109,7 +109,7 @@ class DistributedLockTemplateTest {
     }
 
     @Test
-    void 读写锁支持并发读与独占写() {
+    void readWriteLockConcurrentReadExclusiveWrite() {
         String key = "modality:test:lock:" + UUID.randomUUID();
         try (LockHandle read = template.acquire(key, 2L, 10L, LockType.READ);
              LockHandle readAgain = template.acquire(key, 2L, 10L, LockType.READ)) {
@@ -124,7 +124,7 @@ class DistributedLockTemplateTest {
     }
 
     @Test
-    void 信号量倒计时锁与原子长整型封装可用() throws Exception {
+    void semaphoreCountdownAndAtomicLongAvailable() throws Exception {
         String name = "modality:test:lock:semaphore:" + UUID.randomUUID();
         assertThat(template.getSemaphore(name).trySetPermits(2)).isTrue();
         assertThat(template.getSemaphore(name).tryAcquire(2)).isTrue();
@@ -142,7 +142,7 @@ class DistributedLockTemplateTest {
     }
 
     @Test
-    void 看门狗模式与锁键为空校验() {
+    void watchdogModeAndBlankKeyValidation() {
         String key = "modality:test:lock:" + UUID.randomUUID();
         AtomicBoolean executed = new AtomicBoolean();
         template.executeWithLock(key, 2L, -1L, () -> {

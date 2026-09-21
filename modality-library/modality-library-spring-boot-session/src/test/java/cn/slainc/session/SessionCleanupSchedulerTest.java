@@ -16,20 +16,20 @@ class SessionCleanupSchedulerTest extends SessionCleanupEnabledTestSupport {
 
     @Test
     @DisplayName("开启清理后调度器处于运行状态")
-    void 调度器运行() {
+    void schedulerRuns() {
         assertThat(scheduler.isRunning()).isTrue();
     }
 
     @Test
     @DisplayName("首次调度延迟一个周期")
-    void 首次延迟一个周期() {
+    void firstRunDelayedOnePeriod() {
         assertThat(scheduler.initialDelayMillis()).isEqualTo(30 * 60_000L);
         assertThat(scheduler.nextDelayMillis()).isEqualTo(30 * 60_000L);
     }
 
     @Test
     @DisplayName("热配置改变周期后调度间隔随之变化")
-    void 周期热配置() {
+    void periodHotConfig() {
         config.set("modality.session.cleanup.interval-minutes", "5");
 
         assertThat(scheduler.nextDelayMillis()).isEqualTo(5 * 60_000L);
@@ -37,9 +37,9 @@ class SessionCleanupSchedulerTest extends SessionCleanupEnabledTestSupport {
 
     @Test
     @DisplayName("手动触发一次清理会清理残留终端")
-    void 手动触发清理() {
-        String token = loginDirect(LoginType.USER, USER_ONE, "web");
-        deleteKey("satoken:USER:token:" + token);
+    void manualCleanupTrigger() {
+        String token = loginDirect(LoginType.TENANT_USER, USER_ONE, "web");
+        deleteKey("satoken:TENANT_USER:token:" + token);
 
         CleanupReport report = scheduler.runOnce();
 
@@ -48,7 +48,7 @@ class SessionCleanupSchedulerTest extends SessionCleanupEnabledTestSupport {
 
     @Test
     @DisplayName("调度线程为单线程守护线程")
-    void 调度线程为守护线程() {
+    void schedulerThreadIsDaemon() {
         boolean daemon = Thread.getAllStackTraces().keySet().stream()
                 .filter(thread -> SessionCleanupScheduler.THREAD_NAME.equals(thread.getName()))
                 .allMatch(Thread::isDaemon);

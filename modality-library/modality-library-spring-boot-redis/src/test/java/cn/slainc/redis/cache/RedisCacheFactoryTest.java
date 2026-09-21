@@ -62,7 +62,7 @@ class RedisCacheFactoryTest {
     }
 
     @Test
-    void 缓存管理器写入读取与键前缀符合约定() throws Exception {
+    void cacheManagerNamingConventions() throws Exception {
         Cache cache = cacheManager.getCache("验收缓存");
         assertThat(cache).isNotNull();
         cache.put("键一", "值一");
@@ -75,7 +75,7 @@ class RedisCacheFactoryTest {
     }
 
     @Test
-    void 默认配置带过期时间且写入的实际TTL受控() throws Exception {
+    void defaultExpiryTtlControlled() throws Exception {
         Cache cache = cacheManager.getCache("验收过期");
         cache.put("键二", "值二");
         awaitValue(cache, "键二", "值二");
@@ -86,7 +86,7 @@ class RedisCacheFactoryTest {
     }
 
     @Test
-    void 覆写已存在键后读取到最新值() throws Exception {
+    void overwrittenKeyReadsLatest() throws Exception {
         Cache cache = cacheManager.getCache("验收覆写");
         cache.put("键三", "旧值");
         awaitValue(cache, "键三", "旧值");
@@ -133,7 +133,7 @@ class RedisCacheFactoryTest {
     }
 
     @Test
-    void 默认配置对象可独立构造且序列化器为空时使用内置实现() {
+    void configConstructibleWithBuiltinSerializer() {
         RedisProperties properties = new RedisProperties();
         org.springframework.data.redis.cache.RedisCacheConfiguration configuration =
                 RedisCacheFactory.defaultConfiguration(properties, null);

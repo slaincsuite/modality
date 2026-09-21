@@ -55,7 +55,7 @@ class RedisAutoConfigurationTest {
             });
 
     @Test
-    void 默认配置下装配全部能力Bean() {
+    void allCapabilityBeansWiredByDefault() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context.getBean("redisTemplate", RedisTemplate.class).getKeySerializer())
@@ -81,7 +81,7 @@ class RedisAutoConfigurationTest {
     }
 
     @Test
-    void 缺少compileOnly坐标时相关自动配置安静退避() {
+    void compileOnlyMissingAutoConfigsBackOff() {
         runner.withClassLoader(new org.springframework.boot.test.context.FilteredClassLoader(
                 "cn.dev33.satoken.dao.SaTokenDao",
                 "cn.dev33.satoken.dao",
@@ -98,7 +98,7 @@ class RedisAutoConfigurationTest {
     }
 
     @Test
-    void 每项能力都可通过属性单独关闭() {
+    void eachCapabilityDisableableByProperty() {
         runner.withPropertyValues(
                         "modality.redis.cache.enabled=false",
                         "modality.redis.lock.enabled=false",
@@ -123,7 +123,7 @@ class RedisAutoConfigurationTest {
     }
 
     @Test
-    void 发布与订阅可分别独立开关() {
+    void publishAndSubscribeIndependentlyToggleable() {
         runner.withPropertyValues("modality.redis.config.publish-enabled=false").run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).doesNotHaveBean("configBroadcaster");
@@ -138,7 +138,7 @@ class RedisAutoConfigurationTest {
     }
 
     @Test
-    void 使用方可覆盖默认Bean() {
+    void defaultBeanOverridableByConsumer() {
         runner.withBean("redisTemplate", RedisTemplate.class, () -> {
             RedisTemplate<String, Object> template = new RedisTemplate<>();
             template.setConnectionFactory(RedisTestSupport.newConnectionFactory());

@@ -27,14 +27,14 @@ class ContextTest {
         assertTrue(UserContext.roles().isEmpty());
         assertFalse(UserContext.hasRole("admin"));
 
-        UserContext.UserInfo info = new UserContext.UserInfo(100L, "admin", LoginType.ADMIN,
+        UserContext.UserInfo info = new UserContext.UserInfo(100L, "admin", LoginType.PLATFORM_ADMIN,
                 Set.of("admin", "ops"), Set.of("user:list"), true);
         UserContext.set(info);
 
         assertTrue(UserContext.isAuthenticated());
         assertEquals(100L, (long) UserContext.userId());
         assertEquals("admin", UserContext.username());
-        assertEquals(LoginType.ADMIN, UserContext.loginType());
+        assertEquals(LoginType.PLATFORM_ADMIN, UserContext.loginType());
         assertTrue(UserContext.hasRole("admin"));
         assertFalse(UserContext.hasRole("guest"));
         assertFalse(UserContext.hasRole(null));
@@ -49,10 +49,10 @@ class ContextTest {
 
     @Test
     void userInfoToleratesNullCollections() {
-        UserContext.UserInfo info = new UserContext.UserInfo(1L, "u", LoginType.USER, null, null, false);
+        UserContext.UserInfo info = new UserContext.UserInfo(1L, "u", LoginType.TENANT_USER, null, null, false);
         assertTrue(info.roles().isEmpty());
         assertTrue(info.permissions().isEmpty());
-        assertEquals(1L, (long) UserContext.UserInfo.of(1L, "u", LoginType.USER).userId());
+        assertEquals(1L, (long) UserContext.UserInfo.of(1L, "u", LoginType.TENANT_USER).userId());
     }
 
     @Test
@@ -87,7 +87,7 @@ class ContextTest {
 
     @Test
     void snapshotCapturesAndRestores() {
-        UserContext.set(UserContext.UserInfo.of(1L, "u", LoginType.USER));
+        UserContext.set(UserContext.UserInfo.of(1L, "u", LoginType.TENANT_USER));
         TenantContext.set(5L);
         RequestContext.set(RequestContext.RequestInfo.of("t-1"));
 
@@ -111,7 +111,7 @@ class ContextTest {
 
     @Test
     void taskDecoratorPropagatesContext() {
-        UserContext.set(UserContext.UserInfo.of(2L, "worker-user", LoginType.USER));
+        UserContext.set(UserContext.UserInfo.of(2L, "worker-user", LoginType.TENANT_USER));
         TenantContext.set(6L);
 
         Runnable decorated = new ContextTaskDecorator().decorate(() -> {

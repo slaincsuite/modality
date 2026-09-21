@@ -16,7 +16,7 @@ class GcmConfigValueCipherTest {
             MapCryptoKeyProvider.sm4(Map.of("default", KEY_HEX)));
 
     @Test
-    void 国密SM4加解密往返一致() {
+    void sm4RoundTrip() {
         String plain = "数据库口令-模态平台-2026";
         String encrypted = cipher.encrypt(plain);
 
@@ -25,7 +25,7 @@ class GcmConfigValueCipherTest {
     }
 
     @Test
-    void 相同明文两次加密得到不同密文且都能解密() {
+    void samePlaintextDifferentCipherBothDecryptable() {
         String plain = "同一段明文";
         String first = cipher.encrypt(plain);
         String second = cipher.encrypt(plain);
@@ -36,7 +36,7 @@ class GcmConfigValueCipherTest {
     }
 
     @Test
-    void 空值与非法密文的处理() {
+    void nullAndIllegalCipherHandled() {
         assertThat(cipher.encrypt(null)).isNull();
         assertThat(cipher.decrypt(null)).isNull();
         assertThatThrownBy(() -> cipher.decrypt("不是合法的 Base64 密文"))
@@ -47,7 +47,7 @@ class GcmConfigValueCipherTest {
     }
 
     @Test
-    void 缺少密钥实现时抛出中文异常() {
+    void missingCipherImplThrowsChinese() {
         ConfigValueCipher unavailable = new UnavailableConfigValueCipher();
         assertThatThrownBy(() -> unavailable.encrypt("明文"))
                 .isInstanceOf(IllegalStateException.class)

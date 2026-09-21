@@ -64,7 +64,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void HS256签发后可验签() {
+    void hs256RoundTrip() {
         JwtTokenServiceTest.Env env = envFor(JwtAlgorithm.HS256);
         SignedToken signed = env.service().issueToken(TokenIssuanceSpec.of("user-1"));
         JwtVerification verification = env.verifier().verify(signed.tokenValue());
@@ -75,7 +75,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void RS256签发后可验签() {
+    void rs256RoundTrip() {
         JwtTokenServiceTest.Env env = envFor(JwtAlgorithm.RS256);
         SignedToken signed = env.service().issueToken(TokenIssuanceSpec.of("user-2"));
         JwtVerification verification = env.verifier().verify(signed.tokenValue());
@@ -83,7 +83,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void ES256签发后可验签() {
+    void es256RoundTrip() {
         JwtTokenServiceTest.Env env = envFor(JwtAlgorithm.ES256);
         SignedToken signed = env.service().issueToken(TokenIssuanceSpec.of("user-3"));
         JwtVerification verification = env.verifier().verify(signed.tokenValue());
@@ -91,7 +91,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void PS256签发后可验签() {
+    void ps256RoundTrip() {
         JwtTokenServiceTest.Env env = envFor(JwtAlgorithm.PS256);
         SignedToken signed = env.service().issueToken(TokenIssuanceSpec.of("user-4"));
         JwtVerification verification = env.verifier().verify(signed.tokenValue());
@@ -99,7 +99,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void EdDSA签发后可验签() {
+    void eddsaRoundTrip() {
         JwtTokenServiceTest.Env env = envFor(JwtAlgorithm.EdDSA);
         SignedToken signed = env.service().issueToken(TokenIssuanceSpec.of("user-5"));
         JwtVerification verification = env.verifier().verify(signed.tokenValue());
@@ -107,7 +107,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void 五种算法签出的令牌kid与alg正确() {
+    void fiveAlgorithmsProduceCorrectKidAndAlg() {
         for (JwtAlgorithm algorithm : List.of(JwtAlgorithm.HS256, JwtAlgorithm.RS256,
                 JwtAlgorithm.ES256, JwtAlgorithm.PS256, JwtAlgorithm.EdDSA)) {
             SignedToken signed = serviceFor(algorithm).issueToken(TokenIssuanceSpec.of("user-kid"));
@@ -119,7 +119,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void 标准claim完整写入() {
+    void standardClaimsFullyWritten() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256)
                 .issueToken(TokenIssuanceSpec.builder("user-100").audience("client-a").build());
         Jwt jwt = decode(signed);
@@ -137,7 +137,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void 自定义claim写入载荷() {
+    void customClaimWrittenToPayload() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .claim("roles", List.of("admin", "user"))
                 .claim("tenantId", "t-001")
@@ -150,7 +150,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void 自定义claim不能覆盖标准claim() {
+    void customClaimCannotOverrideStandard() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("real-sub")
                 .claim("sub", "fake-sub")
                 .claim("iss", "fake-issuer")
@@ -161,7 +161,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void 多受众写成数组() {
+    void multipleAudienceAsArray() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .audience("client-a")
                 .audience("client-b")
@@ -170,7 +170,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void 单受众写成字符串() {
+    void singleAudienceAsString() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .audience("client-a")
                 .build());
@@ -178,7 +178,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void ACCESS默认TTL两小时() {
+    void accessTokenDefaultTtlTwoHours() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.of("user-1"));
         assertThat(Duration.between(decode(signed).issuedAt(), decode(signed).expiresAt()))
                 .isEqualTo(Duration.ofHours(2));
@@ -186,7 +186,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void REFRESH默认TTL三十天() {
+    void refreshTokenDefaultTtlThirtyDays() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256)
                 .issueToken(TokenIssuanceSpec.builder("user-1").tokenType(TokenType.REFRESH).build());
         assertThat(Duration.between(decode(signed).issuedAt(), decode(signed).expiresAt()))
@@ -194,7 +194,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void ID_TOKEN默认TTL十分钟() {
+    void idTokenDefaultTtlTenMinutes() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256)
                 .issueToken(TokenIssuanceSpec.builder("user-1").tokenType(TokenType.ID_TOKEN).build());
         assertThat(Duration.between(decode(signed).issuedAt(), decode(signed).expiresAt()))
@@ -202,7 +202,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void ONE_SHOT默认TTL五分钟() {
+    void oneShotDefaultTtlFiveMinutes() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256)
                 .issueToken(TokenIssuanceSpec.builder("user-1").tokenType(TokenType.ONE_SHOT).build());
         assertThat(Duration.between(decode(signed).issuedAt(), decode(signed).expiresAt()))
@@ -210,7 +210,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void ID_TOKEN按OIDC写入nonce与auth_time() {
+    void idTokenWritesNonceAndAuthTime() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .tokenType(TokenType.ID_TOKEN)
                 .nonce("nonce-abc")
@@ -228,14 +228,14 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void ID_TOKEN未传nonce时不写nonce() {
+    void idTokenOmitsNonceWhenAbsent() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256)
                 .issueToken(TokenIssuanceSpec.builder("user-1").tokenType(TokenType.ID_TOKEN).build());
         assertThat(decode(signed).claims()).doesNotContainKey("nonce");
     }
 
     @Test
-    void 动态TTL修改后新签发的令牌立即生效() {
+    void dynamicTtlTakesEffectOnNewTokens() {
         JwtProperties properties = propertiesFor(JwtAlgorithm.HS256);
         cn.slainc.jwt.MapDynamicConfigService dynamic = new cn.slainc.jwt.MapDynamicConfigService();
         JwtKeyManager manager = new JwtKeyManager(properties);
@@ -254,7 +254,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void spec显式ttl优先于默认值() {
+    void specTtlOverridesDefault() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .ttl(Duration.ofSeconds(60))
                 .build());
@@ -263,7 +263,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void spec绝对过期时间覆盖ttl() {
+    void specAbsoluteExpiryOverridesTtl() {
         Instant expiresAt = clock.instant().plusSeconds(3600);
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .expiresAt(expiresAt)
@@ -273,7 +273,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void nbf延迟按配置写入() {
+    void nbfDelayWrittenFromConfig() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .notBeforeDelay(Duration.ofSeconds(30))
                 .build());
@@ -281,7 +281,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void jti可显式指定() {
+    void jtiExplicitlySettable() {
         SignedToken signed = serviceFor(JwtAlgorithm.HS256).issueToken(TokenIssuanceSpec.builder("user-1")
                 .jti("fixed-jti-001")
                 .build());
@@ -290,7 +290,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void issueBatch批量签发互不影响() {
+    void issueBatchTokensIndependent() {
         List<TokenIssuanceSpec> specs = List.of(
                 TokenIssuanceSpec.builder("u-1").tokenType(TokenType.ACCESS).build(),
                 TokenIssuanceSpec.builder("u-2").tokenType(TokenType.REFRESH).build(),
@@ -304,7 +304,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    void 空subject构造即拒绝() {
+    void blankSubjectRejected() {
         assertThatThrownBy(() -> TokenIssuanceSpec.of(" "))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("subject");

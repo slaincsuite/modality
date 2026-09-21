@@ -52,7 +52,7 @@ public class Oauth2UserInfoService {
             return null;
         }
         try {
-            LoginType type = LoginTypes.resolveOrDefault(loginType, LoginType.USER.value());
+            LoginType type = LoginTypes.resolveOrDefault(loginType, LoginType.TENANT_USER.value());
             return provider.findAccountByUserId(Long.parseLong(String.valueOf(loginId)), type);
         } catch (NumberFormatException e) {
             return null;

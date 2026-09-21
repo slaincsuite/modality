@@ -98,9 +98,9 @@ public abstract class SessionTestSupport {
     @DynamicPropertySource
     static void accountProperties(DynamicPropertyRegistry registry) {
         String hash = BCryptUtils.hash(PASSWORD, 4);
-        Object[][] accounts = {{"admin1", ADMIN_ONE, "ADMIN"}, {"admin2", ADMIN_TWO, "ADMIN"},
-                {"user1", USER_ONE, "USER"}, {"user2", USER_TWO, "USER"}, {"user3", USER_THREE, "USER"},
-                {"client1", CLIENT_ONE, "CLIENT"}, {"client2", CLIENT_TWO, "CLIENT"}};
+        Object[][] accounts = {{"admin1", ADMIN_ONE, "PLATFORM_ADMIN"}, {"admin2", ADMIN_TWO, "PLATFORM_ADMIN"},
+                {"user1", USER_ONE, "TENANT_USER"}, {"user2", USER_TWO, "TENANT_USER"}, {"user3", USER_THREE, "TENANT_USER"},
+                {"client1", CLIENT_ONE, "APP"}, {"client2", CLIENT_TWO, "APP"}};
         for (int index = 0; index < accounts.length; index++) {
             Object[] account = accounts[index];
             String prefix = "modality.security.accounts[" + index + "].";

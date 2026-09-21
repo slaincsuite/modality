@@ -54,7 +54,7 @@ class IntrospectionServiceTest {
     }
 
     @Test
-    void 有效令牌返回active与claims() {
+    void validTokenReturnsActiveAndClaims() {
         Fixture fixture = fixture(null);
         SignedToken signed = fixture.tokenService().issueToken(
                 TokenIssuanceSpec.builder("user-9").claim("dept", "finance").build());
@@ -67,7 +67,7 @@ class IntrospectionServiceTest {
     }
 
     @Test
-    void 过期令牌返回inactive() {
+    void expiredTokenReportsInactive() {
         Fixture fixture = fixture(null);
         SignedToken signed = fixture.tokenService().issueToken(
                 TokenIssuanceSpec.builder("user-1").ttl(Duration.ofSeconds(10)).build());
@@ -80,7 +80,7 @@ class IntrospectionServiceTest {
     }
 
     @Test
-    void 吊销令牌返回inactive() {
+    void revokedTokenReportsInactive() {
         Fixture fixture = fixture(null);
         SignedToken signed = fixture.tokenService().issueToken(TokenIssuanceSpec.of("user-1"));
         fixture.revocation().store().revoke(signed.jti(), signed.expiresAt());
@@ -88,13 +88,13 @@ class IntrospectionServiceTest {
     }
 
     @Test
-    void 乱码令牌返回inactive() {
+    void malformedTokenReportsInactive() {
         Fixture fixture = fixture(null);
         assertThat(fixture.introspection().introspect("garbage-token").active()).isFalse();
     }
 
     @Test
-    void 外部签发的无tokenType令牌active但tokenType为null() {
+    void externalTokenActiveWithNullType() {
         Fixture fixture = fixture(null);
         String external = JwtCodec.encode(JwtAlgorithm.HS256, fixture.keyManager().current().signingKey(),
                 Map.of("kid", "hs-main"),

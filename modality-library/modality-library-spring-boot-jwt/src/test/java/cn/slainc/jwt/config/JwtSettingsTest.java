@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JwtSettingsTest {
 
     @Test
-    void 四种TokenType映射到各自的动态TTL键() {
+    void fourTokenTypesMapToOwnTtlKeys() {
         MapDynamicConfigService dynamic = new MapDynamicConfigService();
         dynamic.put(JwtSettings.KEY_TTL_ACCESS, "111");
         dynamic.put(JwtSettings.KEY_TTL_REFRESH, "222");
@@ -25,7 +25,7 @@ class JwtSettingsTest {
     }
 
     @Test
-    void 无动态配置时回落到properties默认值() {
+    void propertiesDefaultsUsedWithoutConfigService() {
         JwtProperties properties = new JwtProperties();
         JwtSettings settings = new JwtSettings(properties, (cn.slainc.core.config.DynamicConfigService) null);
         assertThat(settings.ttl(cn.slainc.jwt.issue.TokenType.ACCESS)).isEqualTo(Duration.ofHours(2));
@@ -38,7 +38,7 @@ class JwtSettingsTest {
     }
 
     @Test
-    void spec显式ttl优先于动态与默认() {
+    void specTtlOverridesDynamicAndDefault() {
         JwtSettings settings = new JwtSettings(new JwtProperties(), new MapDynamicConfigService());
         assertThat(settings.ttl(cn.slainc.jwt.issue.TokenType.ACCESS, Duration.ofSeconds(77)))
                 .isEqualTo(Duration.ofSeconds(77));
@@ -47,7 +47,7 @@ class JwtSettingsTest {
     }
 
     @Test
-    void clockSkew与maxTokenLength与jwks缓存秒数动态热读() {
+    void clockSkewAndMaxTokenLengthAndJwksTtlHotReadable() {
         MapDynamicConfigService dynamic = new MapDynamicConfigService();
         JwtSettings settings = new JwtSettings(new JwtProperties(), (cn.slainc.core.config.DynamicConfigService) dynamic);
         assertThat(settings.clockSkewSeconds()).isEqualTo(60);
@@ -61,7 +61,7 @@ class JwtSettingsTest {
     }
 
     @Test
-    void TTL最小值保护避免立即可用过期() {
+    void ttlMinimumGuardAvoidsInstantExpiry() {
         MapDynamicConfigService dynamic = new MapDynamicConfigService();
         dynamic.set(JwtSettings.KEY_TTL_ACCESS, "0");
         JwtSettings settings = new JwtSettings(new JwtProperties(), (cn.slainc.core.config.DynamicConfigService) dynamic);

@@ -107,10 +107,10 @@ class PolicyJdbcStoreTest {
 
     @Test
     void engineEvaluatesFromDatabaseSnapshot() {
-        Policy created = adminService.create("引擎策略", PolicySubjectType.USER, "99001", "USER",
+        Policy created = adminService.create("引擎策略", PolicySubjectType.USER, "99001", "TENANT_USER",
                 document(Effect.ALLOW, List.of("modality:engine:*")), null, "甲");
         PolicyRequest request = PolicyRequest.of("modality:engine:get", "modality:engine/r")
-                .userId("99001").loginType("USER");
+                .userId("99001").loginType("TENANT_USER");
         assertTrue(engine.evaluate(request).allowed());
         adminService.changeStatus(created.getId(), false, "乙");
         assertFalse(engine.evaluate(request).allowed());

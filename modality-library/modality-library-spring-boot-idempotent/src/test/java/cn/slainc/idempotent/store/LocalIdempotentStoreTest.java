@@ -18,7 +18,7 @@ class LocalIdempotentStoreTest {
     private final LocalIdempotentStore store = new LocalIdempotentStore();
 
     @Test
-    void 并发占位只有一个赢家() throws Exception {
+    void concurrentAcquireHasSingleWinner() throws Exception {
         String key = newKey();
         int threads = 32;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -40,7 +40,7 @@ class LocalIdempotentStoreTest {
     }
 
     @Test
-    void 释放后可以重新占位() {
+    void placeholderAcquirableAfterRelease() {
         String key = newKey();
         assertThat(store.tryAcquire(key, Duration.ofSeconds(30))).isTrue();
         assertThat(store.tryAcquire(key, Duration.ofSeconds(30))).isFalse();
@@ -49,7 +49,7 @@ class LocalIdempotentStoreTest {
     }
 
     @Test
-    void 执行中状态不返回结果_完成后返回结果() {
+    void pendingHoldsAndCompletedReturnsResult() {
         String key = newKey();
         store.tryAcquire(key, Duration.ofSeconds(30));
         assertThat(store.findRecord(key)).isEmpty();
@@ -62,7 +62,7 @@ class LocalIdempotentStoreTest {
     }
 
     @Test
-    void Token只能消费一次() {
+    void tokenConsumedOnlyOnce() {
         String token = "token-" + UUID.randomUUID();
         store.saveToken(token, "1001", Duration.ofSeconds(30));
         assertThat(store.consumeToken(token)).isEqualTo("1001");
@@ -70,7 +70,7 @@ class LocalIdempotentStoreTest {
     }
 
     @Test
-    void 失败计数在窗口内累加_窗口外清零() throws Exception {
+    void failureCountAccumulatesInWindowAndClearsAfter() throws Exception {
         String key = newKey();
         assertThat(store.increaseFailure(key, Duration.ofMillis(300))).isEqualTo(1L);
         assertThat(store.increaseFailure(key, Duration.ofMillis(300))).isEqualTo(2L);
@@ -83,7 +83,7 @@ class LocalIdempotentStoreTest {
     }
 
     @Test
-    void 窗口过期后可以重新占位() throws Exception {
+    void placeholderAcquirableAfterWindowExpiry() throws Exception {
         String key = newKey();
         assertThat(store.tryAcquire(key, Duration.ofMillis(150))).isTrue();
         Thread.sleep(300L);

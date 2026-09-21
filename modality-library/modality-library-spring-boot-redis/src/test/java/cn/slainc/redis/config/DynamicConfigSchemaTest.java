@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class DynamicConfigSchemaTest {
 
     @Test
-    void 建表语句包含全部约定字段() {
+    void createTableContainsAllColumns() {
         String sql = DynamicConfigSchema.createTableSql("t_dynamic_config");
         assertThat(sql).contains("CREATE TABLE IF NOT EXISTS t_dynamic_config");
         assertThat(sql).contains("config_key VARCHAR(255) NOT NULL");
@@ -21,7 +21,7 @@ class DynamicConfigSchemaTest {
     }
 
     @Test
-    void 非法表名被拒绝且默认表名生效() {
+    void illegalTableNameRejectedDefaultApplies() {
         assertThat(DynamicConfigSchema.requireValidTable(null)).isEqualTo("t_dynamic_config");
         assertThat(DynamicConfigSchema.requireValidTable("  ")).isEqualTo("t_dynamic_config");
         assertThat(DynamicConfigSchema.requireValidTable(" t_config_2 ")).isEqualTo("t_config_2");
@@ -36,7 +36,7 @@ class DynamicConfigSchemaTest {
     }
 
     @Test
-    void 各类语句引用同一张表且参数个数正确() {
+    void statementsShareTableWithCorrectParams() {
         String table = "t_dynamic_config";
         assertThat(DynamicConfigSchema.selectAllSql(table)).endsWith("WHERE deleted = 0");
         assertThat(DynamicConfigSchema.selectByKeySql(table)).contains("config_key = ?");

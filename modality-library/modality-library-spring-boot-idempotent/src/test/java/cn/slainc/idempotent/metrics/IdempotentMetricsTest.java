@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class IdempotentMetricsTest {
 
     @Test
-    void 本地指标统计重复率与按方法分布() {
+    void localMetricsTrackDuplicateRateAndMethodDistribution() {
         LocalIdempotentMetrics metrics = new LocalIdempotentMetrics();
         metrics.recordRequest("A#m");
         metrics.recordRequest("A#m");
@@ -30,7 +30,7 @@ class IdempotentMetricsTest {
     }
 
     @Test
-    void Micrometer指标被真实登记并可读取() {
+    void micrometerMetricsRegisteredAndReadable() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         MicrometerIdempotentMetrics metrics = new MicrometerIdempotentMetrics(registry);
         metrics.recordRequest("B#m");
@@ -46,7 +46,7 @@ class IdempotentMetricsTest {
     }
 
     @Test
-    void 没有MeterRegistry时仍能统计() {
+    void metricsStillWorkWithoutRegistry() {
         MicrometerIdempotentMetrics metrics = new MicrometerIdempotentMetrics(null);
         metrics.recordRequest("C#m");
         metrics.recordDuplicate("C#m");

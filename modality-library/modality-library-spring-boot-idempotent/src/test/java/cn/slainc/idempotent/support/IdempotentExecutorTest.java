@@ -30,7 +30,7 @@ class IdempotentExecutorTest {
     private static final String KEY_PREFIX = "modality:idempotent:";
 
     @Test
-    void 重复请求返回首次结果并保留Result结构() throws Throwable {
+    void replayKeepsFirstResultStructure() throws Throwable {
         LocalIdempotentStore store = new LocalIdempotentStore();
         IdempotentExecutor executor = executor(store, new IdempotentProperties());
         AtomicInteger executions = new AtomicInteger();
@@ -50,7 +50,7 @@ class IdempotentExecutorTest {
     }
 
     @Test
-    void 结果缓存关闭时重复请求直接报重复() throws Throwable {
+    void duplicateReportedWhenResultCacheDisabled() throws Throwable {
         LocalIdempotentStore store = new LocalIdempotentStore();
         IdempotentProperties properties = new IdempotentProperties();
         properties.setCacheResult(false);
@@ -69,7 +69,7 @@ class IdempotentExecutorTest {
     }
 
     @Test
-    void 存储不可用时默认放行() throws Throwable {
+    void storageUnavailableFailsOpenByDefault() throws Throwable {
         IdempotentExecutor executor = executor(new BrokenIdempotentStore(), new IdempotentProperties());
         AtomicInteger executions = new AtomicInteger();
         Object result = executor.execute(context(annotation("plain"), "载荷-3"), () -> {
@@ -81,7 +81,7 @@ class IdempotentExecutorTest {
     }
 
     @Test
-    void 关闭failOpen后存储异常直接抛出() {
+    void storageExceptionThrownWhenFailOpenDisabled() {
         IdempotentProperties properties = new IdempotentProperties();
         properties.setFailOpen(false);
         IdempotentExecutor executor = executor(new BrokenIdempotentStore(), properties);
@@ -91,7 +91,7 @@ class IdempotentExecutorTest {
     }
 
     @Test
-    void 自定义SPI处理器真正参与去重() throws Throwable {
+    void customSpiHandlerParticipatesInDedup() throws Throwable {
         LocalIdempotentStore store = new LocalIdempotentStore();
         IdempotentExecutor executor = executor(store, new IdempotentProperties(), new FixedKeyHandler());
         AtomicInteger executions = new AtomicInteger();
@@ -109,7 +109,7 @@ class IdempotentExecutorTest {
     }
 
     @Test
-    void 重复请求指标被统计() throws Throwable {
+    void duplicateRequestMetricsTracked() throws Throwable {
         LocalIdempotentStore store = new LocalIdempotentStore();
         LocalIdempotentMetrics metrics = new LocalIdempotentMetrics();
         IdempotentExecutor executor = executor(store, new IdempotentProperties(), metrics);

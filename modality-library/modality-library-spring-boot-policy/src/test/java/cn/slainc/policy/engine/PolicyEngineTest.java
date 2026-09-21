@@ -74,7 +74,7 @@ class PolicyEngineTest {
     }
 
     @Test
-    void deny优先于allow() {
+    void denyTakesPrecedenceOverAllow() {
         createPolicy(PolicySubjectType.GLOBAL, null, Effect.ALLOW, List.of("modality:user:*"), List.of("*"), null);
         createPolicy(PolicySubjectType.GLOBAL, null, Effect.DENY, List.of("modality:user:delete"), List.of("*"), null);
         PolicyDecision deleteDecision = engine.evaluate(PolicyRequest.of("modality:user:delete", "modality:user/1"));
@@ -135,11 +135,11 @@ class PolicyEngineTest {
         statement.setEffect(Effect.ALLOW);
         statement.setActions(List.of("modality:user:*"));
         statement.setResources(List.of("*"));
-        Policy policy = Policy.create("仅用户体系", PolicySubjectType.GLOBAL, null, "USER",
+        Policy policy = Policy.create("仅用户体系", PolicySubjectType.GLOBAL, null, "TENANT_USER",
                 PolicyDocument.of(statement));
         store.save(policy);
-        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r").loginType("USER").userId("1")).allowed());
-        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r").loginType("ADMIN").userId("1")).allowed());
+        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r").loginType("TENANT_USER").userId("1")).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r").loginType("PLATFORM_ADMIN").userId("1")).allowed());
     }
 
     @Test

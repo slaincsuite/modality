@@ -65,7 +65,7 @@ class RateLimitAspectTest {
     }
 
     @Test
-    void 接口维度按方法签名限流并在超限时抛出中文异常() {
+    void methodSignatureRateLimitWithChineseError() {
         String suffix = UUID.randomUUID().toString().substring(0, 6);
         assertThat(proxy.limited(suffix)).isEqualTo("第1次:" + suffix);
         assertThat(proxy.limited(suffix)).isEqualTo("第2次:" + suffix);
@@ -75,7 +75,7 @@ class RateLimitAspectTest {
     }
 
     @Test
-    void 自定义SpEL维度按参数分别限流() {
+    void customSpelDimensionPerParamRateLimit() {
         assertThat(proxy.custom("甲")).isEqualTo("自定义:甲");
         assertThat(proxy.custom("甲")).isEqualTo("自定义:甲");
         assertThatThrownBy(() -> proxy.custom("甲")).isInstanceOf(RateLimitExceededException.class);
@@ -83,7 +83,7 @@ class RateLimitAspectTest {
     }
 
     @Test
-    void 用户维度在无登录上下文时按匿名用户限流() {
+    void anonymousUserRateLimitWithoutLoginContext() {
         UserContext.clear();
         assertThat(proxy.byUser()).isEqualTo("用户维度");
         assertThat(proxy.byUser()).isEqualTo("用户维度");
@@ -91,7 +91,7 @@ class RateLimitAspectTest {
     }
 
     @Test
-    void 未标注注解的方法不做限流() {
+    void unannotatedMethodNotRateLimited() {
         for (int i = 0; i < 5; i++) {
             assertThat(proxy.plain()).isEqualTo("无限流");
         }

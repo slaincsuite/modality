@@ -22,7 +22,7 @@ class JwtAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(JwtRedisStoreAutoConfiguration.class, JwtAutoConfiguration.class));
 
     @Test
-    void 默认装配全部核心Bean() {
+    void allCoreBeansWiredByDefault() {
         runner.run(context -> {
             assertThat(context).hasSingleBean(JwtProperties.class);
             assertThat(context).hasSingleBean(JwtKeyManager.class);
@@ -37,7 +37,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void 无Redis模板时吊销存储回落内存() {
+    void revocationFallsBackToMemoryWithoutRedis() {
         runner.run(context -> {
             assertThat(context).hasSingleBean(RevocationStore.class);
             assertThat(context.getBean(RevocationStore.class)).isInstanceOf(MemoryRevocationStore.class);
@@ -46,7 +46,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void 有Redis模板且store为redis时装配Redis存储() {
+    void redisRevocationWiredWhenConfigured() {
         runner.withBean(StringRedisTemplate.class, JwtAutoConfigurationTest::mockRedisTemplate)
                 .run(context -> {
                     assertThat(context.getBean(RevocationStore.class)).isInstanceOf(RedisRevocationStore.class);
@@ -54,7 +54,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void store配置为memory时强制使用内存存储() {
+    void memoryStoreEnforcedWhenConfigured() {
         runner.withBean(StringRedisTemplate.class, JwtAutoConfigurationTest::mockRedisTemplate)
                 .withPropertyValues("modality.jwt.revocation-store=memory")
                 .run(context -> {
@@ -71,7 +71,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void enabled为false时不装配任何Bean() {
+    void noBeansWhenDisabled() {
         runner.withPropertyValues("modality.jwt.enabled=false")
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(JwtKeyManager.class);
@@ -81,7 +81,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void 开启autoRotate后装配调度器() {
+    void schedulerWiredWhenAutoRotateEnabled() {
         runner.withPropertyValues("modality.jwt.auto-rotate.enabled=true",
                         "modality.jwt.auto-rotate.interval-hours=1")
                 .run(context -> {
@@ -90,7 +90,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void 自定义JwtKeyManager时自动配置退避() {
+    void customKeyManagerBacksOffAutoConfig() {
         runner.withBean(JwtKeyManager.class, () -> new JwtKeyManager(new cn.slainc.jwt.config.JwtProperties()))
                 .run(context -> {
                     assertThat(context).hasSingleBean(JwtKeyManager.class);
@@ -99,7 +99,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void 自定义RevocationStore时内存兜底退避() {
+    void customRevocationStoreBacksOff() {
         runner.withBean(RevocationStore.class, () -> new RevocationStore() {
                     @Override
                     public void revoke(String jti, java.time.Instant expiresAt) {
@@ -118,7 +118,7 @@ class JwtAutoConfigurationTest {
     }
 
     @Test
-    void 默认issuer为modality且白名单为三算法() {
+    void defaultIssuerAndThreeAlgWhitelist() {
         runner.run(context -> {
             JwtProperties properties = context.getBean(JwtProperties.class);
             assertThat(properties.getIssuer()).isEqualTo("modality");

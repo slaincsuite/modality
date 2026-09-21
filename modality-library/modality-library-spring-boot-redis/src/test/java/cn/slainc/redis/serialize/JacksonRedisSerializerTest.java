@@ -17,7 +17,7 @@ class JacksonRedisSerializerTest {
     private final ObjectMapper mapper = RedisSerializers.jsonMapper();
 
     @Test
-    void 空值序列化为空字节数组且反序列化为空() {
+    void nullSerializesToEmptyBytes() {
         RedisSerializer<Object> serializer = new JacksonRedisSerializer<>(mapper);
         assertThat(serializer.serialize(null)).isEmpty();
         assertThat(serializer.deserialize(null)).isNull();
@@ -25,7 +25,7 @@ class JacksonRedisSerializerTest {
     }
 
     @Test
-    void 泛型对象往返保持原类型() {
+    void genericRoundTripKeepsType() {
         RedisSerializer<Object> serializer = new JacksonRedisSerializer<>(mapper);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("名称", "模态平台");
@@ -44,7 +44,7 @@ class JacksonRedisSerializerTest {
     }
 
     @Test
-    void 指定JavaType时按声明类型反序列化() {
+    void declaredJavaTypeRespected() {
         RedisSerializer<SamplePayload> serializer = new JacksonRedisSerializer<>(mapper,
                 mapper.constructType(SamplePayload.class));
         SamplePayload payload = new SamplePayload();
@@ -58,7 +58,7 @@ class JacksonRedisSerializerTest {
     }
 
     @Test
-    void 非法内容抛出中文序列化异常() {
+    void illegalContentThrowsChineseSerializationError() {
         RedisSerializer<SamplePayload> serializer = new JacksonRedisSerializer<>(mapper,
                 mapper.constructType(SamplePayload.class));
         assertThatThrownBy(() -> serializer.deserialize("{不是合法 JSON".getBytes()))
@@ -67,7 +67,7 @@ class JacksonRedisSerializerTest {
     }
 
     @Test
-    void 构造参数为空时抛出中文异常() {
+    void blankConstructorArgThrowsChinese() {
         assertThatThrownBy(() -> new JacksonRedisSerializer<>(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("objectMapper 不能为空");

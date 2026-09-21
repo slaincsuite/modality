@@ -28,14 +28,14 @@ class SecurityStpLogicTest extends SecurityAcceptanceTestBase {
 
     @Test
     void logoutAndClearRemovesAuxiliaryKeys() {
-        redis.opsForValue().set(SecurityKeys.lastIpKey("USER", 5555L), "1.1.1.1", java.time.Duration.ofSeconds(60));
-        redis.opsForValue().set(SecurityKeys.lockFailKey("USER", 5555L), "2", java.time.Duration.ofSeconds(60));
+        redis.opsForValue().set(SecurityKeys.lastIpKey("TENANT_USER", 5555L), "1.1.1.1", java.time.Duration.ofSeconds(60));
+        redis.opsForValue().set(SecurityKeys.lockFailKey("TENANT_USER", 5555L), "2", java.time.Duration.ofSeconds(60));
         cn.dev33.satoken.context.mock.SaTokenContextMockUtil.setMockContext();
         try {
             userLogic.login(5555L, new SaLoginParameter().setIsShare(false));
             userLogic.logoutAndClear(5555L);
-            assertThat(redis.opsForValue().get(SecurityKeys.lastIpKey("USER", 5555L))).isNull();
-            assertThat(redis.opsForValue().get(SecurityKeys.lockFailKey("USER", 5555L))).isNull();
+            assertThat(redis.opsForValue().get(SecurityKeys.lastIpKey("TENANT_USER", 5555L))).isNull();
+            assertThat(redis.opsForValue().get(SecurityKeys.lockFailKey("TENANT_USER", 5555L))).isNull();
         } finally {
             cn.dev33.satoken.context.mock.SaTokenContextMockUtil.clearContext();
         }
@@ -43,8 +43,8 @@ class SecurityStpLogicTest extends SecurityAcceptanceTestBase {
 
     @Test
     void loginTypeValueMatchesCoreEnum() {
-        assertThat(userLogic.getLoginType()).isEqualTo(LoginType.USER.value());
-        assertThat(StpKit.admin().getLoginType()).isEqualTo(LoginType.ADMIN.value());
-        assertThat(StpKit.client().getLoginType()).isEqualTo(LoginType.CLIENT.value());
+        assertThat(userLogic.getLoginType()).isEqualTo(LoginType.TENANT_USER.value());
+        assertThat(StpKit.platformAdmin().getLoginType()).isEqualTo(LoginType.PLATFORM_ADMIN.value());
+        assertThat(StpKit.app().getLoginType()).isEqualTo(LoginType.APP.value());
     }
 }

@@ -36,7 +36,7 @@ public class SsoTestApplication {
             private final Map<String, PasswordAccount> accounts = new ConcurrentHashMap<>();
 
             {
-                accounts.put("USER:user", new PasswordAccount(2001L, "user",
+                accounts.put("TENANT_USER:user", new PasswordAccount(2001L, "user",
                         BCryptUtils.hash("Password#123"), true, LocalDateTime.now().minusDays(1), false));
             }
 
@@ -71,7 +71,7 @@ public class SsoTestApplication {
 
         @GetMapping("/sso/isLogin")
         public Object isLogin() {
-            return StpKit.client().isLogin();
+            return StpKit.app().isLogin();
         }
     }
 
@@ -86,7 +86,7 @@ public class SsoTestApplication {
 
         @PostMapping("/test/login")
         public Result<Object> login(@RequestBody Map<String, String> body) {
-            return Result.ok(loginService.login(LoginType.USER,
+            return Result.ok(loginService.login(LoginType.TENANT_USER,
                     LoginRequest.of(body.get("username"), body.get("password"))));
         }
     }

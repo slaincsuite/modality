@@ -40,9 +40,9 @@ public class Oauth2TestApplication {
         private final Map<String, PasswordAccount> accounts = new ConcurrentHashMap<>();
 
         TestAccountProvider() {
-            accounts.put("USER:user", new PasswordAccount(2001L, "user",
+            accounts.put("TENANT_USER:user", new PasswordAccount(2001L, "user",
                     BCryptUtils.hash("Password#123"), true, LocalDateTime.now().minusDays(1), false));
-            accounts.put("USER:alice", new PasswordAccount(2002L, "alice",
+            accounts.put("TENANT_USER:alice", new PasswordAccount(2002L, "alice",
                     BCryptUtils.hash("Password#123"), true, LocalDateTime.now().minusDays(1), false));
         }
 
@@ -94,7 +94,7 @@ public class Oauth2TestApplication {
 
         @PostMapping("/test/login")
         public Result<Object> login(@RequestBody Map<String, String> body) {
-            return Result.ok(loginService.login(LoginType.USER,
+            return Result.ok(loginService.login(LoginType.TENANT_USER,
                     LoginRequest.of(body.get("username"), body.get("password"))));
         }
     }

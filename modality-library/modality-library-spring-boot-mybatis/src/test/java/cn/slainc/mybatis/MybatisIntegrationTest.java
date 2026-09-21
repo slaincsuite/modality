@@ -133,7 +133,7 @@ class MybatisIntegrationTest {
         insertUser("tenant-1-a", 1L, "100");
         insertUser("tenant-2-a", 2L, "100");
 
-        UserContext.set(new UserContext.UserInfo(1L, "admin", LoginType.ADMIN, Set.of(), Set.of(), true));
+        UserContext.set(new UserContext.UserInfo(1L, "admin", LoginType.PLATFORM_ADMIN, Set.of(), Set.of(), true));
         assertEquals(2, userMapper.selectList(null).size());
     }
 
@@ -241,7 +241,7 @@ class MybatisIntegrationTest {
     @Test
     @DisplayName("自动填充审计字段、租户、逻辑删除与版本号")
     void autoFillWorks() {
-        UserContext.set(new UserContext.UserInfo(7L, "alice", LoginType.ADMIN, Set.of(), Set.of(), false));
+        UserContext.set(new UserContext.UserInfo(7L, "alice", LoginType.PLATFORM_ADMIN, Set.of(), Set.of(), false));
         User user = new User();
         user.setId(9001L);
         user.setName("auto-fill");
@@ -333,15 +333,15 @@ class MybatisIntegrationTest {
         insertUser("by-100", 1L, "100");
         insertUser("by-200", 1L, "200");
 
-        UserContext.set(new UserContext.UserInfo(100L, "user-100", LoginType.USER, Set.of(), Set.of(), false));
+        UserContext.set(new UserContext.UserInfo(100L, "user-100", LoginType.TENANT_USER, Set.of(), Set.of(), false));
         List<User> scoped = userMapper.selectWithDataScope();
         assertEquals(1, scoped.size());
         assertEquals("by-100", scoped.get(0).getName());
 
-        UserContext.set(new UserContext.UserInfo(200L, "user-200", LoginType.USER, Set.of(), Set.of(), false));
+        UserContext.set(new UserContext.UserInfo(200L, "user-200", LoginType.TENANT_USER, Set.of(), Set.of(), false));
         assertEquals("by-200", userMapper.selectWithDataScope().get(0).getName());
 
-        UserContext.set(new UserContext.UserInfo(1L, "admin", LoginType.ADMIN, Set.of(), Set.of(), true));
+        UserContext.set(new UserContext.UserInfo(1L, "admin", LoginType.PLATFORM_ADMIN, Set.of(), Set.of(), true));
         assertEquals(2, userMapper.selectWithDataScope().size());
     }
 

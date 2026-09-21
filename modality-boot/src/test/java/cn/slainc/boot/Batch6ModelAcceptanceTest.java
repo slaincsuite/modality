@@ -90,7 +90,7 @@ class Batch6ModelAcceptanceTest {
 
     @Test
     void denyPrecedenceAndAspectWorkOverRealHttp() throws Exception {
-        policyAdminService.create("批次六读权限", PolicySubjectType.USER, "2001", "USER",
+        policyAdminService.create("批次六读权限", PolicySubjectType.USER, "2001", "TENANT_USER",
                 document(Effect.ALLOW, "modality:batch6:data:read"), null, "batch6");
         policyAdminService.create("批次六禁写", PolicySubjectType.GLOBAL, null, null,
                 document(Effect.DENY, "modality:batch6:data:write"), null, "batch6");
@@ -236,7 +236,7 @@ class Batch6ModelAcceptanceTest {
         return httpClient.send(
                 HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                         .header("satoken", token)
-                        .header("X-Login-Type", "USER")
+                        .header("X-Login-Type", "TENANT_USER")
                         .GET().build(),
                 HttpResponse.BodyHandlers.ofString());
     }

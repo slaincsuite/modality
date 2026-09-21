@@ -40,7 +40,7 @@ class IdempotentAutoConfigurationTest {
                     IdempotentMissingStoreAutoConfiguration.class));
 
     @Test
-    void 没有Redis客户端时退回本地存储() {
+    void fallsBackToLocalStoreWithoutRedisClient() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context.getBean(IdempotentStore.class)).isInstanceOf(LocalIdempotentStore.class);
@@ -52,7 +52,7 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 存在Redis连接工厂时选择Redis存储() {
+    void redisStoreChosenWhenConnectionFactoryPresent() {
         runner.withBean(RedisConnectionFactory.class, () -> Mockito.mock(RedisConnectionFactory.class))
                 .withBean(StringRedisTemplate.class,
                         () -> new StringRedisTemplate(Mockito.mock(RedisConnectionFactory.class)))
@@ -61,7 +61,7 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 显式配置本地存储时即使有Redis也用本地() {
+    void localStoreWinsWhenExplicitlyConfigured() {
         runner.withPropertyValues("modality.idempotent.store.type=local")
                 .withBean(RedisConnectionFactory.class, () -> Mockito.mock(RedisConnectionFactory.class))
                 .withBean(StringRedisTemplate.class,
@@ -71,7 +71,7 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 配置数据库存储但缺少JdbcTemplate时快速失败并给中文原因() {
+    void failFastWithChineseReasonWhenJdbcTemplateMissing() {
         runner.withPropertyValues("modality.idempotent.store.type=database").run(context -> {
             assertThat(context).hasFailed();
             assertThat(context.getStartupFailure()).hasStackTraceContaining("幂等存储未就绪");
@@ -79,7 +79,7 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 配置数据库存储且存在JdbcTemplate时使用数据库存储() {
+    void jdbcStoreChosenWhenConfiguredAndTemplatePresent() {
         runner.withPropertyValues("modality.idempotent.store.type=database")
                 .withBean(JdbcTemplate.class, () -> new JdbcTemplate(new DriverManagerDataSource(
                         "jdbc:h2:mem:idempotent_config_test;MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "")))
@@ -88,14 +88,14 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 用户自定义存储优先于默认实现() {
+    void userStoreOverridesDefault() {
         LocalIdempotentStore custom = new LocalIdempotentStore();
         runner.withBean(IdempotentStore.class, () -> custom)
                 .run(context -> assertThat(context.getBean(IdempotentStore.class)).isSameAs(custom));
     }
 
     @Test
-    void 存在MeterRegistry时登记Micrometer指标() {
+    void micrometerMetricsRegisteredWhenRegistryPresent() {
         runner.withBean(MeterRegistry.class, SimpleMeterRegistry::new).run(context -> {
             assertThat(context).hasSingleBean(MicrometerIdempotentMetrics.class);
             assertThat(context.getBean(IdempotentMetrics.class)).isInstanceOf(MicrometerIdempotentMetrics.class);
@@ -104,7 +104,7 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 关闭幂等总开关后不注册切面() {
+    void aspectNotRegisteredWhenDisabled() {
         runner.withPropertyValues("modality.idempotent.enabled=false").run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).doesNotHaveBean(IdempotentAspect.class);
@@ -113,7 +113,7 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 缺少动态配置服务时依然可以装配() {
+    void wiringWorksWithoutConfigService() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).doesNotHaveBean(DynamicConfigService.class);
@@ -122,7 +122,7 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void Token服务通过Bean注册且可配置关闭() {
+    void tokenServiceRegisteredAsBeanAndDisableable() {
         WebApplicationContextRunner webRunner = new WebApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(IdempotentAutoConfiguration.class,
                         IdempotentLocalStoreAutoConfiguration.class, IdempotentTokenAutoConfiguration.class))
@@ -135,13 +135,13 @@ class IdempotentAutoConfigurationTest {
     }
 
     @Test
-    void 库内不注册任何MVC控制器() {
+    void noMvcControllersRegisteredInLibrary() {
         runner.run(context -> assertThat(context.getBeansWithAnnotation(
                 org.springframework.web.bind.annotation.RestController.class)).isEmpty());
     }
 
     @Test
-    void 自动配置已登记到imports文件() throws Exception {
+    void autoConfigRegisteredInImportsFile() throws Exception {
         try (InputStream input = getClass().getClassLoader().getResourceAsStream(
                 "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports")) {
             assertThat(input).isNotNull();

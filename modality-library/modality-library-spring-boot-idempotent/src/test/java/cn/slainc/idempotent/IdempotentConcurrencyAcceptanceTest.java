@@ -65,7 +65,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 同一参数并发提交只有一次真正执行其余返回重复提示() throws Exception {
+    void concurrentSubmitExecutesOnceOthersGetDuplicateHint() throws Exception {
         assertThat(idempotentStore.name()).as("真实上下文应选中 Redis 存储").isEqualTo("redis");
         orderService.resetBarrier();
         IdempotentTestApplication.OrderRequest request =
@@ -114,7 +114,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 并发被拦截后重复请求返回首次结果() throws Exception {
+    void replayedRequestReturnsFirstResultAfterIntercept() throws Exception {
         IdempotentTestApplication.OrderRequest request =
                 new IdempotentTestApplication.OrderRequest(unique("CONCURRENT-2"), 100L, 1L);
         int before = orderService.slowExecutions().get();
@@ -153,7 +153,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 参数顺序不同但内容相同判定为同一请求() {
+    void paramOrderIgnoredWhenContentEquals() {
         String mapOrderNo = unique("MAP-ORDER-1");
         Map<String, Object> first = new LinkedHashMap<>();
         first.put("orderNo", mapOrderNo);
@@ -169,7 +169,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 忽略字段后仅时间戳不同判定为同一请求() {
+    void ignoredFieldsMakeTimestampOnlyDifferenceSame() {
         String ignoreOrderNo = unique("IGNORE-1");
         int before = orderService.ignoreExecutions().get();
         Result<String> first = orderService.createIgnoreTimestamp(
@@ -181,7 +181,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 不同参数不会被一刀切拦截() {
+    void differentParamsNotBlockedIndiscriminately() {
         String diffFirst = unique("DIFF-1");
         String diffSecond = unique("DIFF-2");
         int before = orderService.normalExecutions().get();
@@ -193,7 +193,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 注解上的自定义重复提示生效() throws Exception {
+    void customDuplicateHintFromAnnotationTakesEffect() throws Exception {
         orderService.resetBarrier();
         IdempotentTestApplication.OrderRequest request =
                 new IdempotentTestApplication.OrderRequest(unique("MESSAGE-1"), 10L, 1L);
@@ -226,7 +226,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void Token模式申请后首次消费成功二次消费被拒() {
+    void tokenModeFirstConsumeSucceedsSecondRejected() {
         String orderNo = unique("TOKEN-ORDER-1");
         String otherOrderNo = unique("TOKEN-ORDER-2");
         IdempotentToken token = tokenService.issue(null);
@@ -252,14 +252,14 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 缺少Token时给出中文提示() {
+    void missingTokenGivesChineseHint() {
         assertThatThrownBy(() -> tokenOrderService.submitByToken(null, unique("TOKEN-MISSING-1")))
                 .isInstanceOf(cn.slainc.core.exception.BizException.class)
                 .hasMessageContaining("缺少幂等 Token");
     }
 
     @Test
-    void 混合模式同时校验Token与参数指纹() {
+    void hybridModeChecksTokenAndFingerprint() {
         String orderNo = unique("HYBRID-1");
         String otherOrderNo = unique("HYBRID-2");
         IdempotentToken token = tokenService.issue(null);
@@ -277,7 +277,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 首次执行抛异常不算消费成功并允许重试() {
+    void firstFailureNotConsumedAndRetryAllowed() {
         retryOrderService.failTimes(1);
         IdempotentTestApplication.OrderRequest request =
                 new IdempotentTestApplication.OrderRequest(unique("RETRY-OK-1"), 1L, 1L);
@@ -291,7 +291,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 超过最大重试次数后请求被拒绝() {
+    void requestRejectedAfterMaxRetries() {
         retryOrderService.failTimes(100);
         IdempotentTestApplication.OrderRequest request =
                 new IdempotentTestApplication.OrderRequest(unique("RETRY-EXCEED-1"), 1L, 1L);
@@ -309,7 +309,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 重试窗口过期后重新允许执行() throws Exception {
+    void executionAllowedAfterRetryWindowExpiry() throws Exception {
         retryOrderService.failTimes(100);
         IdempotentTestApplication.OrderRequest request =
                 new IdempotentTestApplication.OrderRequest(unique("RETRY-WINDOW-1"), 1L, 1L);
@@ -324,7 +324,7 @@ class IdempotentConcurrencyAcceptanceTest {
     }
 
     @Test
-    void 动态配置可覆盖窗口与总开关() {
+    void dynamicConfigOverridesWindowAndSwitch() {
         String methodId = IdempotentTestApplication.OrderService.class.getName() + "#createWithDefaultTtl";
         String ttlKey = "modality.idempotent.methods." + methodId + ".default-ttl";
         dynamicConfigService.set(ttlKey, "2s");

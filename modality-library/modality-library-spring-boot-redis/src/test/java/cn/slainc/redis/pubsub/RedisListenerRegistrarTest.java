@@ -66,7 +66,7 @@ class RedisListenerRegistrarTest {
     }
 
     @Test
-    void 注解监听方法自动注册并接收消息() throws Exception {
+    void annotatedListenerAutoRegisteredAndReceives() throws Exception {
         String channel = "modality:test:listener:fixed";
         sampleListener.reset(channel);
 
@@ -85,7 +85,7 @@ class RedisListenerRegistrarTest {
     }
 
     @Test
-    void 按通道参数名注入频道名并支持模式订阅() throws Exception {
+    void channelInjectedByNameWithPatternSupport() throws Exception {
         String channel = "modality:test:listener:" + UUID.randomUUID();
         sampleListener.resetPattern(channel);
         for (int i = 0; i < 40 && sampleListener.latch.getCount() > 0; i++) {

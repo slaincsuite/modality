@@ -86,7 +86,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("默认注册全部会话服务")
-    void 默认注册全部会话服务() {
+    void allSessionServicesRegisteredByDefault() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).hasSingleBean(SessionConfigReader.class);
@@ -102,7 +102,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("modality.session.enabled=false 时不注册任何会话服务")
-    void 总开关关闭() {
+    void masterSwitchOff() {
         runner.withPropertyValues("modality.session.enabled=false").run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).doesNotHaveBean(SessionConfigReader.class);
@@ -113,7 +113,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("query.enabled=false 只关闭查询服务")
-    void 关闭查询能力() {
+    void queryCapabilityDisableable() {
         runner.withPropertyValues("modality.session.query.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(SessionQueryService.class);
             assertThat(context).hasSingleBean(OnlineUserService.class);
@@ -123,7 +123,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("online.enabled=false 只关闭在线列表能力")
-    void 关闭在线能力() {
+    void onlineCapabilityDisableable() {
         runner.withPropertyValues("modality.session.online.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(OnlineUserService.class);
             assertThat(context).hasSingleBean(SessionQueryService.class);
@@ -132,7 +132,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("stats.enabled=false 只关闭统计能力")
-    void 关闭统计能力() {
+    void statsCapabilityDisableable() {
         runner.withPropertyValues("modality.session.stats.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(SessionStatsService.class);
             assertThat(context).hasSingleBean(OnlineUserService.class);
@@ -141,7 +141,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("extend.enabled=false 只关闭扩展能力")
-    void 关闭扩展能力() {
+    void extraCapabilityDisableable() {
         runner.withPropertyValues("modality.session.extend.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(SessionExtender.class);
             assertThat(context).hasSingleBean(SessionRenewalService.class);
@@ -150,7 +150,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("renew.enabled=false 只关闭续期能力")
-    void 关闭续期能力() {
+    void renewalCapabilityDisableable() {
         runner.withPropertyValues("modality.session.renew.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(SessionRenewalService.class);
             assertThat(context).hasSingleBean(SessionExtender.class);
@@ -159,7 +159,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("使用方可以覆盖默认服务 Bean")
-    void 允许覆盖默认Bean() {
+    void defaultBeanOverridableByConsumer() {
         runner.withBean(SessionExtender.class, SessionExtender::new).run(context -> {
             assertThat(context).hasSingleBean(SessionExtender.class);
         });
@@ -167,7 +167,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("类路径缺少监控依赖时指标配置整体退避")
-    void 缺少监控依赖退避() {
+    void monitorMissingBacksOff() {
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(SessionAutoConfiguration.class,
                         SessionMetricsAutoConfiguration.class))
@@ -183,7 +183,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("存在 MetricsTemplate 时注册指标绑定器")
-    void 注册指标绑定器() {
+    void metricsBinderRegistered() {
         metricsRunner().run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).hasSingleBean(SessionMetricsBinder.class);
@@ -192,7 +192,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("metrics.enabled=false 时不注册指标绑定器")
-    void 关闭指标绑定器() {
+    void metricsBinderDisableable() {
         metricsRunner().withPropertyValues("modality.session.metrics.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(SessionMetricsBinder.class);
             assertThat(context).hasSingleBean(SessionStatsService.class);
@@ -201,7 +201,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("类路径缺少 WebSocket 时通知配置退避")
-    void 缺少WebSocket退避() {
+    void webSocketMissingBacksOff() {
         websocketRunner().withClassLoader(new FilteredClassLoader("cn.slainc.web.websocket.WebSocketBroadcaster"))
                 .run(context -> {
                     assertThat(context).hasNotFailed();
@@ -212,7 +212,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("存在 WebSocketBroadcaster 时注册 WebSocket 通知器")
-    void 注册WebSocket通知器() {
+    void webSocketNotifierRegistered() {
         websocketRunner().withBean(WebSocketBroadcaster.class, () -> Mockito.mock(WebSocketBroadcaster.class))
                 .run(context -> {
                     assertThat(context).hasNotFailed();
@@ -223,7 +223,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("没有自定义通知器时注册 Slf4j 默认实现")
-    void 注册默认通知器() {
+    void defaultNotifierRegistered() {
         kickRunner().run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).hasSingleBean(Slf4jSessionKickNotifier.class);
@@ -234,7 +234,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("notify.enabled=false 时不注册默认通知器")
-    void 关闭通知能力() {
+    void notifyCapabilityDisableable() {
         kickRunner().withPropertyValues("modality.session.notify.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(Slf4jSessionKickNotifier.class);
             assertThat(context).hasSingleBean(KickSessionService.class);
@@ -243,7 +243,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("kick.enabled=false 时不注册踢人相关能力")
-    void 关闭踢人能力() {
+    void kickCapabilityDisableable() {
         kickRunner().withPropertyValues("modality.session.kick.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(KickSessionService.class);
             assertThat(context).doesNotHaveBean(SessionLimitService.class);
@@ -253,7 +253,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("默认注册踢人服务与会话上限服务")
-    void 注册踢人与上限服务() {
+    void kickAndLimitServicesRegistered() {
         kickRunner().run(context -> {
             assertThat(context).hasSingleBean(KickSessionService.class);
             assertThat(context).hasSingleBean(SessionLimitService.class);
@@ -263,7 +263,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("limit.enabled=false 时不注册上限服务与登录监听")
-    void 关闭上限能力() {
+    void limitCapabilityDisableable() {
         kickRunner().withPropertyValues("modality.session.limit.enabled=false").run(context -> {
             assertThat(context).hasSingleBean(KickSessionService.class);
             assertThat(context).doesNotHaveBean(SessionLimitService.class);
@@ -273,7 +273,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("清理能力默认关闭")
-    void 清理默认关闭() {
+    void cleanupDisabledByDefault() {
         cleanupRunner().run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).doesNotHaveBean(SessionCleanupService.class);
@@ -283,7 +283,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("cleanup.enabled=true 时注册清理服务与调度器")
-    void 开启清理能力() {
+    void cleanupCapabilityEnableable() {
         cleanupRunner().withPropertyValues("modality.session.cleanup.enabled=true").run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).hasSingleBean(SessionCleanupService.class);
@@ -293,7 +293,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("会话配置属性可按前缀绑定")
-    void 配置属性绑定() {
+    void configPropertiesBound() {
         runner.withPropertyValues("modality.session.max-scan=88", "modality.session.max-lifetime-seconds=99",
                 "modality.session.display.mask-token=false", "modality.session.cleanup.interval-minutes=7").run(
                 context -> {
@@ -308,7 +308,7 @@ class SessionAutoConfigurationTest {
 
     @Test
     @DisplayName("默认配置值符合约定")
-    void 默认配置值() {
+    void defaultConfigValues() {
         runner.run(context -> {
             SessionConfigReader reader = context.getBean(SessionConfigReader.class);
             assertThat(reader.maxScan()).isEqualTo(10000);

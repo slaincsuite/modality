@@ -13,7 +13,7 @@ class CompressedRedisSerializerTest {
     private final RedisSerializer<String> raw = RedisSerializer.string();
 
     @Test
-    void 小值使用原始魔术头且不被压缩() {
+    void smallValueNotCompressed() {
         CompressedRedisSerializer<String> serializer = new CompressedRedisSerializer<>(raw, 1024);
         byte[] bytes = serializer.serialize("短内容");
         assertThat(bytes[0]).isEqualTo(CompressedRedisSerializer.MAGIC_RAW);
@@ -21,7 +21,7 @@ class CompressedRedisSerializerTest {
     }
 
     @Test
-    void 大值使用压缩魔术头且能还原() {
+    void largeValueCompressedWithMagicHeader() {
         CompressedRedisSerializer<String> serializer = new CompressedRedisSerializer<>(raw, 64);
         String payload = "模态平台".repeat(500);
         byte[] plain = raw.serialize(payload);
@@ -33,7 +33,7 @@ class CompressedRedisSerializerTest {
     }
 
     @Test
-    void 空值与非压缩历史数据都能兼容解析() {
+    void nullAndLegacyNonCompressedParseable() {
         CompressedRedisSerializer<String> serializer = new CompressedRedisSerializer<>(raw, 16);
         assertThat(serializer.serialize(null)).isNull();
         assertThat(serializer.deserialize(null)).isNull();
@@ -42,7 +42,7 @@ class CompressedRedisSerializerTest {
     }
 
     @Test
-    void 阈值与委托对象为空时抛出中文异常() {
+    void blankThresholdOrDelegateThrowsChinese() {
         assertThatThrownBy(() -> new CompressedRedisSerializer<String>(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("被包装的序列化器不能为空");

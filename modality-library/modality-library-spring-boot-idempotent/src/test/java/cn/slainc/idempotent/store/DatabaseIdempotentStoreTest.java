@@ -42,7 +42,7 @@ class DatabaseIdempotentStoreTest {
     }
 
     @Test
-    void 并发占位只有一个赢家() throws Exception {
+    void concurrentAcquireHasSingleWinner() throws Exception {
         String key = newKey();
         int threads = 16;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -64,7 +64,7 @@ class DatabaseIdempotentStoreTest {
     }
 
     @Test
-    void 释放后可重新占位且自动建表() {
+    void releasedPlaceholderReacquiredWithAutoTable() {
         String key = newKey();
         assertThat(store.isHeld(key)).isFalse();
         assertThat(store.tryAcquire(key, Duration.ofSeconds(30))).isTrue();
@@ -75,7 +75,7 @@ class DatabaseIdempotentStoreTest {
     }
 
     @Test
-    void 结果记录可以读写() {
+    void resultRecordReadableAndWritable() {
         String key = newKey();
         store.saveRecord(key, new IdempotentRecord(IdempotentState.SUCCESS, "java.lang.String", "\"首次\"",
                 System.currentTimeMillis()), Duration.ofSeconds(30));
@@ -85,7 +85,7 @@ class DatabaseIdempotentStoreTest {
     }
 
     @Test
-    void Token只能消费一次并返回归属() {
+    void tokenConsumedOnceWithOwnership() {
         String token = "token-" + UUID.randomUUID();
         store.saveToken(token, "2002", Duration.ofSeconds(30));
         assertThat(store.consumeToken(token)).isEqualTo("2002");
@@ -93,7 +93,7 @@ class DatabaseIdempotentStoreTest {
     }
 
     @Test
-    void 失败计数累加且窗口过期后清零() throws Exception {
+    void failureCountClearsAfterWindowExpiry() throws Exception {
         String key = newKey();
         assertThat(store.increaseFailure(key, Duration.ofMillis(300))).isEqualTo(1L);
         assertThat(store.increaseFailure(key, Duration.ofMillis(300))).isEqualTo(2L);
@@ -103,7 +103,7 @@ class DatabaseIdempotentStoreTest {
     }
 
     @Test
-    void 表名非法时给出中文提示() {
+    void illegalTableNameGivesChineseHint() {
         assertThatThrownBy(() -> new DatabaseIdempotentStore(jdbcTemplate, "t_record; drop table x", true, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("幂等表名不合法");

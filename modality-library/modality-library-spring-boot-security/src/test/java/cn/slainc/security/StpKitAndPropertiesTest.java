@@ -22,22 +22,22 @@ class StpKitAndPropertiesTest {
 
     @AfterAll
     static void restoreAssignments() {
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_ADMIN));
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_USER));
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_CLIENT));
+        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_PLATFORM_ADMIN));
+        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_TENANT_USER));
+        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_APP));
     }
 
     @Test
     @Order(1)
     void uninitializedStpKitThrowsChineseException() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class, StpKit::admin);
-        assertThat(exception.getMessage()).contains("尚未初始化").contains("ADMIN");
+        IllegalStateException exception = assertThrows(IllegalStateException.class, StpKit::platformAdmin);
+        assertThat(exception.getMessage()).contains("尚未初始化").contains("PLATFORM_ADMIN");
     }
 
     @Test
     @Order(2)
     void ofNullTypeThrowsChineseException() {
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_USER));
+        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_TENANT_USER));
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> StpKit.of(null));
         assertThat(exception.getMessage()).isEqualTo("账号体系不能为空");
     }
@@ -45,9 +45,9 @@ class StpKitAndPropertiesTest {
     @Test
     @Order(3)
     void constantsMatchCoreLoginTypeValues() {
-        assertThat(StpKit.TYPE_ADMIN).isEqualTo(LoginType.ADMIN.value());
-        assertThat(StpKit.TYPE_USER).isEqualTo(LoginType.USER.value());
-        assertThat(StpKit.TYPE_CLIENT).isEqualTo(LoginType.CLIENT.value());
+        assertThat(StpKit.TYPE_PLATFORM_ADMIN).isEqualTo(LoginType.PLATFORM_ADMIN.value());
+        assertThat(StpKit.TYPE_TENANT_USER).isEqualTo(LoginType.TENANT_USER.value());
+        assertThat(StpKit.TYPE_APP).isEqualTo(LoginType.APP.value());
     }
 
     @Test
@@ -60,12 +60,12 @@ class StpKitAndPropertiesTest {
         assertThat(properties.getFilter().getProtectedPatterns()).containsExactly("/**");
         assertThat(properties.getFilter().getBlacklistPatterns()).isEmpty();
         assertThat(properties.getTypeHeader()).isEqualTo("X-Login-Type");
-        assertThat(properties.getDefaultType()).isEqualTo("USER");
+        assertThat(properties.getDefaultType()).isEqualTo("TENANT_USER");
         assertThat(properties.getDeviceIdHeader()).isEqualTo("X-Device-Id");
         assertThat(properties.getPermissionCacheTtlSeconds()).isEqualTo(300);
         assertThat(properties.getOrigin().isEnabled()).isTrue();
         assertThat(properties.getOrigin().getAllowedOrigins()).isEmpty();
-        assertThat(properties.getSession().getTimeoutUser()).isEqualTo(2592000);
+        assertThat(properties.getSession().getTimeoutTenantUser()).isEqualTo(2592000);
         assertThat(properties.getDevice().getMaxCountPerType()).isEqualTo(5);
         assertThat(properties.getDevice().getOverflowMode().name()).isEqualTo("KICK_OLDEST");
         assertThat(properties.getDevice().isSingleSessionPerType()).isFalse();

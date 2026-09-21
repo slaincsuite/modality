@@ -22,6 +22,6 @@ public final class LoginTypes {
             return type;
         }
         LoginType fallback = LoginType.of(defaultName);
-        return fallback == null ? LoginType.USER : fallback;
+        return fallback == null ? LoginType.TENANT_USER : fallback;
     }
 }

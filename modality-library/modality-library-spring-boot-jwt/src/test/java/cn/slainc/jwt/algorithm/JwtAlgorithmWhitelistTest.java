@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class JwtAlgorithmWhitelistTest {
 
     @Test
-    void 默认白名单包含_HS256_RS256_ES256() {
+    void defaultWhitelistContainsHsRsEs() {
         JwtAlgorithmWhitelist whitelist = JwtAlgorithmWhitelist.defaults();
         assertThat(whitelist.isAllowed(JwtAlgorithm.HS256)).isTrue();
         assertThat(whitelist.isAllowed(JwtAlgorithm.RS256)).isTrue();
@@ -22,7 +22,7 @@ class JwtAlgorithmWhitelistTest {
     }
 
     @Test
-    void 默认白名单外的算法被拒绝并给出中文提示() {
+    void nonDefaultWhitelistAlgRejectedWithChinese() {
         JwtAlgorithmWhitelist whitelist = JwtAlgorithmWhitelist.defaults();
         assertThatThrownBy(() -> whitelist.ensureAllowed(JwtAlgorithm.HS512))
                 .isInstanceOf(JwtVerifyException.class)
@@ -33,7 +33,7 @@ class JwtAlgorithmWhitelistTest {
     }
 
     @Test
-    void 自定义白名单按配置生效() {
+    void customWhitelistTakesEffect() {
         JwtAlgorithmWhitelist whitelist = new JwtAlgorithmWhitelist(List.of(JwtAlgorithm.HS512, JwtAlgorithm.EdDSA));
         assertThat(whitelist.isAllowed(JwtAlgorithm.HS512)).isTrue();
         assertThat(whitelist.isAllowed(JwtAlgorithm.EdDSA)).isTrue();
@@ -42,7 +42,7 @@ class JwtAlgorithmWhitelistTest {
     }
 
     @Test
-    void 空白名单构造即拒绝() {
+    void blankWhitelistRejected() {
         assertThatThrownBy(() -> new JwtAlgorithmWhitelist(List.of()))
                 .isInstanceOf(JwtVerifyException.class)
                 .hasMessageContaining("白名单不能为空");
@@ -51,13 +51,13 @@ class JwtAlgorithmWhitelistTest {
     }
 
     @Test
-    void isAllowed对空算法返回假() {
+    void isAllowedReturnsFalseForNullAlg() {
         JwtAlgorithmWhitelist whitelist = JwtAlgorithmWhitelist.defaults();
         assertThat(whitelist.isAllowed(null)).isFalse();
     }
 
     @Test
-    void allowedAlgorithms返回不可变集合() {
+    void allowedAlgorithmsReturnsImmutableSet() {
         JwtAlgorithmWhitelist whitelist = JwtAlgorithmWhitelist.defaults();
         assertThatThrownBy(() -> whitelist.allowedAlgorithms().add(JwtAlgorithm.HS512))
                 .isInstanceOf(UnsupportedOperationException.class);

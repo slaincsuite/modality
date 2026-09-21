@@ -77,50 +77,50 @@ class Batch4SecurityAcceptanceTest {
     @Test
     @DisplayName("认证闭环：用户名密码登录 → Token 鉴权 → 管理员查询在线 → 踢人立即生效")
     void authenticationLoopEndsWithEffectiveKick() throws Exception {
-        String userToken = login("user", "USER", "PC", "device-1");
+        String userToken = login("user", "TENANT_USER", "PC", "device-1");
 
-        var authorized = send("GET", "/batch4/me", "USER", userToken, null);
+        var authorized = send("GET", "/batch4/me", "TENANT_USER", userToken, null);
         assertThat(authorized.statusCode()).isEqualTo(200);
         assertThat(authorized.body()).contains("2001");
 
-        var anonymous = send("GET", "/batch4/me", "USER", null, null);
+        var anonymous = send("GET", "/batch4/me", "TENANT_USER", null, null);
         assertThat(anonymous.statusCode()).isEqualTo(401);
         assertThat(anonymous.body()).contains("未能读取到有效 token");
 
-        String adminToken = login("admin", "ADMIN", "PC", "device-admin");
-        var online = send("GET", "/batch4/admin/online?type=USER&loginId=2001", "ADMIN", adminToken, null);
+        String adminToken = login("admin", "PLATFORM_ADMIN", "PC", "device-admin");
+        var online = send("GET", "/batch4/admin/online?type=TENANT_USER&loginId=2001", "PLATFORM_ADMIN", adminToken, null);
         assertThat(online.statusCode()).isEqualTo(200);
         assertThat(online.body()).contains("device-1");
 
-        var kick = send("POST", "/batch4/admin/kick?type=USER&loginId=2001&reason=违规操作", "ADMIN", adminToken, null);
+        var kick = send("POST", "/batch4/admin/kick?type=TENANT_USER&loginId=2001&reason=违规操作", "PLATFORM_ADMIN", adminToken, null);
         assertThat(kick.statusCode()).isEqualTo(200);
 
-        var afterKick = send("GET", "/batch4/me", "USER", userToken, null);
+        var afterKick = send("GET", "/batch4/me", "TENANT_USER", userToken, null);
         assertThat(afterKick.statusCode()).isEqualTo(401);
         assertThat(afterKick.body()).contains("token 已被踢下线");
 
-        var adminStillAlive = send("GET", "/batch4/admin/online?type=USER&loginId=2001", "ADMIN", adminToken, null);
+        var adminStillAlive = send("GET", "/batch4/admin/online?type=TENANT_USER&loginId=2001", "PLATFORM_ADMIN", adminToken, null);
         assertThat(adminStillAlive.statusCode()).isEqualTo(200);
     }
 
     @Test
     @DisplayName("三套账号体系独立登录与鉴权，踢人互不影响")
     void threeAccountSystemsStayIsolated() throws Exception {
-        String userToken = login("user", "USER", "PC", "u-1");
-        String clientToken = login("client", "CLIENT", "MOBILE", "c-1");
-        String adminToken = login("admin", "ADMIN", "PC", "a-1");
+        String userToken = login("user", "TENANT_USER", "PC", "u-1");
+        String clientToken = login("client", "APP", "MOBILE", "c-1");
+        String adminToken = login("admin", "PLATFORM_ADMIN", "PC", "a-1");
 
         assertThat(userToken).isNotEqualTo(clientToken).isNotEqualTo(adminToken);
-        assertThat(send("GET", "/batch4/me", "USER", userToken, null).statusCode()).isEqualTo(200);
-        assertThat(send("GET", "/batch4/client/me", "CLIENT", clientToken, null).statusCode()).isEqualTo(200);
+        assertThat(send("GET", "/batch4/me", "TENANT_USER", userToken, null).statusCode()).isEqualTo(200);
+        assertThat(send("GET", "/batch4/client/me", "APP", clientToken, null).statusCode()).isEqualTo(200);
 
-        assertThat(send("GET", "/batch4/admin/panel", "USER", userToken, null).statusCode()).isEqualTo(401);
-        assertThat(send("GET", "/batch4/admin/panel", "CLIENT", clientToken, null).statusCode()).isEqualTo(401);
+        assertThat(send("GET", "/batch4/admin/panel", "TENANT_USER", userToken, null).statusCode()).isEqualTo(401);
+        assertThat(send("GET", "/batch4/admin/panel", "APP", clientToken, null).statusCode()).isEqualTo(401);
 
-        assertThat(send("POST", "/batch4/admin/kick?type=USER&loginId=2001", "ADMIN", adminToken, null)
+        assertThat(send("POST", "/batch4/admin/kick?type=TENANT_USER&loginId=2001", "PLATFORM_ADMIN", adminToken, null)
                 .statusCode()).isEqualTo(200);
-        assertThat(send("GET", "/batch4/me", "USER", userToken, null).statusCode()).isEqualTo(401);
-        assertThat(send("GET", "/batch4/client/me", "CLIENT", clientToken, null).statusCode()).isEqualTo(200);
+        assertThat(send("GET", "/batch4/me", "TENANT_USER", userToken, null).statusCode()).isEqualTo(401);
+        assertThat(send("GET", "/batch4/client/me", "APP", clientToken, null).statusCode()).isEqualTo(200);
     }
 
     @Test
@@ -138,8 +138,8 @@ class Batch4SecurityAcceptanceTest {
     @DisplayName("SaTokenDao 走的是 Redis 实现，会话数据落在 Redis 中")
     void sessionsAreStoredInRedis(@Autowired org.springframework.data.redis.core.StringRedisTemplate redis)
             throws Exception {
-        String token = login("user", "USER", "PC", "redis-check");
-        assertThat(redis.opsForValue().get("satoken:USER:token:" + token)).isEqualTo("2001");
-        assertThat(StpKit.user().getTokenTimeout(token)).isGreaterThan(0);
+        String token = login("user", "TENANT_USER", "PC", "redis-check");
+        assertThat(redis.opsForValue().get("satoken:TENANT_USER:token:" + token)).isEqualTo("2001");
+        assertThat(StpKit.tenantUser().getTokenTimeout(token)).isGreaterThan(0);
     }
 }

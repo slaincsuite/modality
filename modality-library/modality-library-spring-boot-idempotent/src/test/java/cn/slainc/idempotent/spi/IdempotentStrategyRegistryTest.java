@@ -20,14 +20,14 @@ class IdempotentStrategyRegistryTest {
             new HybridStrategyHandler(new ParameterFingerprint(), "modality:idempotent:", true)));
 
     @Test
-    void 内置策略按枚举解析() {
+    void builtInStrategiesResolvedByEnum() {
         assertThat(registry.resolve(settings(IdempotentStrategy.PARAMETER, null)).name()).isEqualTo("parameter");
         assertThat(registry.resolve(settings(IdempotentStrategy.TOKEN, null)).name()).isEqualTo("token");
         assertThat(registry.resolve(settings(IdempotentStrategy.HYBRID, null)).name()).isEqualTo("hybrid");
     }
 
     @Test
-    void 自定义策略按名称解析并且后注册覆盖先注册() {
+    void customStrategyResolvedByNameLaterOverrides() {
         registry.register(customHandler("my-custom"));
         assertThat(registry.resolve(settings(IdempotentStrategy.CUSTOM, "my-custom")).name()).isEqualTo("my-custom");
         registry.register(customHandler("my-custom"));
@@ -35,21 +35,21 @@ class IdempotentStrategyRegistryTest {
     }
 
     @Test
-    void 自定义策略必须指定处理器名称() {
+    void customStrategyRequiresHandlerName() {
         assertThatThrownBy(() -> registry.resolve(settings(IdempotentStrategy.CUSTOM, null)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("必须通过 @Idempotent(handler");
     }
 
     @Test
-    void 未注册的处理器给出中文提示() {
+    void unregisteredHandlerGivesChineseHint() {
         assertThatThrownBy(() -> registry.resolve(settings(IdempotentStrategy.CUSTOM, "not-exists")))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("未找到自定义幂等策略处理器：not-exists");
     }
 
     @Test
-    void ServiceLoader可以加载外部扩展() {
+    void serviceLoaderLoadsExternalExtensions() {
         IdempotentStrategyRegistry spiRegistry = new IdempotentStrategyRegistry(List.of());
         assertThat(spiRegistry.find("test-spi")).as("通过 META-INF/services 加载的扩展").isPresent();
         IdempotentStrategyRegistry withoutSpi = new IdempotentStrategyRegistry(List.of(), false);

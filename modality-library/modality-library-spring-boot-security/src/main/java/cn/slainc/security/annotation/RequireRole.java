@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequireRole {
 
-    LoginType value() default LoginType.USER;
+    LoginType value() default LoginType.TENANT_USER;
 
     String[] roles();
 

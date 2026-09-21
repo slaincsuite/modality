@@ -73,8 +73,8 @@ public abstract class SecurityAcceptanceTestBase {
     private void resetHotConfig() {
         String[] keys = {"modality.security.permission-cache-ttl-seconds",
                 "modality.security.lockout.max-failures", "modality.security.lockout.window-seconds",
-                "modality.security.lockout.lock-minutes", "modality.security.session.timeout-admin",
-                "modality.security.session.timeout-user", "modality.security.session.timeout-client",
+                "modality.security.lockout.lock-minutes", "modality.security.session.timeout-platform-admin",
+                "modality.security.session.timeout-tenant-user", "modality.security.session.timeout-app",
                 "modality.security.device.max-count-per-type", "modality.security.device.overflow-mode",
                 "modality.security.device.single-session-per-type", "modality.security.restriction.time-start",
                 "modality.security.restriction.time-end", "modality.security.restriction.ip-whitelist",

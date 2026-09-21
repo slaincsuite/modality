@@ -19,14 +19,14 @@ class ParameterFingerprintTest {
     private final ParameterFingerprint parameterFingerprint = new ParameterFingerprint();
 
     @Test
-    void 字段顺序不同但内容相同的参数指纹一致() throws Exception {
+    void fieldOrderIgnoredWhenContentEquals() throws Exception {
         Method method = handleMethod();
         assertThat(fp(context(method, new Object[]{new OrderA("M-1", 10L)}, settings(List.of(), true, true))))
                 .isEqualTo(fp(context(method, new Object[]{new OrderB(10L, "M-1")}, settings(List.of(), true, true))));
     }
 
     @Test
-    void 嵌套对象字段顺序与Map顺序被规范化() throws Exception {
+    void nestedFieldAndMapOrderNormalized() throws Exception {
         Method method = handleMethod();
         Map<String, Object> first = new LinkedHashMap<>();
         first.put("orderNo", "M-2");
@@ -39,7 +39,7 @@ class ParameterFingerprintTest {
     }
 
     @Test
-    void 忽略字段后仅时间戳不同的参数指纹一致() throws Exception {
+    void fingerprintEqualsWhenOnlyIgnoredTimestampDiffers() throws Exception {
         Method method = handleMethod();
         IdempotentSettings settings = settings(List.of("timestamp"), true, true);
         assertThat(fp(context(method, new Object[]{new OrderRequest("M-3", 10L, 111L)}, settings)))
@@ -47,7 +47,7 @@ class ParameterFingerprintTest {
     }
 
     @Test
-    void 参数内容不同则指纹不同() throws Exception {
+    void differentParamContentYieldsDifferentFingerprint() throws Exception {
         Method method = handleMethod();
         IdempotentSettings settings = settings(List.of(), true, true);
         assertThat(fp(context(method, new Object[]{new OrderRequest("M-4", 10L, 1L)}, settings)))
@@ -55,7 +55,7 @@ class ParameterFingerprintTest {
     }
 
     @Test
-    void 用户与接口路径参与指纹() throws Exception {
+    void userAndPathParticipateInFingerprint() throws Exception {
         Method method = handleMethod();
         IdempotentSettings settings = settings(List.of(), true, true);
         Object[] args = {new OrderRequest("M-6", 10L, 1L)};
@@ -68,7 +68,7 @@ class ParameterFingerprintTest {
     }
 
     @Test
-    void 方法不同则指纹不同() throws Exception {
+    void differentMethodYieldsDifferentFingerprint() throws Exception {
         Method first = handleMethod();
         Method second = getClass().getDeclaredMethod("handleOther", Object.class);
         IdempotentSettings settings = settings(List.of(), true, true);

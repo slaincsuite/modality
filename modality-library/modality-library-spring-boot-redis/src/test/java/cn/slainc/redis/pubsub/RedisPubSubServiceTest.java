@@ -57,7 +57,7 @@ class RedisPubSubServiceTest {
     }
 
     @Test
-    void 订阅频道后能收到独立连接发布的消息() throws Exception {
+    void subscriberReceivesFromIndependentConnection() throws Exception {
         String channel = "modality:test:pubsub:" + UUID.randomUUID();
         CountDownLatch latch = new CountDownLatch(1);
         List<String> received = new CopyOnWriteArrayList<>();
@@ -89,7 +89,7 @@ class RedisPubSubServiceTest {
     }
 
     @Test
-    void 发布对象会被序列化为JSON并支持下线() throws Exception {
+    void publishedObjectSerializedAsJsonWithOfflineSupport() throws Exception {
         String channel = "modality:test:pubsub:" + UUID.randomUUID();
         CountDownLatch latch = new CountDownLatch(1);
         List<String> received = new CopyOnWriteArrayList<>();
@@ -115,7 +115,7 @@ class RedisPubSubServiceTest {
     }
 
     @Test
-    void 参数校验与非法发布频道() {
+    void paramValidationAndIllegalChannel() {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> pubSubService.publish(null, "内容"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("发布频道不能为空");

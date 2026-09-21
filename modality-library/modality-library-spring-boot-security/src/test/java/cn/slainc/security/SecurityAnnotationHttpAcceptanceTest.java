@@ -10,7 +10,7 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void requireLoginWithoutTokenRejected() {
-        var response = get("/test/annotated/role-all", LoginType.USER, null);
+        var response = get("/test/annotated/role-all", LoginType.TENANT_USER, null);
         assertThat(response.statusCode()).isEqualTo(401);
         assertThat(codeOf(response)).isEqualTo(401000);
         assertThat(messageOf(response)).isEqualTo("未能读取到有效 token");
@@ -20,7 +20,7 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
     void annotationCheckMapsNotLoginToUnified401Result() {
         config.set("modality.security.filter.exclude-patterns",
                 "[\"/test/annotated/safe-only\",\"/auth/login\",\"/auth/logout\"]");
-        var response = get("/test/annotated/safe-only", LoginType.USER, null);
+        var response = get("/test/annotated/safe-only", LoginType.TENANT_USER, null);
         assertThat(response.statusCode()).isEqualTo(401);
         assertThat(codeOf(response)).as(response.body()).isEqualTo(401000);
         assertThat(messageOf(response)).isEqualTo("未能读取到有效 token");
@@ -28,8 +28,8 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void requireLoginWithValidTokenPasses() {
-        String token = tokenOf(LoginType.USER, "user");
-        var response = get("/test/user/me", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        var response = get("/test/user/me", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(Long.parseLong(String.valueOf((Object) JsonPath.parse(response.body()).read("$.data"))))
                 .isEqualTo(2001L);
@@ -37,20 +37,20 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void requireRoleAllPassesWhenBothRolesGranted() {
-        String token = tokenOf(LoginType.USER, "user");
-        var response = get("/test/annotated/role-all", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        var response = get("/test/annotated/role-all", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(dataOf(response)).contains("同时拥有");
     }
 
     @Test
     void requireRoleAllFailsWithRoleNameWhenRoleMissing() {
-        accounts.register("limited-user", 2999L, LoginType.USER, true, false, null);
-        var login = post("/auth/login", LoginType.USER, null, """
+        accounts.register("limited-user", 2999L, LoginType.TENANT_USER, true, false, null);
+        var login = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"limited-user","password":"Password#123","deviceType":"","deviceId":""}
                 """);
         String token = JsonPath.parse(login.body()).read("$.data.tokenValue");
-        var response = get("/test/annotated/role-all", LoginType.USER, token);
+        var response = get("/test/annotated/role-all", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(403);
         assertThat(codeOf(response)).isEqualTo(403000);
         assertThat(messageOf(response)).contains("无此角色");
@@ -58,19 +58,19 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void requireRoleAnyPassesWithOperatorRole() {
-        String token = tokenOf(LoginType.USER, "user");
-        var response = get("/test/annotated/role-any", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        var response = get("/test/annotated/role-any", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(200);
     }
 
     @Test
     void requirePermissionFailsWithPermissionNameWhenMissing() {
-        accounts.register("limited-user", 2999L, LoginType.USER, true, false, null);
-        var login = post("/auth/login", LoginType.USER, null, """
+        accounts.register("limited-user", 2999L, LoginType.TENANT_USER, true, false, null);
+        var login = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"limited-user","password":"Password#123","deviceType":"","deviceId":""}
                 """);
         String token = JsonPath.parse(login.body()).read("$.data.tokenValue");
-        var response = get("/test/annotated/perm-all", LoginType.USER, token);
+        var response = get("/test/annotated/perm-all", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(403);
         assertThat(codeOf(response)).isEqualTo(403000);
         assertThat(messageOf(response)).contains("无此权限");
@@ -78,27 +78,27 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void requirePermissionAnyFailsWhenNoneGranted() {
-        accounts.register("limited-user", 2999L, LoginType.USER, true, false, null);
-        var login = post("/auth/login", LoginType.USER, null, """
+        accounts.register("limited-user", 2999L, LoginType.TENANT_USER, true, false, null);
+        var login = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"limited-user","password":"Password#123","deviceType":"","deviceId":""}
                 """);
         String token = JsonPath.parse(login.body()).read("$.data.tokenValue");
-        var response = get("/test/annotated/perm-any", LoginType.USER, token);
+        var response = get("/test/annotated/perm-any", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(403);
         assertThat(codeOf(response)).as(response.body()).isEqualTo(403000);
     }
 
     @Test
     void requirePermissionAllPassesForUser() {
-        String token = tokenOf(LoginType.USER, "user");
-        var response = get("/test/annotated/perm-all", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        var response = get("/test/annotated/perm-all", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(200);
     }
 
     @Test
     void adminTokenDoesNotSatisfyUserSystemAnnotation() {
-        String token = tokenOf(LoginType.ADMIN, "admin");
-        var response = get("/test/annotated/perm-all", LoginType.ADMIN, token);
+        String token = tokenOf(LoginType.PLATFORM_ADMIN, "admin");
+        var response = get("/test/annotated/perm-all", LoginType.PLATFORM_ADMIN, token);
         // 该注解默认校验 USER 体系，而 ADMIN 的会话在 USER 体系里并不存在
         assertThat(response.statusCode()).isEqualTo(401);
         assertThat(codeOf(response)).isEqualTo(401000);
@@ -106,16 +106,16 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void requirePermissionAnyPassesWithExportPermission() {
-        String token = tokenOf(LoginType.USER, "user");
-        var response = get("/test/annotated/perm-any", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        var response = get("/test/annotated/perm-any", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(dataOf(response)).contains("任一权限");
     }
 
     @Test
     void requireSafeRejectsWhenNotOpened() {
-        String token = tokenOf(LoginType.USER, "user");
-        var response = get("/test/safe/annotated", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        var response = get("/test/safe/annotated", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(403);
         assertThat(codeOf(response)).isEqualTo(403000);
         assertThat(messageOf(response)).contains("二级认证");
@@ -123,25 +123,25 @@ class SecurityAnnotationHttpAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void requireSafePassesAfterOpenSafe() {
-        String token = tokenOf(LoginType.USER, "user");
-        post("/test/safe/open?type=USER&service=DEFAULT&seconds=60", LoginType.USER, token, null);
-        var response = get("/test/safe/annotated", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        post("/test/safe/open?type=TENANT_USER&service=DEFAULT&seconds=60", LoginType.TENANT_USER, token, null);
+        var response = get("/test/safe/annotated", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(dataOf(response)).contains("二次认证通过");
     }
 
     @Test
     void builtInSaCheckLoginPassesForAdmin() {
-        String token = tokenOf(LoginType.ADMIN, "admin");
-        var response = get("/test/annotated/sa-check-login", LoginType.ADMIN, token);
+        String token = tokenOf(LoginType.PLATFORM_ADMIN, "admin");
+        var response = get("/test/annotated/sa-check-login", LoginType.PLATFORM_ADMIN, token);
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(dataOf(response)).contains("内置注解通过");
     }
 
     @Test
     void builtInSaCheckLoginRejectsUserToken() {
-        String token = tokenOf(LoginType.USER, "user");
-        var response = get("/test/annotated/sa-check-login", LoginType.USER, token);
+        String token = tokenOf(LoginType.TENANT_USER, "user");
+        var response = get("/test/annotated/sa-check-login", LoginType.TENANT_USER, token);
         assertThat(response.statusCode()).isEqualTo(401);
         assertThat(codeOf(response)).isEqualTo(401000);
     }

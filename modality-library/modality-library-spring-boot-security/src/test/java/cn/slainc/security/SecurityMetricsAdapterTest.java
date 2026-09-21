@@ -20,12 +20,12 @@ class SecurityMetricsAdapterTest {
         MeterRegistry registry = new SimpleMeterRegistry();
         SaTokenMetrics metrics = new SaTokenMetrics(new MetricsTemplate(registry, new cn.slainc.monitor.metrics.MetricNaming("modality"), false));
         SaTokenMetricsAdapter adapter = new SaTokenMetricsAdapter(metrics);
-        adapter.login("USER", true);
-        adapter.login("USER", false);
-        adapter.login("ADMIN", true);
+        adapter.login("TENANT_USER", true);
+        adapter.login("TENANT_USER", false);
+        adapter.login("PLATFORM_ADMIN", true);
         assertThat(metrics.loginCount()).isEqualTo(3.0);
         io.micrometer.core.instrument.Counter userSuccess = registry.find("modality.satoken.login")
-                .tag("type", "USER").tag("result", "success").counter();
+                .tag("type", "TENANT_USER").tag("result", "success").counter();
         assertThat(userSuccess).isNotNull();
         assertThat(userSuccess.count()).isEqualTo(1d);
     }
@@ -46,8 +46,8 @@ class SecurityMetricsAdapterTest {
     @Test
     void countersNoopAccumulatesReadableNumbers() {
         SecurityCounters counters = new SecurityCounters();
-        counters.login("USER", true);
-        counters.login("USER", false);
+        counters.login("TENANT_USER", true);
+        counters.login("TENANT_USER", false);
         counters.authorization(true);
         counters.authorization(false);
         counters.authorization(false);

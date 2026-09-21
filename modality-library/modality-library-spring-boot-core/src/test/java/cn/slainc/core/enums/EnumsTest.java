@@ -41,10 +41,10 @@ class EnumsTest {
 
     @Test
     void loginType() {
-        assertEquals(LoginType.ADMIN, LoginType.of("admin"));
-        assertEquals(LoginType.CLIENT, LoginType.of("CLIENT"));
+        assertEquals(LoginType.PLATFORM_ADMIN, LoginType.of("platform_admin"));
+        assertEquals(LoginType.APP, LoginType.of("APP"));
         assertNull(LoginType.of("unknown"));
-        assertEquals("客户端", LoginType.CLIENT.label());
+        assertEquals("应用方用户", LoginType.APP.label());
     }
 
     @Test

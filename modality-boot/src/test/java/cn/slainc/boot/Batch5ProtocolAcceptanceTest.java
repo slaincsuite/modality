@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "modality.sso.client.enabled=true",
         "modality.sso.client.client=boot-client",
         "modality.sso.client.secret-key=boot-sso-secret",
-        "modality.sso.client.login-type=CLIENT",
+        "modality.sso.client.login-type=APP",
         "modality.sign.keys[0].app-id=boot-app",
         "modality.sign.keys[0].algorithm=HMAC_SHA256",
         "modality.sign.keys[0].secret-base64=Ym9vdC1zaWduLXNlY3JldA=="
@@ -197,7 +197,7 @@ class Batch5ProtocolAcceptanceTest {
     private String loginCenter() throws Exception {
         HttpResponse<String> response = httpClient.send(HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl() + "/auth/login"))
-                .header("X-Login-Type", "USER")
+                .header("X-Login-Type", "TENANT_USER")
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"username\":\"user\",\"password\":\"" + PASSWORD + "\"}"))

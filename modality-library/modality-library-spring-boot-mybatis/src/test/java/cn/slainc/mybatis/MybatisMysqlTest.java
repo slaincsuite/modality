@@ -86,7 +86,7 @@ class MybatisMysqlTest {
         TenantContext.set(2L);
         assertEquals(2L, userMapper.selectList(null).get(0).getTenantId());
 
-        UserContext.set(new UserContext.UserInfo(1L, "admin", cn.slainc.core.enums.LoginType.ADMIN,
+        UserContext.set(new UserContext.UserInfo(1L, "admin", cn.slainc.core.enums.LoginType.PLATFORM_ADMIN,
                 java.util.Set.of(), java.util.Set.of(), true));
         assertEquals(2, userMapper.selectList(null).size());
     }

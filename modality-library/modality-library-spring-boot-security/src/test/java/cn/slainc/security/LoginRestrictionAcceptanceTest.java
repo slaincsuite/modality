@@ -19,7 +19,7 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
     @Test
     void ipBlacklistRejectsMatchingPrefix() {
         config.set("modality.security.restriction.ip-blacklist", "[\"10.20.\"]");
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":"","clientIp":"10.20.30.40"}
                 """);
         assertThat(codeOf(response)).isEqualTo(400100);
@@ -29,11 +29,11 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
     @Test
     void ipWhitelistAllowsOnlyListedPrefix() {
         config.set("modality.security.restriction.ip-whitelist", "[\"192.168.\"]");
-        var allowed = post("/auth/login", LoginType.USER, null, """
+        var allowed = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":"","clientIp":"192.168.1.9"}
                 """);
         assertThat(allowed.body()).contains("tokenValue");
-        var rejected = post("/auth/login", LoginType.USER, null, """
+        var rejected = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":"","clientIp":"8.8.8.8"}
                 """);
         assertThat(messageOf(rejected)).contains("白名单");
@@ -44,7 +44,7 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
         LocalTime now = LocalTime.now();
         config.set("modality.security.restriction.time-start", now.minusMinutes(5).toString().substring(0, 5));
         config.set("modality.security.restriction.time-end", now.plusMinutes(5).toString().substring(0, 5));
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":""}
                 """);
         assertThat(response.body()).contains("tokenValue");
@@ -55,7 +55,7 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
         LocalTime now = LocalTime.now();
         config.set("modality.security.restriction.time-start", now.plusMinutes(10).toString().substring(0, 5));
         config.set("modality.security.restriction.time-end", now.plusMinutes(20).toString().substring(0, 5));
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":""}
                 """);
         assertThat(codeOf(response)).isEqualTo(400100);
@@ -78,11 +78,11 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
     @Test
     void allowedDeviceTypesRestrictLogin() {
         config.set("modality.security.restriction.allowed-device-types", "[\"PC\",\"MOBILE\"]");
-        var ok = post("/auth/login", LoginType.USER, null, """
+        var ok = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"PC","deviceId":""}
                 """);
         assertThat(ok.body()).contains("tokenValue");
-        var rejected = post("/auth/login", LoginType.USER, null, """
+        var rejected = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"BOT","deviceId":""}
                 """);
         assertThat(messageOf(rejected)).contains("设备类型");
@@ -91,7 +91,7 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
     @Test
     void blankDeviceTypeFallsBackToDefaultAndCanBeRestricted() {
         config.set("modality.security.restriction.allowed-device-types", "[\"PC\"]");
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":""}
                 """);
         assertThat(messageOf(response)).contains("设备类型");
@@ -101,7 +101,7 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
     void whitelistTakesPrecedenceOverBlacklist() {
         config.set("modality.security.restriction.ip-whitelist", "[\"10.20.\"]");
         config.set("modality.security.restriction.ip-blacklist", "[\"10.20.30.\"]");
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":"","clientIp":"10.20.30.40"}
                 """);
         assertThat(response.body()).contains("tokenValue");
@@ -111,7 +111,7 @@ class LoginRestrictionAcceptanceTest extends SecurityAcceptanceTestBase {
     void serviceCheckDirectlyThrowsChineseException() {
         config.set("modality.security.restriction.ip-blacklist", "[\"1.2.3.\"]");
         BizException exception = assertThrows(BizException.class,
-                () -> restrictionService.check(LoginType.USER, "1.2.3.4", "PC"));
+                () -> restrictionService.check(LoginType.TENANT_USER, "1.2.3.4", "PC"));
         assertThat(exception.getMessage()).contains("黑名单");
     }
 }

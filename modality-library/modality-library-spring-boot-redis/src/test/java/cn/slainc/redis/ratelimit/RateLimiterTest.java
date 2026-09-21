@@ -44,7 +44,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void 令牌桶在容量耗尽后拒绝请求() {
+    void tokenBucketRejectsWhenExhausted() {
         String key = newKey();
         for (int i = 0; i < 3; i++) {
             assertThat(rateLimiter.tryAcquire(key, RateLimitType.TOKEN_BUCKET, 3L, Duration.ofSeconds(60)))
@@ -57,7 +57,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void 滑动窗口在时间窗内限制请求数并在窗口外恢复() throws Exception {
+    void slidingWindowLimitsAndRecovers() throws Exception {
         String key = newKey();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.SLIDING_WINDOW, 2L, Duration.ofSeconds(2))).isTrue();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.SLIDING_WINDOW, 2L, Duration.ofSeconds(2))).isTrue();
@@ -68,7 +68,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void 漏桶按恒定速率漏水且桶满后拒绝() {
+    void leakyBucketDrainsAtConstantRate() {
         String key = newKey();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.LEAKY_BUCKET, 2L, Duration.ofSeconds(60))).isTrue();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.LEAKY_BUCKET, 2L, Duration.ofSeconds(60))).isTrue();
@@ -76,7 +76,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void 固定窗口在计数超过上限后拒绝() {
+    void fixedWindowRejectsOverLimit() {
         String key = newKey();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.FIXED_WINDOW, 2L, Duration.ofSeconds(60))).isTrue();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.FIXED_WINDOW, 2L, Duration.ofSeconds(60))).isTrue();
@@ -84,7 +84,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void 每次申请多个许可() {
+    void multiplePermitsPerAcquire() {
         String key = newKey();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.TOKEN_BUCKET, 10L, Duration.ofSeconds(60), 5L)).isTrue();
         assertThat(rateLimiter.tryAcquire(key, RateLimitType.TOKEN_BUCKET, 10L, Duration.ofSeconds(60), 5L)).isTrue();
@@ -92,7 +92,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void 统计放行拒绝与拒绝率() {
+    void statsTrackAllowDenyAndRate() {
         rateLimiter.getStats().reset();
         String key = newKey();
         rateLimiter.tryAcquire(key, RateLimitType.FIXED_WINDOW, 1L, Duration.ofSeconds(60));
@@ -105,7 +105,7 @@ class RateLimiterTest {
     }
 
     @Test
-    void 键为空时抛出中文异常() {
+    void blankKeyThrowsChinese() {
         assertThatThrownBy(() -> rateLimiter.tryAcquire("  ", RateLimitType.TOKEN_BUCKET, 1L, Duration.ofSeconds(1)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("限流键不能为空");

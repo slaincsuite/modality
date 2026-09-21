@@ -103,7 +103,7 @@ class DegradableSaTokenDaoTest {
         SaSession loaded = dao.getSession("session-1");
         assertThat(loaded).isNotNull();
         assertThat(loaded.get("attr")).isEqualTo("value");
-        dao.set("satoken:USER:token:abc", "2001", 60);
+        dao.set("satoken:TENANT_USER:token:abc", "2001", 60);
         List<String> found = dao.searchData("satoken", "abc", 0, 10, true);
         assertThat(found).anyMatch(key -> key.endsWith("abc"));
     }

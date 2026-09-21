@@ -58,7 +58,7 @@ class JwtHttpAcceptanceTest {
     }
 
     @Test
-    void 真实HTTP拉取JWKS返回200且含公钥() throws Exception {
+    void jwksFetchedOverHttpWithPublicKey() throws Exception {
         HttpResponse<String> response = httpClient.send(
                 HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/oauth2/jwks")).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
@@ -80,7 +80,7 @@ class JwtHttpAcceptanceTest {
     }
 
     @Test
-    void JWKS端点响应与服务层输出一致() throws Exception {
+    void jwksEndpointMatchesServiceOutput() throws Exception {
         HttpResponse<String> response = httpClient.send(
                 HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/oauth2/jwks")).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
@@ -88,7 +88,7 @@ class JwtHttpAcceptanceTest {
     }
 
     @Test
-    void JWKS公钥可以验签服务签发的令牌() throws Exception {
+    void jwksPublicKeyVerifiesIssuedToken() throws Exception {
         SignedToken signed = tokenService.issueToken(TokenIssuanceSpec.builder("user-http")
                 .audience("web")
                 .claims(Map.of("tenantId", "t-1"))

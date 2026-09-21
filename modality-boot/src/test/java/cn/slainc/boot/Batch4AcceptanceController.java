@@ -42,7 +42,7 @@ public class Batch4AcceptanceController {
     @PostMapping("/auth/login")
     public Result<LoginResult> login(@RequestHeader(value = "X-Login-Type", required = false) String type,
                                      @RequestBody LoginBody body) {
-        LoginType loginType = LoginType.of(type) == null ? LoginType.USER : LoginType.of(type);
+        LoginType loginType = LoginType.of(type) == null ? LoginType.TENANT_USER : LoginType.of(type);
         return Result.ok(loginService.login(loginType, new LoginRequest(body.username(), body.password(),
                 body.deviceType(), body.deviceId(), null)));
     }
@@ -57,29 +57,29 @@ public class Batch4AcceptanceController {
     @GetMapping("/batch4/me")
     @RequireLogin
     public Result<Object> me() {
-        return Result.ok(loginService.getLoginId(LoginType.USER));
+        return Result.ok(loginService.getLoginId(LoginType.TENANT_USER));
     }
 
     @GetMapping("/batch4/client/me")
-    @RequireLogin(LoginType.CLIENT)
+    @RequireLogin(LoginType.APP)
     public Result<Object> clientMe() {
-        return Result.ok(loginService.getLoginId(LoginType.CLIENT));
+        return Result.ok(loginService.getLoginId(LoginType.APP));
     }
 
     @GetMapping("/batch4/admin/panel")
-    @RequireLogin(LoginType.ADMIN)
+    @RequireLogin(LoginType.PLATFORM_ADMIN)
     public Result<String> adminPanel() {
         return Result.ok("管理端面板");
     }
 
     @GetMapping("/batch4/admin/online")
-    @RequireLogin(LoginType.ADMIN)
+    @RequireLogin(LoginType.PLATFORM_ADMIN)
     public Result<List<Map<String, Object>>> online(@RequestParam String type, @RequestParam Long loginId) {
         return Result.ok(loginService.onlineTerminals(LoginType.of(type), loginId));
     }
 
     @PostMapping("/batch4/admin/kick")
-    @RequireLogin(LoginType.ADMIN)
+    @RequireLogin(LoginType.PLATFORM_ADMIN)
     public Result<Void> kick(@RequestParam String type, @RequestParam Long loginId,
                              @RequestParam(defaultValue = "管理员强制下线") String reason) {
         kickService.kickout(LoginType.of(type), loginId, reason);

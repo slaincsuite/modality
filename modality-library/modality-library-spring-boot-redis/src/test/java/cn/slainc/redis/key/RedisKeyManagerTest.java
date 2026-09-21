@@ -55,7 +55,7 @@ class RedisKeyManagerTest {
     }
 
     @Test
-    void SCAN前缀扫描不遗漏键() {
+    void scanPrefixDoesNotMissKeys() {
         List<String> keys = keyManager.scan(scope + "*");
         assertThat(keys).contains(scope + "甲", scope + "乙", scope + "散列");
         assertThat(keyManager.scanSet(scope + "*")).hasSize(3);
@@ -64,14 +64,14 @@ class RedisKeyManagerTest {
     }
 
     @Test
-    void 批量删除按前缀清理() {
+    void batchDeleteByPrefix() {
         long deleted = keyManager.deleteByPrefix(scope);
         assertThat(deleted).isEqualTo(3L);
         assertThat(keyManager.scan(scope + "*")).isEmpty();
     }
 
     @Test
-    void TTL管理与持久化() {
+    void ttlManagementAndPersistence() {
         assertThat(keyManager.ttl(scope + "甲")).isNull();
         assertThat(keyManager.ttlSeconds(scope + "甲")).isEqualTo(-1L);
 
@@ -85,7 +85,7 @@ class RedisKeyManagerTest {
     }
 
     @Test
-    void 类型判断重命名与内存占用() {
+    void typeCheckRenameAndMemoryUsage() {
         assertThat(keyManager.dataType(scope + "甲")).isEqualTo(DataType.STRING);
         assertThat(keyManager.type(scope + "散列")).isEqualTo("hash");
         assertThat(keyManager.type(scope + "不存在")).isEqualTo("none");
@@ -101,7 +101,7 @@ class RedisKeyManagerTest {
     }
 
     @Test
-    void 单个与批量删除以及触碰与库大小() {
+    void singleAndBatchDeleteTouchAndDbSize() {
         assertThat(keyManager.touch(scope + "甲", scope + "乙")).isEqualTo(2L);
         assertThat(keyManager.delete(scope + "甲")).isEqualTo(1L);
         assertThat(keyManager.unlink(scope + "乙", scope + "散列")).isEqualTo(2L);

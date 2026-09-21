@@ -80,7 +80,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 有效令牌返回完整验证结果() {
+    void validTokenReturnsFullResult() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.of("user-1"));
         JwtVerification verification = fixture.verifier().verify(signed.tokenValue());
@@ -93,7 +93,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 过期令牌在零偏移下被拒绝() {
+    void expiredTokenRejectedAtZeroSkew() {
         VerifierFixture fixture = fixture();
         fixture.dynamic().set(cn.slainc.jwt.config.JwtSettings.KEY_CLOCK_SKEW_SECONDS, "0");
         var signed = fixture.service().issueToken(TokenIssuanceSpec.builder("user-1")
@@ -105,7 +105,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 默认时钟偏移容忍刚过期的令牌() {
+    void defaultSkewToleratesJustExpired() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.builder("user-1")
                 .ttl(Duration.ofSeconds(60)).build());
@@ -114,7 +114,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 动态clockSkew热读后立即生效() {
+    void dynamicClockSkewTakesEffectImmediately() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.builder("user-1")
                 .ttl(Duration.ofSeconds(60)).build());
@@ -127,7 +127,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void nbf未生效的令牌被拒绝() {
+    void tokenRejectedBeforeNbf() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.builder("user-1")
                 .notBeforeDelay(Duration.ofSeconds(300)).build());
@@ -137,7 +137,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void nbf到期后令牌通过验证() {
+    void tokenPassesAfterNbfReached() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.builder("user-1")
                 .notBeforeDelay(Duration.ofSeconds(300)).build());
@@ -146,7 +146,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void iss不匹配被拒绝() {
+    void issMismatchRejected() {
         VerifierFixture fixture = fixture();
         String forged = JwtCodec.encode(JwtAlgorithm.HS256,
                 fixture.hsKey().signingKey(),
@@ -159,7 +159,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 缺少iss被拒绝() {
+    void missingIssRejected() {
         VerifierFixture fixture = fixture();
         String forged = JwtCodec.encode(JwtAlgorithm.HS256,
                 fixture.hsKey().signingKey(),
@@ -171,7 +171,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void aud不匹配被拒绝() {
+    void audMismatchRejected() {
         JwtProperties properties = hsProperties();
         properties.setAudiences(List.of("client-a"));
         VerifierFixture fixture = fixture(properties, JwtAlgorithmWhitelist.defaults());
@@ -186,7 +186,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void aud命中配置即通过() {
+    void audMatchConfigPasses() {
         JwtProperties properties = hsProperties();
         properties.setAudiences(List.of("client-a", "client-b"));
         VerifierFixture fixture = fixture(properties, JwtAlgorithmWhitelist.defaults());
@@ -199,7 +199,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 未知kid按中文异常拒绝() {
+    void unknownKidRejectedWithChinese() {
         VerifierFixture fixture = fixture();
         String forged = JwtCodec.encode(JwtAlgorithm.HS256,
                 fixture.hsKey().signingKey(),
@@ -212,7 +212,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void alg为none的令牌一律拒绝() {
+    void noneAlgAlwaysRejected() {
         VerifierFixture fixture = fixture();
         String payload = base64Url("{\"sub\":\"user-1\",\"iss\":\"modality\",\"exp\":9999999999}");
         String header = base64Url("{\"alg\":\"none\",\"typ\":\"JWT\"}");
@@ -224,7 +224,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 白名单外算法的令牌被拒绝() {
+    void nonWhitelistedAlgRejected() {
         VerifierFixture fixture = fixture();
         javax.crypto.SecretKey hs512Key = cn.slainc.crypto.key.SecretKeyUtils.hmacKey("HmacSHA512", 64);
         String forged = JwtCodec.encode(JwtAlgorithm.HS512, hs512Key,
@@ -237,7 +237,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 算法混淆的令牌被拒绝() {
+    void algConfusionRejected() {
         VerifierFixture fixture = dualFixture();
         assertThat(fixture.manager().currentKid()).isEqualTo("rsa-main");
         javax.crypto.SecretKey attackerKey = cn.slainc.crypto.key.SecretKeyUtils.hmacKey("HmacSHA256", 32);
@@ -251,7 +251,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 对称密钥冒用非对称kid同样被拒绝() {
+    void symmetricKeyWithAsymmetricKidRejected() {
         VerifierFixture fixture = dualFixture();
         String forged = JwtCodec.encode(JwtAlgorithm.HS256, fixture.hsKey().signingKey(),
                 Map.of("typ", "JWT", "kid", "rsa-main"),
@@ -260,7 +260,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 签名被篡改的令牌被拒绝() {
+    void tamperedSignatureRejected() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.of("user-1"));
         String[] parts = signed.tokenValue().split("\\.");
@@ -273,7 +273,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 超长令牌被拒绝() {
+    void overlongTokenRejected() {
         JwtProperties properties = hsProperties();
         properties.setMaxTokenLength(80);
         VerifierFixture fixture = fixture(properties, JwtAlgorithmWhitelist.defaults());
@@ -286,7 +286,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 动态maxTokenLength热读后立即生效() {
+    void dynamicMaxTokenLengthTakesEffectImmediately() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.of("user-1"));
         assertThat(fixture.verifier().verify(signed.tokenValue()).valid()).isTrue();
@@ -297,7 +297,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 吊销后的令牌被拒绝() {
+    void revokedTokenRejected() {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.of("user-1"));
         assertThat(fixture.verifier().verify(signed.tokenValue()).valid()).isTrue();
@@ -308,7 +308,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 格式非法的令牌被拒绝() {
+    void malformedTokenRejected() {
         VerifierFixture fixture = fixture();
         JwtVerification verification = fixture.verifier().verify("not-a-jwt");
         assertThat(verification.valid()).isFalse();
@@ -318,7 +318,7 @@ class JwtVerifierTest {
     }
 
     @Test
-    void 空白令牌verifyStrict抛出中文异常() {
+    void blankTokenRejectedWithChinese() {
         VerifierFixture fixture = fixture();
         assertThatThrownBy(() -> fixture.verifier().verifyStrict(" "))
                 .isInstanceOf(JwtVerifyException.class)

@@ -49,7 +49,7 @@ class TwoLevelCacheTest {
     }
 
     @Test
-    void 二级缓存首次读穿透到加载器之后命中本地缓存() {
+    void twoLevelCachePenetratesThenHitsLocal() {
         String name = "二级-" + UUID.randomUUID().toString().substring(0, 6);
         String key = "键";
         AtomicInteger loads = new AtomicInteger();
@@ -72,7 +72,7 @@ class TwoLevelCacheTest {
     }
 
     @Test
-    void 本地缓存失效后重新加载并能读到Redis中的新值() {
+    void localCacheReloadsAfterInvalidation() {
         String name = "失效-" + UUID.randomUUID().toString().substring(0, 6);
         String key = "键";
         cache.put(name, key, "旧值", Duration.ofMinutes(1));
@@ -83,7 +83,7 @@ class TwoLevelCacheTest {
     }
 
     @Test
-    void 清空命名空间会同时清理本地与Redis() {
+    void namespaceClearCleansLocalAndRedis() {
         String name = "清空-" + UUID.randomUUID().toString().substring(0, 6);
         cache.put(name, "甲", "1", Duration.ofMinutes(1));
         cache.put(name, "乙", "2", Duration.ofMinutes(1));
@@ -95,7 +95,7 @@ class TwoLevelCacheTest {
     }
 
     @Test
-    void 广播失效消息会清除同进程内的本地缓存() {
+    void broadcastClearsInProcessLocalCache() {
         String name = "广播-" + UUID.randomUUID().toString().substring(0, 6);
         cache.put(name, "键", "值", Duration.ofMinutes(1));
         assertThat(cache.localSize(name)).isEqualTo(1L);
@@ -121,7 +121,7 @@ class TwoLevelCacheTest {
     }
 
     @Test
-    void 键前缀符合仓库约定() {
+    void keyPrefixConventions() {
         assertThat(TwoLevelCache.redisKey("订单", "1")).isEqualTo("modality:cache:订单:1");
         assertThat(CacheInvalidationListener.channel()).isEqualTo("modality:cache:invalidate");
     }

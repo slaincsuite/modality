@@ -115,7 +115,7 @@ public class SecurityTestApplication {
         @PostMapping("/auth/login")
         public Result<LoginResult> login(@RequestHeader(value = "X-Login-Type", required = false) String loginType,
                                          @RequestBody LoginBody body) {
-            return Result.ok(loginService.login(LoginType.of(loginType) == null ? LoginType.USER
+            return Result.ok(loginService.login(LoginType.of(loginType) == null ? LoginType.TENANT_USER
                             : LoginType.of(loginType),
                     new LoginRequest(body.username(), body.password(), body.deviceType(), body.deviceId(),
                             body.clientIp())));
@@ -123,7 +123,7 @@ public class SecurityTestApplication {
 
         @PostMapping("/auth/logout")
         public Result<Void> logout(@RequestHeader(value = "X-Login-Type", required = false) String loginType) {
-            loginService.logout(LoginType.of(loginType) == null ? LoginType.USER : LoginType.of(loginType));
+            loginService.logout(LoginType.of(loginType) == null ? LoginType.TENANT_USER : LoginType.of(loginType));
             return Result.ok();
         }
     }
@@ -140,17 +140,17 @@ public class SecurityTestApplication {
         @GetMapping("/test/user/me")
         @RequireLogin
         public Result<Object> me() {
-            return Result.ok(loginService.getLoginId(LoginType.USER));
+            return Result.ok(loginService.getLoginId(LoginType.TENANT_USER));
         }
 
         @GetMapping("/test/admin/panel")
-        @RequireLogin(LoginType.ADMIN)
+        @RequireLogin(LoginType.PLATFORM_ADMIN)
         public Result<String> adminPanel() {
             return Result.ok("管理端面板");
         }
 
         @GetMapping("/test/client/info")
-        @RequireLogin(LoginType.CLIENT)
+        @RequireLogin(LoginType.APP)
         public Result<String> clientInfo() {
             return Result.ok("客户端信息");
         }
@@ -178,7 +178,7 @@ public class SecurityTestApplication {
         }
 
         @PostMapping("/test/admin/kick")
-        @RequireLogin(LoginType.ADMIN)
+        @RequireLogin(LoginType.PLATFORM_ADMIN)
         public Result<Void> kick(@RequestParam String type, @RequestParam Long loginId,
                                  @RequestParam(required = false) String token,
                                  @RequestParam(required = false) String deviceType,
@@ -195,14 +195,14 @@ public class SecurityTestApplication {
         }
 
         @GetMapping("/test/admin/online")
-        @RequireLogin(LoginType.ADMIN)
+        @RequireLogin(LoginType.PLATFORM_ADMIN)
         public Result<List<Map<String, Object>>> online(@RequestParam String type,
                                                         @RequestParam Long loginId) {
             return Result.ok(loginService.onlineTerminals(LoginType.of(type), loginId));
         }
 
         @PostMapping("/test/admin/ban")
-        @RequireLogin(LoginType.ADMIN)
+        @RequireLogin(LoginType.PLATFORM_ADMIN)
         public Result<Void> ban(@RequestParam String type, @RequestParam Long loginId,
                                 @RequestParam(defaultValue = "60") long seconds) {
             banService.ban(LoginType.of(type), loginId, seconds);
@@ -210,7 +210,7 @@ public class SecurityTestApplication {
         }
 
         @PostMapping("/test/admin/unban")
-        @RequireLogin(LoginType.ADMIN)
+        @RequireLogin(LoginType.PLATFORM_ADMIN)
         public Result<Void> unban(@RequestParam String type, @RequestParam Long loginId) {
             banService.unban(LoginType.of(type), loginId);
             return Result.ok();
@@ -262,7 +262,7 @@ public class SecurityTestApplication {
 
         @RequireLogin
         @PostMapping("/test/safe/open")
-        public Result<Void> open(@RequestParam(defaultValue = "USER") String type,
+        public Result<Void> open(@RequestParam(defaultValue = "TENANT_USER") String type,
                                  @RequestParam(defaultValue = "pay") String service,
                                  @RequestParam(defaultValue = "60") long seconds) {
             safeAuthService.openSafe(LoginType.of(type), service, seconds);
@@ -271,14 +271,14 @@ public class SecurityTestApplication {
 
         @RequireLogin
         @GetMapping("/test/safe/state")
-        public Result<Boolean> state(@RequestParam(defaultValue = "USER") String type,
+        public Result<Boolean> state(@RequestParam(defaultValue = "TENANT_USER") String type,
                                      @RequestParam(defaultValue = "pay") String service) {
             return Result.ok(safeAuthService.isSafe(LoginType.of(type), service));
         }
 
         @RequireLogin
         @PostMapping("/test/safe/close")
-        public Result<Void> close(@RequestParam(defaultValue = "USER") String type,
+        public Result<Void> close(@RequestParam(defaultValue = "TENANT_USER") String type,
                                   @RequestParam(defaultValue = "pay") String service) {
             safeAuthService.closeSafe(LoginType.of(type), service);
             return Result.ok();
@@ -351,7 +351,7 @@ public class SecurityTestApplication {
         }
 
         @GetMapping("/test/annotated/sa-check-login")
-        @cn.dev33.satoken.annotation.SaCheckLogin(type = "ADMIN")
+        @cn.dev33.satoken.annotation.SaCheckLogin(type = "PLATFORM_ADMIN")
         public Result<String> saCheckLogin() {
             return Result.ok("内置注解通过");
         }
@@ -362,7 +362,7 @@ public class SecurityTestApplication {
         }
 
         @GetMapping("/test/restrict/echo")
-        public Result<String> restrict(@RequestParam(defaultValue = "USER") String type,
+        public Result<String> restrict(@RequestParam(defaultValue = "TENANT_USER") String type,
                                        @RequestParam(required = false) String clientIp,
                                        @RequestParam(required = false) String deviceType,
                                        LoginRestrictionService restrictionService) {

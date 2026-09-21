@@ -73,7 +73,7 @@ class CacheTemplateTest {
     }
 
     @Test
-    void 读穿加载并写入Redis() {
+    void readThroughLoadsAndWritesRedis() {
         AtomicInteger loads = new AtomicInteger();
         String first = cacheTemplate.get(key, () -> {
             loads.incrementAndGet();
@@ -91,7 +91,7 @@ class CacheTemplateTest {
     }
 
     @Test
-    void 空值缓存拦截穿透且第二次不再调用loader() {
+    void nullCacheBlocksPenetration() {
         AtomicInteger loads = new AtomicInteger();
         String first = cacheTemplate.get(key, () -> {
             loads.incrementAndGet();
@@ -108,7 +108,7 @@ class CacheTemplateTest {
     }
 
     @Test
-    void 写入读取删除与存在判断() {
+    void writeReadDeleteAndExists() {
         cacheTemplate.put(key, "缓存值");
         assertThat(cacheTemplate.get(key, () -> "兜底")).isEqualTo("缓存值");
         assertThat(cacheTemplate.exists(key)).isTrue();
@@ -118,14 +118,14 @@ class CacheTemplateTest {
     }
 
     @Test
-    void 过期时间带有随机抖动且不小于下限() {
+    void expiryJitteredWithLowerBound() {
         cacheTemplate.put(key, "抖动值", Duration.ofSeconds(100));
         Long ttl = stringRedisTemplate.getExpire(key, TimeUnit.SECONDS);
         assertThat(ttl).isNotNull().isBetween(1L, 110L);
     }
 
     @Test
-    void 单飞保证并发场景下loader只执行一次() throws Exception {
+    void singleFlightLoadsOnceUnderConcurrency() throws Exception {
         int threads = 16;
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         CountDownLatch ready = new CountDownLatch(threads);
@@ -165,7 +165,7 @@ class CacheTemplateTest {
     }
 
     @Test
-    void 按键前缀批量清理并且不使用KEYS命令() {
+    void prefixCleanupWithoutKeysCommand() {
         String scope = PREFIX + "clear-" + UUID.randomUUID().toString().substring(0, 6) + ":";
         cacheTemplate.put(scope + "一", "1");
         cacheTemplate.put(scope + "二", "2");
@@ -178,7 +178,7 @@ class CacheTemplateTest {
     }
 
     @Test
-    void 统计快照字段与命中率() {
+    void statsSnapshotFieldsAndHitRate() {
         cacheTemplate.resetStats();
         cacheTemplate.put(key, "统计值");
         cacheTemplate.get(key, () -> "兜底");
@@ -191,7 +191,7 @@ class CacheTemplateTest {
     }
 
     @Test
-    void 键为空时抛出中文异常() {
+    void blankKeyThrowsChinese() {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> cacheTemplate.get(null, () -> "值"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("缓存键不能为空");

@@ -51,13 +51,13 @@ class DomainEventTest {
 
     @Test
     void loginEventFactories() {
-        LoginEvent success = LoginEvent.success(1L, "alice", LoginType.ADMIN, "10.0.0.1");
+        LoginEvent success = LoginEvent.success(1L, "alice", LoginType.PLATFORM_ADMIN, "10.0.0.1");
         assertTrue(success.isSucceeded());
         assertEquals("alice", success.getUsername());
         assertNull(success.getFailureReason());
         assertNull(success.getUserId() == null ? null : null);
 
-        LoginEvent failure = LoginEvent.failure("alice", LoginType.ADMIN, "10.0.0.1", "密码错误");
+        LoginEvent failure = LoginEvent.failure("alice", LoginType.PLATFORM_ADMIN, "10.0.0.1", "密码错误");
         assertTrue(!failure.isSucceeded());
         assertNull(failure.getUserId());
         assertEquals("密码错误", failure.getFailureReason());
@@ -66,7 +66,7 @@ class DomainEventTest {
 
     @Test
     void otherEventsCarryTheirFields() {
-        LogoutEvent logout = new LogoutEvent(1L, "alice", LoginType.USER, true);
+        LogoutEvent logout = new LogoutEvent(1L, "alice", LoginType.TENANT_USER, true);
         assertTrue(logout.isForced());
         assertEquals("auth", logout.getSource());
 

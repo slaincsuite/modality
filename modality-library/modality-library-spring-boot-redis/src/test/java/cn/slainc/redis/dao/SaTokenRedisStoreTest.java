@@ -66,28 +66,28 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void 字符串写入读取与过期秒数() {
+    void stringWriteReadWithTtl() {
         store.set(key, "令牌内容", 100L);
         assertThat(store.get(key)).isEqualTo("令牌内容");
         assertThat(store.getTimeout(key)).isBetween(90L, 100L);
     }
 
     @Test
-    void 负一表示永不过期() {
+    void minusOneMeansNeverExpire() {
         store.set(key, "长期令牌", SaTokenRedisStore.NEVER_EXPIRE);
         assertThat(store.get(key)).isEqualTo("长期令牌");
         assertThat(store.getTimeout(key)).isEqualTo(SaTokenRedisStore.NEVER_EXPIRE);
     }
 
     @Test
-    void 负二表示不写入() {
+    void minusTwoMeansNoWrite() {
         store.set(key, "不应写入", SaTokenRedisStore.NOT_VALUE_EXPIRE);
         assertThat(store.get(key)).isNull();
         assertThat(store.getTimeout(key)).isEqualTo(SaTokenRedisStore.NOT_VALUE_EXPIRE);
     }
 
     @Test
-    void update只改值并保留原有过期时间() {
+    void updateKeepsOriginalExpiry() {
         store.set(key, "旧值", 120L);
         long before = store.getTimeout(key);
         store.update(key, "新值");
@@ -98,14 +98,14 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void update对不存在的键不写入() {
+    void updateSkipsMissingKey() {
         store.update(key, "新值");
         assertThat(store.get(key)).isNull();
         assertThat(store.getTimeout(key)).isEqualTo(SaTokenRedisStore.NOT_VALUE_EXPIRE);
     }
 
     @Test
-    void updateTimeout只改过期时间不动值() {
+    void updateTimeoutOnlyChangesExpiry() {
         store.set(key, "保持不变", 300L);
         store.updateTimeout(key, 600L);
 
@@ -114,7 +114,7 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void updateTimeout为负一时持久化且不动值() {
+    void updateTimeoutMinusOnePersistsWithoutChange() {
         store.set(key, "转永久", 300L);
         store.updateTimeout(key, SaTokenRedisStore.NEVER_EXPIRE);
 
@@ -123,7 +123,7 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void updateTimeout为零或负二时不改动() {
+    void updateTimeoutZeroOrMinusTwoNoop() {
         store.set(key, "原值", 300L);
         store.updateTimeout(key, 0L);
         store.updateTimeout(key, SaTokenRedisStore.NOT_VALUE_EXPIRE);
@@ -131,14 +131,14 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void 删除不存在的键不报错() {
+    void deletingMissingKeyIsSilent() {
         store.delete(key);
         store.delete(key);
         assertThat(store.get(key)).isNull();
     }
 
     @Test
-    void 对象型读写过期与删除() {
+    void objectReadWriteExpiryAndDelete() {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("会话", "会话-1");
         payload.put("计数", 7);
@@ -150,7 +150,7 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void 对象型update保留过期时间且updateTimeout只改时间() {
+    void objectUpdateKeepsExpiry() {
         store.setObject(key, "对象旧值", 400L);
         long before = store.getObjectTimeout(key);
         store.updateObject(key, "对象新值");
@@ -171,7 +171,7 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void 对象转换到指定类型() {
+    void objectConvertsToTargetType() {
         SaTokenRedisStoreTest.Payload payload = new SaTokenRedisStoreTest.Payload();
         payload.setName("会话数据");
         payload.setCount(3);
@@ -183,7 +183,7 @@ class SaTokenRedisStoreTest {
     }
 
     @Test
-    void searchData做前缀关键词筛选排序与分页() {
+    void searchDataFiltersSortsAndPages() {
         String scope = PREFIX + "search-" + UUID.randomUUID().toString().substring(0, 6) + ":";
         stringRedisTemplate.opsForValue().set(scope + "c", "1");
         stringRedisTemplate.opsForValue().set(scope + "a", "1");

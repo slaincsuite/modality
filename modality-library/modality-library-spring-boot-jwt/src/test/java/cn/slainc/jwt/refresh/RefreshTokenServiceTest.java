@@ -58,7 +58,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void 刷新令牌成功换发新的ACCESS与REFRESH() {
+    void refreshIssuesNewAccessAndRefresh() {
         RefreshFixture fixture = fixture(true);
         String refreshToken = refreshOf(fixture);
         RefreshedTokens refreshed = fixture.refresh().refresh(refreshToken,
@@ -70,7 +70,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void 换发后的新REFRESH可继续换发() {
+    void refreshedTokenCanRefreshAgain() {
         RefreshFixture fixture = fixture(true);
         String firstRefresh = refreshOf(fixture);
         RefreshedTokens first = fixture.refresh().refresh(firstRefresh,
@@ -81,7 +81,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void rotation默认开启旧REFRESH复用被拒绝() {
+    void oldRefreshReuseRejectedByDefaultRotation() {
         RefreshFixture fixture = fixture(true);
         String oldRefresh = refreshOf(fixture);
         fixture.refresh().refresh(oldRefresh, TokenIssuanceSpec.builder("user-1").build());
@@ -97,7 +97,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void ACCESS令牌调用refresh给出中文异常() {
+    void accessTokenRefreshRejectedWithChineseMessage() {
         RefreshFixture fixture = fixture(true);
         String accessToken = fixture.service().issueToken(TokenIssuanceSpec.of("user-1")).tokenValue();
         assertThatThrownBy(() -> fixture.refresh().refresh(accessToken,
@@ -108,7 +108,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void ONE_SHOT令牌调用refresh同样被拒绝() {
+    void oneShotRefreshRejected() {
         RefreshFixture fixture = fixture(true);
         String oneShot = fixture.service().issueToken(TokenIssuanceSpec.builder("user-1")
                 .tokenType(TokenType.ONE_SHOT).build()).tokenValue();
@@ -118,7 +118,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void 关闭rotation后旧REFRESH仍可复用() {
+    void oldRefreshStillReusableWhenRotationOff() {
         RefreshFixture fixture = fixture(false);
         String refreshToken = refreshOf(fixture);
         RefreshedTokens first = fixture.refresh().refresh(refreshToken,
@@ -130,7 +130,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void 换发的ACCESS保留受众与自定义claim() {
+    void refreshedAccessKeepsAudAndClaims() {
         RefreshFixture fixture = fixture(true);
         String refreshToken = refreshOf(fixture);
         RefreshedTokens refreshed = fixture.refresh().refresh(refreshToken,
@@ -141,7 +141,7 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void 过期的REFRESH换发失败() {
+    void expiredRefreshFailsToExchange() {
         RefreshFixture fixture = fixture(true);
         var signed = fixture.service().issueToken(TokenIssuanceSpec.builder("user-1")
                 .tokenType(TokenType.REFRESH)

@@ -12,7 +12,7 @@ public class TestPolicyProvider implements SecurityPolicyProvider {
         if (isLimited(loginId, type)) {
             return List.of();
         }
-        if (type == LoginType.USER) {
+        if (type == LoginType.TENANT_USER) {
             return List.of("order:write", "order:export");
         }
         return List.of();
@@ -23,13 +23,13 @@ public class TestPolicyProvider implements SecurityPolicyProvider {
         if (isLimited(loginId, type)) {
             return List.of();
         }
-        if (type == LoginType.USER) {
+        if (type == LoginType.TENANT_USER) {
             return List.of("operator");
         }
         return List.of();
     }
 
     private boolean isLimited(Object loginId, LoginType type) {
-        return "2999".equals(String.valueOf(loginId)) && type == LoginType.USER;
+        return "2999".equals(String.valueOf(loginId)) && type == LoginType.TENANT_USER;
     }
 }

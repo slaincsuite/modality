@@ -18,8 +18,8 @@ public class PolicyTestApplication {
 
         @GetMapping("/policy-test/login")
         public Result<String> login() {
-            StpKit.user().login(10001L);
-            return Result.ok(StpKit.user().getTokenValue());
+            StpKit.tenantUser().login(10001L);
+            return Result.ok(StpKit.tenantUser().getTokenValue());
         }
 
         @RequirePolicy(action = "modality:policy-test:read", resource = "modality:policy-test/data")

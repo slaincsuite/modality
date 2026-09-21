@@ -17,19 +17,19 @@ public class ProtectedDemoController {
     }
 
     @GetMapping("/demo/user/me")
-    @RequireLogin(LoginType.USER)
+    @RequireLogin(LoginType.TENANT_USER)
     public Result<String> currentUser() {
-        return Result.ok(String.valueOf(loginService.getLoginId(LoginType.USER)));
+        return Result.ok(String.valueOf(loginService.getLoginId(LoginType.TENANT_USER)));
     }
 
     @GetMapping("/demo/admin/panel")
-    @RequireLogin(LoginType.ADMIN)
+    @RequireLogin(LoginType.PLATFORM_ADMIN)
     public Result<String> adminPanel() {
         return Result.ok("管理端面板");
     }
 
     @GetMapping("/demo/client/info")
-    @RequireLogin(LoginType.CLIENT)
+    @RequireLogin(LoginType.APP)
     public Result<String> clientInfo() {
         return Result.ok("客户端信息");
     }

@@ -10,7 +10,7 @@ public class SsoProperties {
 
     private boolean enabled = true;
 
-    private String loginType = "USER";
+    private String loginType = "TENANT_USER";
 
     private Server server = new Server();
 

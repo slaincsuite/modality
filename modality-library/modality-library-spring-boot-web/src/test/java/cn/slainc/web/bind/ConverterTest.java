@@ -46,8 +46,8 @@ class ConverterTest {
     @Test
     void convertsEnumsByNameAndValue() {
         StringToEnumConverterFactory factory = new StringToEnumConverterFactory();
-        assertEquals(LoginType.ADMIN, factory.getConverter(LoginType.class).convert("admin"));
-        assertEquals(LoginType.CLIENT, factory.getConverter(LoginType.class).convert(" CLIENT "));
+        assertEquals(LoginType.PLATFORM_ADMIN, factory.getConverter(LoginType.class).convert("platform_admin"));
+        assertEquals(LoginType.APP, factory.getConverter(LoginType.class).convert(" APP "));
         assertEquals(EnabledStatus.ENABLED, factory.getConverter(EnabledStatus.class).convert("1"));
         assertEquals(EnabledStatus.DISABLED, factory.getConverter(EnabledStatus.class).convert("0"));
         assertNull(factory.getConverter(EnabledStatus.class).convert(""));

@@ -15,16 +15,16 @@ public class CountingPermissionProvider implements SecurityPermissionProvider {
     @Override
     public List<String> getPermissions(Object loginId, LoginType type) {
         permissionCalls.incrementAndGet();
-        if ("2999".equals(String.valueOf(loginId)) && type == LoginType.USER) {
+        if ("2999".equals(String.valueOf(loginId)) && type == LoginType.TENANT_USER) {
             return List.of("guest:ping");
         }
-        if (type == LoginType.ADMIN) {
+        if (type == LoginType.PLATFORM_ADMIN) {
             return List.of("system:user:list", "system:user:kick");
         }
-        if (type == LoginType.USER) {
+        if (type == LoginType.TENANT_USER) {
             return List.of("order:read", "order:write", "user:info");
         }
-        if (type == LoginType.CLIENT) {
+        if (type == LoginType.APP) {
             return List.of("client:sync");
         }
         return List.of();
@@ -33,16 +33,16 @@ public class CountingPermissionProvider implements SecurityPermissionProvider {
     @Override
     public List<String> getRoles(Object loginId, LoginType type) {
         roleCalls.incrementAndGet();
-        if ("2999".equals(String.valueOf(loginId)) && type == LoginType.USER) {
+        if ("2999".equals(String.valueOf(loginId)) && type == LoginType.TENANT_USER) {
             return List.of();
         }
-        if (type == LoginType.ADMIN) {
+        if (type == LoginType.PLATFORM_ADMIN) {
             return List.of("admin");
         }
-        if (type == LoginType.USER) {
+        if (type == LoginType.TENANT_USER) {
             return List.of("user");
         }
-        if (type == LoginType.CLIENT) {
+        if (type == LoginType.APP) {
             return List.of("client");
         }
         return List.of();

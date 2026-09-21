@@ -25,14 +25,14 @@ public class AuthDemoController {
     @PostMapping("/auth/login")
     public Result<LoginResult> login(@RequestHeader(value = "X-Login-Type", required = false) String loginType,
                                      @RequestBody LoginBody body) {
-        LoginType type = LoginType.of(loginType) == null ? LoginType.USER : LoginType.of(loginType);
+        LoginType type = LoginType.of(loginType) == null ? LoginType.TENANT_USER : LoginType.of(loginType);
         return Result.ok(loginService.login(type, new LoginRequest(body.username(), body.password(),
                 body.deviceType(), body.deviceId(), body.clientIp())));
     }
 
     @PostMapping("/auth/logout")
     public Result<Void> logout(@RequestHeader(value = "X-Login-Type", required = false) String loginType) {
-        loginService.logout(LoginType.of(loginType) == null ? LoginType.USER : LoginType.of(loginType));
+        loginService.logout(LoginType.of(loginType) == null ? LoginType.TENANT_USER : LoginType.of(loginType));
         return Result.ok();
     }
 }

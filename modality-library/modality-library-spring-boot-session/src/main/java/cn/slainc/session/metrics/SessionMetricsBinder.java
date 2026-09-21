@@ -26,7 +26,7 @@ public class SessionMetricsBinder implements SessionStatsListener {
 
     public SessionMetricsBinder(MetricsTemplate metrics, SessionStatsService statsService) {
         this.statsService = statsService;
-        for (String type : List.of("ADMIN", "USER", "CLIENT", ALL_TYPE)) {
+        for (String type : List.of("PLATFORM_ADMIN", "TENANT_USER", "APP", ALL_TYPE)) {
             AtomicLong value = new AtomicLong();
             online.put(type, value);
             metrics.gauge(ONLINE, value, AtomicLong::get, "type", type);
@@ -45,7 +45,7 @@ public class SessionMetricsBinder implements SessionStatsListener {
             return;
         }
         long total = 0;
-        for (String type : List.of("ADMIN", "USER", "CLIENT")) {
+        for (String type : List.of("PLATFORM_ADMIN", "TENANT_USER", "APP")) {
             online.computeIfAbsent(type, key -> new AtomicLong()).set(0L);
         }
         for (Map.Entry<String, Long> entry : stats.byType().entrySet()) {

@@ -81,22 +81,46 @@ public class SecurityAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(name = "adminStpLogic")
-    public SecurityStpLogic adminStpLogic() {
-        return new SecurityStpLogic(StpKit.TYPE_ADMIN);
+    @ConditionalOnMissingBean(name = "platformAdminStpLogic")
+    public SecurityStpLogic platformAdminStpLogic() {
+        return new SecurityStpLogic(StpKit.TYPE_PLATFORM_ADMIN);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "platformUserStpLogic")
+    public SecurityStpLogic platformUserStpLogic() {
+        return new SecurityStpLogic(StpKit.TYPE_PLATFORM_USER);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "tenantAdminStpLogic")
+    public SecurityStpLogic tenantAdminStpLogic() {
+        return new SecurityStpLogic(StpKit.TYPE_TENANT_ADMIN);
     }
 
     @Bean
     @Primary
-    @ConditionalOnMissingBean(name = "userStpLogic")
-    public SecurityStpLogic userStpLogic() {
-        return new SecurityStpLogic(StpKit.TYPE_USER);
+    @ConditionalOnMissingBean(name = "tenantUserStpLogic")
+    public SecurityStpLogic tenantUserStpLogic() {
+        return new SecurityStpLogic(StpKit.TYPE_TENANT_USER);
     }
 
     @Bean
-    @ConditionalOnMissingBean(name = "clientStpLogic")
-    public SecurityStpLogic clientStpLogic() {
-        return new SecurityStpLogic(StpKit.TYPE_CLIENT);
+    @ConditionalOnMissingBean(name = "appStpLogic")
+    public SecurityStpLogic appStpLogic() {
+        return new SecurityStpLogic(StpKit.TYPE_APP);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "serviceStpLogic")
+    public SecurityStpLogic serviceStpLogic() {
+        return new SecurityStpLogic(StpKit.TYPE_SERVICE);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "guestStpLogic")
+    public SecurityStpLogic guestStpLogic() {
+        return new SecurityStpLogic(StpKit.TYPE_GUEST);
     }
 
     @Bean

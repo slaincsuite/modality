@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RedisClasspathDiagnosticTest {
 
     @Test
-    void 打印可选依赖与Redis可用性诊断信息() {
+    void classpathDiagnosticsPrinted() {
         String[] classes = {
                 "cn.dev33.satoken.dao.SaTokenDao",
                 "org.springframework.jdbc.core.JdbcTemplate",

@@ -59,7 +59,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void JWKS包含RSA公钥的kty_n_e() {
+    void jwksContainsRsaKtyNAndE() {
         JwksService service = service(manager(JwtAlgorithm.RS256));
         JwkSet jwkSet = JwkSet.parse(service.getJwksJson());
         assertThat(jwkSet.size()).isEqualTo(1);
@@ -72,7 +72,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void JWKS包含EC公钥的crv_x_y() {
+    void jwksContainsEcCrvXAndY() {
         JwksService service = service(manager(JwtAlgorithm.ES256));
         Jwk jwk = JwkSet.parse(service.getJwksJson()).first();
         assertThat(jwk.kty()).isEqualTo("EC");
@@ -81,7 +81,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void 对称密钥绝不出现在JWKS() {
+    void symmetricKeysNeverAppearInJwks() {
         JwksService hsOnly = service(manager(JwtAlgorithm.HS256));
         assertThat(JwkSet.parse(hsOnly.getJwksJson()).isEmpty())
                 .as("仅 HS 密钥时 JWKS 应为空").isTrue();
@@ -93,7 +93,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void JWKS输出可被JwkSet解析且kid对得上() {
+    void jwksParseableByJwkSetWithMatchingKid() {
         JwtKeyManager keyManager = manager(JwtAlgorithm.RS256, JwtAlgorithm.ES256);
         JwkSet parsed = JwkSet.parse(service(keyManager).getJwksJson());
         List<String> kids = parsed.keys().stream().map(Jwk::kid).toList();
@@ -102,7 +102,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void Redis缓存生效相同实例不重复计算() {
+    void redisCacheAvoidsRecomputeOnSameInstance() {
         JwtKeyManager keyManager = manager(JwtAlgorithm.RS256);
         JwksService service = service(keyManager);
         String first = service.getJwksJson();
@@ -113,7 +113,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void Redis缓存跨实例共享() {
+    void redisCacheSharedAcrossInstances() {
         JwtKeyManager keyManager = manager(JwtAlgorithm.RS256);
         JwksService first = service(keyManager);
         String json = first.getJwksJson();
@@ -126,7 +126,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void JWKS缓存写入Redis并带TTL() {
+    void jwksCachedInRedisWithTtl() {
         JwtKeyManager keyManager = manager(JwtAlgorithm.RS256);
         JwksService service = service(keyManager);
         service.getJwksJson();
@@ -136,7 +136,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void 轮换后缓存失效且新旧公钥并存() {
+    void cacheInvalidatedWithBothKeysAfterRotation() {
         JwtKeyManager keyManager = manager(JwtAlgorithm.RS256);
         JwksService service = service(keyManager);
         String oldKid = keyManager.currentKid();
@@ -151,7 +151,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void Redis异常时降级内存直取不阻塞() {
+    void redisOutageDegradesToMemoryWithoutBlocking() {
         JwtKeyManager keyManager = manager(JwtAlgorithm.RS256);
         StringRedisTemplate broken = new StringRedisTemplate() {
             @Override
@@ -173,7 +173,7 @@ class JwksServiceTest {
     }
 
     @Test
-    void JWKS公钥可用于外部验签() {
+    void jwksPublicKeyUsableExternally() {
         JwtKeyManager keyManager = manager(JwtAlgorithm.RS256);
         JwksService service = service(keyManager);
         String token = JwtCodec.encode(JwtAlgorithm.RS256, keyManager.current().signingKey(),

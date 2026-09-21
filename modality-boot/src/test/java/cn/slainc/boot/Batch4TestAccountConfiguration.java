@@ -21,11 +21,11 @@ public class Batch4TestAccountConfiguration {
         String hash = BCryptUtils.hash(PASSWORD);
         LocalDateTime changedAt = LocalDateTime.now().minusDays(1);
         Map<String, PasswordAccount> accounts = new LinkedHashMap<>();
-        accounts.put(key(LoginType.ADMIN, "admin"),
+        accounts.put(key(LoginType.PLATFORM_ADMIN, "admin"),
                 new PasswordAccount(1001L, "admin", hash, true, changedAt, false));
-        accounts.put(key(LoginType.USER, "user"),
+        accounts.put(key(LoginType.TENANT_USER, "user"),
                 new PasswordAccount(2001L, "user", hash, true, changedAt, false));
-        accounts.put(key(LoginType.CLIENT, "client"),
+        accounts.put(key(LoginType.APP, "client"),
                 new PasswordAccount(3001L, "client", hash, true, changedAt, false));
         return new AccountAuthProvider() {
 

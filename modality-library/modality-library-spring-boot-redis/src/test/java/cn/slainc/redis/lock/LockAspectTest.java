@@ -47,19 +47,19 @@ class LockAspectTest {
     }
 
     @Test
-    void 注解方法在加锁后执行并正确释放() {
+    void annotatedMethodExecutesUnderLockAndReleases() {
         assertThat(proxy.fixedKey("参数")).isEqualTo("固定键:参数");
         assertThat(template.isLocked("modality:test:aspect:fixed")).isFalse();
     }
 
     @Test
-    void SpEL键按方法参数解析并互不冲突() {
+    void spelKeysResolvedPerMethodWithoutConflict() {
         assertThat(proxy.spelKey(11L)).isEqualTo("动态键:11");
         assertThat(proxy.spelKey(22L)).isEqualTo("动态键:22");
     }
 
     @Test
-    void 未标注注解的方法不进入切面() {
+    void unannotatedMethodSkippedByAspect() {
         assertThat(proxy.plain()).isEqualTo("无锁");
     }
 

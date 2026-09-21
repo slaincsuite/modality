@@ -74,7 +74,7 @@ class RedisConfigBroadcastAcceptanceTest {
 
     @Test
     @Order(1)
-    void 默认存储与广播频道命名符合约定() {
+    void storeAndBroadcastNamingConventions() {
         assertThat(publisher.service.storeKey()).isEqualTo("modality:config:store");
         assertThat(publisher.service.channel()).isEqualTo("modality:config:broadcast");
         assertThat(publisher.service.nodeId()).isNotEqualTo(subscriber.service.nodeId());
@@ -84,7 +84,7 @@ class RedisConfigBroadcastAcceptanceTest {
 
     @Test
     @Order(2)
-    void 节点A修改配置后节点B的本地缓存被广播失效并读到新值() throws Exception {
+    void nodeAChangeInvalidatesNodeBCache() throws Exception {
         String version = UUID.randomUUID().toString().substring(0, 6);
         String key = KEY + "." + version;
         String group = GROUP + version;

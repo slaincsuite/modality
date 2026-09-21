@@ -12,7 +12,7 @@ public class SecurityProperties {
 
     private String typeHeader = "X-Login-Type";
 
-    private String defaultType = "USER";
+    private String defaultType = "TENANT_USER";
 
     private String deviceIdHeader = "X-Device-Id";
 
@@ -178,34 +178,74 @@ public class SecurityProperties {
 
     public static class Session {
 
-        private long timeoutAdmin = 2592000;
+        private long timeoutPlatformAdmin = 2592000;
 
-        private long timeoutUser = 2592000;
+        private long timeoutPlatformUser = 2592000;
 
-        private long timeoutClient = 2592000;
+        private long timeoutTenantAdmin = 2592000;
 
-        public long getTimeoutAdmin() {
-            return timeoutAdmin;
+        private long timeoutTenantUser = 2592000;
+
+        private long timeoutApp = 2592000;
+
+        private long timeoutService = 2592000;
+
+        private long timeoutGuest = 2592000;
+
+        public long getTimeoutPlatformAdmin() {
+            return timeoutPlatformAdmin;
         }
 
-        public void setTimeoutAdmin(long timeoutAdmin) {
-            this.timeoutAdmin = timeoutAdmin;
+        public void setTimeoutPlatformAdmin(long timeoutPlatformAdmin) {
+            this.timeoutPlatformAdmin = timeoutPlatformAdmin;
         }
 
-        public long getTimeoutUser() {
-            return timeoutUser;
+        public long getTimeoutPlatformUser() {
+            return timeoutPlatformUser;
         }
 
-        public void setTimeoutUser(long timeoutUser) {
-            this.timeoutUser = timeoutUser;
+        public void setTimeoutPlatformUser(long timeoutPlatformUser) {
+            this.timeoutPlatformUser = timeoutPlatformUser;
         }
 
-        public long getTimeoutClient() {
-            return timeoutClient;
+        public long getTimeoutTenantAdmin() {
+            return timeoutTenantAdmin;
         }
 
-        public void setTimeoutClient(long timeoutClient) {
-            this.timeoutClient = timeoutClient;
+        public void setTimeoutTenantAdmin(long timeoutTenantAdmin) {
+            this.timeoutTenantAdmin = timeoutTenantAdmin;
+        }
+
+        public long getTimeoutTenantUser() {
+            return timeoutTenantUser;
+        }
+
+        public void setTimeoutTenantUser(long timeoutTenantUser) {
+            this.timeoutTenantUser = timeoutTenantUser;
+        }
+
+        public long getTimeoutApp() {
+            return timeoutApp;
+        }
+
+        public void setTimeoutApp(long timeoutApp) {
+            this.timeoutApp = timeoutApp;
+        }
+
+        public long getTimeoutService() {
+            return timeoutService;
+        }
+
+        public void setTimeoutService(long timeoutService) {
+            this.timeoutService = timeoutService;
+        }
+
+        public long getTimeoutGuest() {
+            return timeoutGuest;
+        }
+
+        public void setTimeoutGuest(long timeoutGuest) {
+            this.timeoutGuest = timeoutGuest;
         }
     }
 
@@ -405,7 +445,7 @@ public class SecurityProperties {
 
         private Long userId;
 
-        private String type = "USER";
+        private String type = "TENANT_USER";
 
         private boolean enabled = true;
 

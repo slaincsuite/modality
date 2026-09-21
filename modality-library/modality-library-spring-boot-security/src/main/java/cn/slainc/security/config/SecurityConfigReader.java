@@ -94,15 +94,19 @@ public class SecurityConfigReader {
     }
 
     public long sessionTimeout(LoginType type) {
-        return getLong("modality.security.session.timeout-" + type.value().toLowerCase(Locale.ROOT),
+        return getLong("modality.security.session.timeout-" + type.value().toLowerCase(Locale.ROOT).replace('_', '-'),
                 sessionTimeoutOf(type));
     }
 
     private long sessionTimeoutOf(LoginType type) {
         return switch (type) {
-            case ADMIN -> properties.getSession().getTimeoutAdmin();
-            case USER -> properties.getSession().getTimeoutUser();
-            case CLIENT -> properties.getSession().getTimeoutClient();
+            case PLATFORM_ADMIN -> properties.getSession().getTimeoutPlatformAdmin();
+            case PLATFORM_USER -> properties.getSession().getTimeoutPlatformUser();
+            case TENANT_ADMIN -> properties.getSession().getTimeoutTenantAdmin();
+            case TENANT_USER -> properties.getSession().getTimeoutTenantUser();
+            case APP -> properties.getSession().getTimeoutApp();
+            case SERVICE -> properties.getSession().getTimeoutService();
+            case GUEST -> properties.getSession().getTimeoutGuest();
         };
     }
 

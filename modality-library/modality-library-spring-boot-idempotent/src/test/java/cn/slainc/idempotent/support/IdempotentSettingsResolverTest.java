@@ -18,7 +18,7 @@ class IdempotentSettingsResolverTest {
     private static final String METHOD_ID = "cn.slainc.DemoService#submit";
 
     @Test
-    void 没有动态配置服务时使用本地默认值() throws Exception {
+    void localDefaultsUsedWithoutConfigService() throws Exception {
         IdempotentSettingsResolver resolver = resolver(TestObjectProviders.empty(), new IdempotentProperties());
         IdempotentSettings settings = resolver.resolve(context(annotation("plain")));
         assertThat(settings.enabled()).isTrue();
@@ -30,7 +30,7 @@ class IdempotentSettingsResolverTest {
     }
 
     @Test
-    void 动态配置异常时回退本地默认值() throws Exception {
+    void dynamicConfigErrorFallsBackToLocalDefault() throws Exception {
         DynamicConfigService broken = new MapDynamicConfigService() {
             @Override
             public Optional<String> findString(String key) {
@@ -44,7 +44,7 @@ class IdempotentSettingsResolverTest {
     }
 
     @Test
-    void 注解属性优先于动态配置() throws Exception {
+    void annotationAttributesOverrideDynamicConfig() throws Exception {
         MapDynamicConfigService dynamic = new MapDynamicConfigService()
                 .put("modality.idempotent.default-ttl", "9m")
                 .put("modality.idempotent.retry.max-retries", "9")
@@ -59,7 +59,7 @@ class IdempotentSettingsResolverTest {
     }
 
     @Test
-    void 动态配置按方法覆盖优先于全局() throws Exception {
+    void methodLevelConfigOverridesGlobal() throws Exception {
         MapDynamicConfigService dynamic = new MapDynamicConfigService()
                 .put("modality.idempotent.default-ttl", "9m")
                 .put("modality.idempotent.methods." + METHOD_ID + ".default-ttl", "30s")
@@ -73,7 +73,7 @@ class IdempotentSettingsResolverTest {
     }
 
     @Test
-    void 忽略字段来自属性动态配置与注解的合并() throws Exception {
+    void ignoreFieldsMergedFromConfigAndAnnotation() throws Exception {
         IdempotentProperties properties = new IdempotentProperties();
         properties.setIgnoreFields(java.util.List.of("traceId"));
         MapDynamicConfigService dynamic = new MapDynamicConfigService()
@@ -84,7 +84,7 @@ class IdempotentSettingsResolverTest {
     }
 
     @Test
-    void 时间窗口支持多种写法() {
+    void timeWindowSupportsMultipleFormats() {
         assertThat(IdempotentSettingsResolver.parseDuration("30s")).isEqualTo(Duration.ofSeconds(30));
         assertThat(IdempotentSettingsResolver.parseDuration("5m")).isEqualTo(Duration.ofMinutes(5));
         assertThat(IdempotentSettingsResolver.parseDuration("2h")).isEqualTo(Duration.ofHours(2));
@@ -97,7 +97,7 @@ class IdempotentSettingsResolverTest {
     }
 
     @Test
-    void 动态配置写入非法整数时回退默认值() throws Exception {
+    void invalidDynamicConfigFallsBackToDefault() throws Exception {
         MapDynamicConfigService dynamic = new MapDynamicConfigService()
                 .put("modality.idempotent.retry.max-retries", "abc");
         IdempotentSettingsResolver resolver = resolver(TestObjectProviders.of(dynamic), new IdempotentProperties());

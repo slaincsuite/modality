@@ -11,5 +11,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequireLogin {
 
-    LoginType value() default LoginType.USER;
+    LoginType value() default LoginType.TENANT_USER;
 }

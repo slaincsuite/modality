@@ -41,7 +41,7 @@ class RedisDelayQueueTest {
     }
 
     @Test
-    void 到期任务可被原子弹出且未到期任务不可见() {
+    void dueTaskPoppedAtomicallyUndueInvisible() {
         String queue = "modality:test:queue:" + UUID.randomUUID();
         delayQueue.offer(queue, "立即任务", Duration.ZERO);
         delayQueue.offer(queue, "延迟任务", Duration.ofSeconds(30));
@@ -60,7 +60,7 @@ class RedisDelayQueueTest {
     }
 
     @Test
-    void 按内容移除任务与清空队列() {
+    void removeByContentAndClearQueue() {
         String queue = "modality:test:queue:" + UUID.randomUUID();
         delayQueue.offer(queue, "待移除", Duration.ofSeconds(60));
         delayQueue.offer(queue, "保留", Duration.ofSeconds(60));
@@ -72,7 +72,7 @@ class RedisDelayQueueTest {
     }
 
     @Test
-    void 队列名称为空时抛出中文异常() {
+    void blankQueueNameThrowsChinese() {
         assertThatThrownBy(() -> delayQueue.offer("  ", "内容", Duration.ZERO))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("延迟队列的名称不能为空");

@@ -55,7 +55,7 @@ class RedisSaTokenDaoTest {
     }
 
     @Test
-    void 完整实现SaTokenDao的全部抽象方法() {
+    void allSaTokenDaoMethodsImplemented() {
         List<String> missing = new ArrayList<>();
         for (Method method : daoInterface.getMethods()) {
             if (method.isDefault() || method.getDeclaringClass() == Object.class) {
@@ -77,7 +77,7 @@ class RedisSaTokenDaoTest {
     }
 
     @Test
-    void 字符串型读写更新过期与删除() {
+    void stringValueCrud() {
         String key = PREFIX + UUID.randomUUID().toString().replace("-", "");
         invoke("set", new Class<?>[]{String.class, String.class, long.class}, key, "值一", 60L);
         assertThat(invoke("get", new Class<?>[]{String.class}, key)).isEqualTo("值一");
@@ -97,7 +97,7 @@ class RedisSaTokenDaoTest {
     }
 
     @Test
-    void 对象型读写更新过期与删除() {
+    void objectValueCrud() {
         String key = PREFIX + UUID.randomUUID().toString().replace("-", "");
         invoke("setObject", new Class<?>[]{String.class, Object.class, long.class}, key, "对象一", 60L);
         assertThat(invoke("getObject", new Class<?>[]{String.class}, key)).isEqualTo("对象一");
@@ -116,7 +116,7 @@ class RedisSaTokenDaoTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void 检索数据与生命周期回调() {
+    void retrievalAndLifecycleCallbacks() {
         String scope = PREFIX + "search-" + UUID.randomUUID().toString().substring(0, 6) + ":";
         stringRedisTemplate.opsForValue().set(scope + "b", "1");
         stringRedisTemplate.opsForValue().set(scope + "a", "1");

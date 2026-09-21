@@ -19,39 +19,39 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void adminLoginReturnsFullResult() {
-        LoginResult result = login(LoginType.ADMIN, "admin");
+        LoginResult result = login(LoginType.PLATFORM_ADMIN, "admin");
         assertThat(result.tokenName()).isEqualTo("satoken");
         assertThat(result.tokenValue()).isNotBlank();
         assertThat(result.loginId()).isEqualTo(1001L);
-        assertThat(result.loginType()).isEqualTo("ADMIN");
+        assertThat(result.loginType()).isEqualTo("PLATFORM_ADMIN");
         assertThat(result.tokenTimeout()).isGreaterThan(0);
         assertThat(result.mustChangePassword()).isFalse();
     }
 
     @Test
     void userLoginReturnsUserId2001() {
-        LoginResult result = login(LoginType.USER, "user");
+        LoginResult result = login(LoginType.TENANT_USER, "user");
         assertThat(result.loginId()).isEqualTo(2001L);
-        assertThat(result.loginType()).isEqualTo("USER");
+        assertThat(result.loginType()).isEqualTo("TENANT_USER");
     }
 
     @Test
     void clientLoginReturnsUserId3001() {
-        LoginResult result = login(LoginType.CLIENT, "client");
+        LoginResult result = login(LoginType.APP, "client");
         assertThat(result.loginId()).isEqualTo(3001L);
-        assertThat(result.loginType()).isEqualTo("CLIENT");
+        assertThat(result.loginType()).isEqualTo("APP");
     }
 
     @Test
     void tokenTimeoutFollowsPerTypeHotConfig() {
-        config.set("modality.security.session.timeout-user", "3600");
-        LoginResult result = login(LoginType.USER, "user");
+        config.set("modality.security.session.timeout-tenant-user", "3600");
+        LoginResult result = login(LoginType.TENANT_USER, "user");
         assertThat(result.tokenTimeout()).isBetween(3500L, 3600L);
     }
 
     @Test
     void wrongPasswordRejectedWithChineseMessage() {
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"user","password":"wrong-password","deviceType":"","deviceId":""}
                 """);
         assertThat(response.statusCode()).isEqualTo(200);
@@ -61,7 +61,7 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void unknownAccountRejected() {
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"ghost","password":"whatever","deviceType":"","deviceId":""}
                 """);
         assertThat(codeOf(response)).as(response.body()).isEqualTo(400100);
@@ -70,7 +70,7 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void disabledAccountRejected() {
-        var response = post("/auth/login", LoginType.USER, null, """
+        var response = post("/auth/login", LoginType.TENANT_USER, null, """
                 {"username":"frozen-user","password":"Password#123","deviceType":"","deviceId":""}
                 """);
         assertThat(codeOf(response)).isEqualTo(400100);
@@ -79,15 +79,15 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void eachLoginProducesDistinctTokenBecauseShareDisabled() {
-        String first = tokenOf(LoginType.USER, "user");
-        String second = tokenOf(LoginType.USER, "user");
+        String first = tokenOf(LoginType.TENANT_USER, "user");
+        String second = tokenOf(LoginType.TENANT_USER, "user");
         assertThat(first).isNotEqualTo(second);
     }
 
     @Test
     void terminalExtraDataCarriesIpUaLoginTimeDeviceId() {
-        login(LoginType.USER, "user", PASSWORD, "PC", "device-abc", "10.20.30.40");
-        var response = get("/test/admin/online?type=USER&loginId=2001", LoginType.ADMIN, tokenOf(LoginType.ADMIN, "admin"));
+        login(LoginType.TENANT_USER, "user", PASSWORD, "PC", "device-abc", "10.20.30.40");
+        var response = get("/test/admin/online?type=TENANT_USER&loginId=2001", LoginType.PLATFORM_ADMIN, tokenOf(LoginType.PLATFORM_ADMIN, "admin"));
         assertThat(response.statusCode()).isEqualTo(200);
         Map<String, Object> terminal = JsonPath.parse(response.body()).read("$.data[0]");
         assertThat(terminal.get("deviceId")).isEqualTo("device-abc");
@@ -105,24 +105,24 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
         String body = """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":"","clientIp":""}
                 """;
-        post("/auth/login", LoginType.USER, null, body, Map.of("X-Device-Id", "header-device-1"));
-        var response = get("/test/admin/online?type=USER&loginId=2001", LoginType.ADMIN, tokenOf(LoginType.ADMIN, "admin"));
+        post("/auth/login", LoginType.TENANT_USER, null, body, Map.of("X-Device-Id", "header-device-1"));
+        var response = get("/test/admin/online?type=TENANT_USER&loginId=2001", LoginType.PLATFORM_ADMIN, tokenOf(LoginType.PLATFORM_ADMIN, "admin"));
         Map<String, Object> terminal = JsonPath.parse(response.body()).read("$.data[0]");
         assertThat(terminal.get("deviceId")).isEqualTo("header-device-1");
     }
 
     @Test
     void deviceIdFromRequestWinsOverHeader() {
-        login(LoginType.USER, "user", PASSWORD, null, "body-device", null);
-        var response = get("/test/admin/online?type=USER&loginId=2001", LoginType.ADMIN, tokenOf(LoginType.ADMIN, "admin"));
+        login(LoginType.TENANT_USER, "user", PASSWORD, null, "body-device", null);
+        var response = get("/test/admin/online?type=TENANT_USER&loginId=2001", LoginType.PLATFORM_ADMIN, tokenOf(LoginType.PLATFORM_ADMIN, "admin"));
         Map<String, Object> terminal = JsonPath.parse(response.body()).read("$.data[0]");
         assertThat(terminal.get("deviceId")).isEqualTo("body-device");
     }
 
     @Test
     void terminalUsernameStoredInExtraData() {
-        login(LoginType.USER, "user");
-        var response = get("/test/admin/online?type=USER&loginId=2001", LoginType.ADMIN, tokenOf(LoginType.ADMIN, "admin"));
+        login(LoginType.TENANT_USER, "user");
+        var response = get("/test/admin/online?type=TENANT_USER&loginId=2001", LoginType.PLATFORM_ADMIN, tokenOf(LoginType.PLATFORM_ADMIN, "admin"));
         Map<String, Object> terminal = JsonPath.parse(response.body()).read("$.data[0]");
         @SuppressWarnings("unchecked")
         Map<String, Object> extraData = (Map<String, Object>) terminal.get("extraData");
@@ -134,8 +134,8 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
         String body = """
                 {"username":"user","password":"Password#123","deviceType":"","deviceId":"","clientIp":""}
                 """;
-        post("/auth/login", LoginType.USER, null, body, Map.of("X-Tenant-Id", "88"));
-        SaLoginParameter parameter = listener.lastParameter("USER", 2001L);
+        post("/auth/login", LoginType.TENANT_USER, null, body, Map.of("X-Tenant-Id", "88"));
+        SaLoginParameter parameter = listener.lastParameter("TENANT_USER", 2001L);
         assertThat(parameter).isNotNull();
         assertThat(parameter.getExtra("tenantId")).isEqualTo(88L);
         assertThat(parameter.getExtra("username")).isEqualTo("user");
@@ -143,54 +143,54 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
 
     @Test
     void tenantIdSkippedWhenTenantContextAbsent() {
-        login(LoginType.CLIENT, "client");
-        SaLoginParameter parameter = listener.lastParameter("CLIENT", 3001L);
+        login(LoginType.APP, "client");
+        SaLoginParameter parameter = listener.lastParameter("APP", 3001L);
         assertThat(parameter.getExtra("tenantId")).isNull();
     }
 
     @Test
     void logoutInvalidatesCurrentToken() {
-        LoginResult result = login(LoginType.USER, "user");
-        post("/auth/logout", LoginType.USER, result.tokenValue(), null);
-        var response = get("/test/user/me", LoginType.USER, result.tokenValue());
+        LoginResult result = login(LoginType.TENANT_USER, "user");
+        post("/auth/logout", LoginType.TENANT_USER, result.tokenValue(), null);
+        var response = get("/test/user/me", LoginType.TENANT_USER, result.tokenValue());
         assertThat(response.statusCode()).isEqualTo(401);
         assertThat(codeOf(response)).isEqualTo(401000);
     }
 
     @Test
     void logoutByLoginIdKillsAllTerminals() {
-        LoginResult first = login(LoginType.USER, "user");
-        LoginResult second = login(LoginType.USER, "user");
-        var adminToken = tokenOf(LoginType.ADMIN, "admin");
-        var response = post("/test/admin/kick?type=USER&loginId=2001&reason=注销测试", LoginType.ADMIN,
+        LoginResult first = login(LoginType.TENANT_USER, "user");
+        LoginResult second = login(LoginType.TENANT_USER, "user");
+        var adminToken = tokenOf(LoginType.PLATFORM_ADMIN, "admin");
+        var response = post("/test/admin/kick?type=TENANT_USER&loginId=2001&reason=注销测试", LoginType.PLATFORM_ADMIN,
                 adminToken, null);
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(get("/test/user/me", LoginType.USER, first.tokenValue()).statusCode()).isEqualTo(401);
-        assertThat(get("/test/user/me", LoginType.USER, second.tokenValue()).statusCode()).isEqualTo(401);
+        assertThat(get("/test/user/me", LoginType.TENANT_USER, first.tokenValue()).statusCode()).isEqualTo(401);
+        assertThat(get("/test/user/me", LoginType.TENANT_USER, second.tokenValue()).statusCode()).isEqualTo(401);
     }
 
     @Test
     void checkLoginAndGetLoginIdWorkViaService() {
-        LoginResult result = login(LoginType.USER, "user");
-        Object data = JsonPath.parse(get("/test/user/me", LoginType.USER, result.tokenValue()).body()).read("$.data");
+        LoginResult result = login(LoginType.TENANT_USER, "user");
+        Object data = JsonPath.parse(get("/test/user/me", LoginType.TENANT_USER, result.tokenValue()).body()).read("$.data");
         assertThat(Long.parseLong(String.valueOf(data))).isEqualTo(2001L);
     }
 
     @Test
     void lockCountersResetAfterSuccessfulLogin() {
-        post("/test/lock/fail?type=USER&loginId=2001", null, null, null);
-        post("/test/lock/fail?type=USER&loginId=2001", null, null, null);
-        LoginResult result = login(LoginType.USER, "user");
-        var response = get("/test/lock/state?type=USER&loginId=2001", LoginType.USER, result.tokenValue());
+        post("/test/lock/fail?type=TENANT_USER&loginId=2001", null, null, null);
+        post("/test/lock/fail?type=TENANT_USER&loginId=2001", null, null, null);
+        LoginResult result = login(LoginType.TENANT_USER, "user");
+        var response = get("/test/lock/state?type=TENANT_USER&loginId=2001", LoginType.TENANT_USER, result.tokenValue());
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).contains("\"data\":false");
-        assertThat(redis.opsForValue().get(SecurityKeys.lockFailKey("USER", 2001L))).isNull();
+        assertThat(redis.opsForValue().get(SecurityKeys.lockFailKey("TENANT_USER", 2001L))).isNull();
     }
 
     @Test
     void unknownLoginTypeInRequestHeaderFallsBackToUserSystem() {
-        LoginResult userResult = login(LoginType.USER, "user");
-        var response = get("/test/user/me", null, userResult.tokenValue(), Map.of("X-Login-Type", "GUEST"));
+        LoginResult userResult = login(LoginType.TENANT_USER, "user");
+        var response = get("/test/user/me", null, userResult.tokenValue(), Map.of("X-Login-Type", "bogus"));
         assertThat(response.statusCode()).isEqualTo(200);
     }
 

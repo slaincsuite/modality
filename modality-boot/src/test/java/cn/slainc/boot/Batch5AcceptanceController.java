@@ -50,7 +50,7 @@ public class Batch5AcceptanceController {
     @NoWrap
     @GetMapping("/sso/isLogin")
     public Object isLogin() {
-        return StpKit.client().isLogin();
+        return StpKit.app().isLogin();
     }
 
     @SaCheckApiKey(scope = "order:read")

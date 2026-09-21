@@ -17,13 +17,14 @@ public class TestAccountStore implements AccountAuthProvider, AccountPasswordUpd
     private final Map<String, MutableAccount> byUsername = new ConcurrentHashMap<>();
 
     public TestAccountStore() {
-        register("admin", 1001L, LoginType.ADMIN, true, false, null);
-        register("user", 2001L, LoginType.USER, true, false, null);
-        register("client", 3001L, LoginType.CLIENT, true, false, null);
-        register("frozen-user", 2002L, LoginType.USER, false, false, null);
-        register("must-change", 2003L, LoginType.USER, true, true, null);
-        register("expired-pwd", 2004L, LoginType.USER, true, false, LocalDateTime.now().minusDays(100));
-        register("fresh-pwd", 2005L, LoginType.USER, true, false, LocalDateTime.now().minusDays(1));
+        register("admin", 1001L, LoginType.PLATFORM_ADMIN, true, false, null);
+        register("user", 2001L, LoginType.TENANT_USER, true, false, null);
+        register("client", 3001L, LoginType.APP, true, false, null);
+        register("service", 3101L, LoginType.SERVICE, true, false, null);
+        register("frozen-user", 2002L, LoginType.TENANT_USER, false, false, null);
+        register("must-change", 2003L, LoginType.TENANT_USER, true, true, null);
+        register("expired-pwd", 2004L, LoginType.TENANT_USER, true, false, LocalDateTime.now().minusDays(100));
+        register("fresh-pwd", 2005L, LoginType.TENANT_USER, true, false, LocalDateTime.now().minusDays(1));
     }
 
     public void register(String username, Long userId, LoginType type, boolean enabled,

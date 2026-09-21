@@ -38,7 +38,7 @@ class RedisStructureTest {
     }
 
     @Test
-    void 位图置位读取计数与位运算() {
+    void bitmapSetGetCountAndOps() {
         RedisBitMap bitMap = new RedisBitMap(redisTemplate);
         String key = "modality:test:bitmap:" + UUID.randomUUID();
         assertThat(bitMap.setBit(key, 7L, true)).isFalse();
@@ -60,7 +60,7 @@ class RedisStructureTest {
     }
 
     @Test
-    void 基数统计与合并() {
+    void hyperLogLogCountAndMerge() {
         RedisHyperLogLog hyperLogLog = new RedisHyperLogLog(redisTemplate);
         String first = "modality:test:hll:" + UUID.randomUUID();
         String second = "modality:test:hll:" + UUID.randomUUID();
@@ -78,7 +78,7 @@ class RedisStructureTest {
     }
 
     @Test
-    void 地理坐标写入距离与半径检索() {
+    void geoAddRadiusSearch() {
         RedisGeo geo = new RedisGeo(redisTemplate);
         String key = "modality:test:geo:" + UUID.randomUUID();
         geo.add(key, 116.397128d, 39.916527d, "北京");
@@ -98,7 +98,7 @@ class RedisStructureTest {
     }
 
     @Test
-    void 管道批量执行返回按顺序的结果() {
+    void pipelinedResultsInOrder() {
         RedisPipeline pipeline = new RedisPipeline(redisTemplate);
         String scope = "modality:test:pipeline:" + UUID.randomUUID() + ":";
         List<Object> results = pipeline.execute(operations -> {
@@ -114,7 +114,7 @@ class RedisStructureTest {
     }
 
     @Test
-    void Lua脚本加载缓存与执行() {
+    void luaScriptsLoadedAndExecuted() {
         RedisScriptExecutor executor = new RedisScriptExecutor(stringRedisTemplate);
         String scope = "modality:test:script:" + UUID.randomUUID() + ":";
         String script = "redis.call('set', KEYS[1], ARGV[1]) return redis.call('get', KEYS[1])";

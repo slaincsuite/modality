@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class InMemoryDynamicConfigRepositoryTest {
 
     @Test
-    void 保存查询分组与逻辑删除() {
+    void saveQueryGroupAndLogicalDelete() {
         InMemoryDynamicConfigRepository repository = new InMemoryDynamicConfigRepository();
         repository.save(config("a.b", "1", "组一"));
         repository.save(config("a.c", "2", "组一"));
@@ -28,7 +28,7 @@ class InMemoryDynamicConfigRepositoryTest {
     }
 
     @Test
-    void 空键与分组为空的处理() {
+    void blankKeyAndGroupHandled() {
         InMemoryDynamicConfigRepository repository = new InMemoryDynamicConfigRepository();
         assertThat(repository.findByKey(null)).isEmpty();
         repository.delete(null);
@@ -40,7 +40,7 @@ class InMemoryDynamicConfigRepositoryTest {
     }
 
     @Test
-    void 保存时补齐审计字段() {
+    void auditFieldsFilledOnSave() {
         InMemoryDynamicConfigRepository repository = new InMemoryDynamicConfigRepository();
         DynamicConfig config = config("x.y", "值", "组");
         repository.save(config);
@@ -54,7 +54,7 @@ class InMemoryDynamicConfigRepositoryTest {
     }
 
     @Test
-    void 清空仓储() {
+    void clearRepository() {
         InMemoryDynamicConfigRepository repository = new InMemoryDynamicConfigRepository();
         repository.save(config("a", "1", "组"));
         repository.clear();

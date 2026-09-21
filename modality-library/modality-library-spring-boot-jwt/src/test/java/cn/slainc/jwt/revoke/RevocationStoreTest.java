@@ -35,7 +35,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void 内存存储吊销后判定已吊销() {
+    void memoryStoreMarksRevoked() {
         MemoryRevocationStore store = new MemoryRevocationStore();
         String jti = UUID.randomUUID().toString();
         assertThat(store.isRevoked(jti)).isFalse();
@@ -45,7 +45,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void 内存存储过期记录自动清理() throws Exception {
+    void memoryStoreAutoCleansExpired() throws Exception {
         MemoryRevocationStore store = new MemoryRevocationStore();
         String jti = UUID.randomUUID().toString();
         store.revoke(jti, Instant.now().plusMillis(300));
@@ -55,14 +55,14 @@ class RevocationStoreTest {
     }
 
     @Test
-    void 内存存储空jti查询返回未吊销() {
+    void memoryStoreBlankJtiQueriesNotRevoked() {
         MemoryRevocationStore store = new MemoryRevocationStore();
         assertThat(store.isRevoked(null)).isFalse();
         assertThat(store.isRevoked("")).isFalse();
     }
 
     @Test
-    void 内存存储空jti吊销抛中文异常() {
+    void memoryStoreBlankJtiThrowsChinese() {
         MemoryRevocationStore store = new MemoryRevocationStore();
         assertThatThrownBy(() -> store.revoke(null, Instant.now().plusSeconds(60)))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -70,7 +70,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void Redis存储吊销后判定已吊销() {
+    void redisStoreMarksRevoked() {
         RedisRevocationStore store = new RedisRevocationStore(redis);
         String jti = UUID.randomUUID().toString();
         assertThat(store.isRevoked(jti)).isFalse();
@@ -80,7 +80,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void Redis存储TTL等于距过期的剩余时间() {
+    void redisStoreTtlEqualsRemainingLifetime() {
         RedisRevocationStore store = new RedisRevocationStore(redis);
         String jti = UUID.randomUUID().toString();
         store.revoke(jti, Instant.now().plusSeconds(30));
@@ -90,7 +90,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void Redis存储键名使用统一前缀() {
+    void redisStoreUsesUnifiedPrefix() {
         RedisRevocationStore store = new RedisRevocationStore(redis);
         String jti = UUID.randomUUID().toString();
         store.revoke(jti, Instant.now().plusSeconds(60));
@@ -100,7 +100,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void Redis存储过期后自动失效() throws Exception {
+    void redisStoreExpiresAutomatically() throws Exception {
         RedisRevocationStore store = new RedisRevocationStore(redis);
         String jti = UUID.randomUUID().toString();
         store.revoke(jti, Instant.now().plusMillis(300));
@@ -112,7 +112,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void Redis存储空jti不产生键() {
+    void redisStoreSkipsBlankJti() {
         RedisRevocationStore store = new RedisRevocationStore(redis);
         assertThat(store.isRevoked(null)).isFalse();
         assertThatThrownBy(() -> store.revoke("", Instant.now().plusSeconds(60)))
@@ -120,7 +120,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void 服务层按令牌吊销解析jti入库() {
+    void revocationParsedByJti() {
         RevocationService service = new RevocationService(new MemoryRevocationStore());
         String header = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
                 "{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes());
@@ -132,7 +132,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void 服务层对缺少jti的令牌给出中文异常() {
+    void missingJtiThrowsChinese() {
         RevocationService service = new RevocationService(new MemoryRevocationStore());
         String header = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
                 "{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes());
@@ -144,7 +144,7 @@ class RevocationStoreTest {
     }
 
     @Test
-    void 服务层查询异常时按未吊销放行() {
+    void storeErrorTreatedAsNotRevoked() {
         RevocationStore broken = new RevocationStore() {
             @Override
             public void revoke(String jti, Instant expiresAt) {

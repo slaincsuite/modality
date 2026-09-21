@@ -38,7 +38,7 @@ class RedisMonitorTest {
     }
 
     @Test
-    void 分节读取INFO信息() {
+    void sectionedInfoRead() {
         Map<String, String> memory = monitor.memoryInfo();
         assertThat(memory).containsKey("used_memory");
 
@@ -53,7 +53,7 @@ class RedisMonitorTest {
     }
 
     @Test
-    void 指标快照包含命中率连接数与QPS() {
+    void snapshotContainsHitRateConnAndQps() {
         stringRedisTemplate.opsForValue().set("modality:test:monitor:key", "值");
         stringRedisTemplate.opsForValue().get("modality:test:monitor:key");
         stringRedisTemplate.delete("modality:test:monitor:key");
@@ -70,7 +70,7 @@ class RedisMonitorTest {
     }
 
     @Test
-    void 慢查询日志与阈值配置可读() {
+    void slowlogAndThresholdReadable() {
         assertThat(monitor.slowlog(10)).isNotNull();
         assertThat(monitor.dbSize()).isPositive();
         assertThat(monitor.slowlogThresholdMicros()).isEqualTo(100000L);
@@ -79,7 +79,7 @@ class RedisMonitorTest {
     }
 
     @Test
-    void 快照对象字段可单独访问() {
+    void snapshotFieldsIndividuallyAccessible() {
         RedisMetricsSnapshot snapshot = new RedisMetricsSnapshot(8L, 2L, 1L, 0L, 3L, 0L, 1024L, 100L, 5L, 9L,
                 1_700_000_000_000L);
         assertThat(snapshot.getHitRate()).isEqualTo(0.8d);

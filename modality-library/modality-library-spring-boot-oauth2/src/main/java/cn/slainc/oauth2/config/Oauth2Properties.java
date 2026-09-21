@@ -11,7 +11,7 @@ public class Oauth2Properties {
 
     private boolean enabled = true;
 
-    private String loginType = "USER";
+    private String loginType = "TENANT_USER";
 
     private long codeTimeoutSeconds = 300;
 

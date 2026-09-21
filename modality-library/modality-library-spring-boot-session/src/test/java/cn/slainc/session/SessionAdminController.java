@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequireLogin(LoginType.ADMIN)
+@RequireLogin(LoginType.PLATFORM_ADMIN)
 public class SessionAdminController {
 
     private final OnlineUserService onlineUserService;

@@ -49,7 +49,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void 轮换后新令牌使用新kid() {
+    void newTokenUsesNewKidAfterRotation() {
         JwtKeyManager keyManager = manager();
         JwtTokenService tokenService = service(keyManager);
         SignedToken before = tokenService.issueToken(TokenIssuanceSpec.of("user-1"));
@@ -62,7 +62,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void 轮换后旧令牌仍验签通过() {
+    void oldTokenStillVerifiesAfterRotation() {
         JwtKeyManager keyManager = manager();
         JwtTokenService tokenService = service(keyManager);
         JwtVerifier verifier = verifier(keyManager);
@@ -74,7 +74,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void 轮换后JWKS同时包含新旧两把公钥() {
+    void jwksContainsBothKeysAfterRotation() {
         JwtKeyManager keyManager = manager();
         JwksService jwksService = new JwksService(keyManager,
                 new JwtSettings(new JwtProperties(), new MapDynamicConfigService()), null);
@@ -92,7 +92,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void 多次轮换保留上限内的旧kid均可验签() {
+    void multipleRotationsKeepOldKidsVerifiable() {
         JwtKeyManager keyManager = manager();
         JwtTokenService tokenService = service(keyManager);
         JwtVerifier verifier = verifier(keyManager);
@@ -110,7 +110,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void 调度器按周期自动轮换() throws Exception {
+    void schedulerRotatesPeriodically() throws Exception {
         JwtKeyManager keyManager = manager();
         String initialKid = keyManager.currentKid();
         JwtKeyRotationScheduler scheduler = new JwtKeyRotationScheduler(keyManager, Duration.ofMillis(120));
@@ -127,7 +127,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void 调度器首次轮换延迟一个周期() throws Exception {
+    void schedulerDelaysFirstRotation() throws Exception {
         JwtKeyManager keyManager = manager();
         String initialKid = keyManager.currentKid();
         JwtKeyRotationScheduler scheduler = new JwtKeyRotationScheduler(keyManager, Duration.ofMillis(300));
@@ -147,7 +147,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void 轮换触发JWKS缓存失效监听() {
+    void rotationTriggersJwksCacheInvalidation() {
         JwtKeyManager keyManager = manager();
         AtomicInteger rotations = new AtomicInteger();
         keyManager.onRotation(rotations::incrementAndGet);
@@ -157,7 +157,7 @@ class JwtKeyRotationTest {
     }
 
     @Test
-    void HS密钥自动轮换后JWKS保持为空() {
+    void hsKeyRotationKeepsJwksEmpty() {
         JwtProperties properties = new JwtProperties();
         JwtProperties.KeySpec spec = new JwtProperties.KeySpec();
         spec.setKid("hs-rotation");
