@@ -16,5 +16,7 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-idempotent')
     api project(':modality-library:modality-library-spring-boot-session')
     api project(':modality-library:modality-library-spring-boot-sensitive')
+    api project(':modality-library:modality-library-spring-boot-policy')
+    testRuntimeOnly libs.h2
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
 }
