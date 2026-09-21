@@ -19,6 +19,53 @@ class MultiAccountIsolationAcceptanceTest extends SecurityAcceptanceTestBase {
     }
 
     @Test
+    void sixLoginableSystemsEachCarryOwnIdentity() {
+        LoginResult platformAdmin = login(LoginType.PLATFORM_ADMIN, "admin");
+        LoginResult platformUser = login(LoginType.PLATFORM_USER, "platform-user");
+        LoginResult tenantAdmin = login(LoginType.TENANT_ADMIN, "tenant-admin");
+        LoginResult tenantUser = login(LoginType.TENANT_USER, "user");
+        LoginResult app = login(LoginType.APP, "client");
+        LoginResult service = login(LoginType.SERVICE, "service");
+        assertThat(platformAdmin.loginType()).isEqualTo("PLATFORM_ADMIN");
+        assertThat(platformAdmin.loginId()).isEqualTo(1001L);
+        assertThat(platformUser.loginType()).isEqualTo("PLATFORM_USER");
+        assertThat(platformUser.loginId()).isEqualTo(1101L);
+        assertThat(tenantAdmin.loginType()).isEqualTo("TENANT_ADMIN");
+        assertThat(tenantAdmin.loginId()).isEqualTo(2101L);
+        assertThat(tenantUser.loginType()).isEqualTo("TENANT_USER");
+        assertThat(app.loginType()).isEqualTo("APP");
+        assertThat(service.loginType()).isEqualTo("SERVICE");
+        assertThat(service.loginId()).isEqualTo(3101L);
+    }
+
+    @Test
+    void tokensFromOtherFiveSystemsCannotAccessTenantUserEndpoint() {
+        assertThat(get("/test/user/me", LoginType.TENANT_USER,
+                tokenOf(LoginType.TENANT_USER, "user")).statusCode()).isEqualTo(200);
+        assertThat(get("/test/user/me", LoginType.TENANT_USER,
+                tokenOf(LoginType.PLATFORM_ADMIN, "admin")).statusCode()).isEqualTo(401);
+        assertThat(get("/test/user/me", LoginType.TENANT_USER,
+                tokenOf(LoginType.PLATFORM_USER, "platform-user")).statusCode()).isEqualTo(401);
+        assertThat(get("/test/user/me", LoginType.TENANT_USER,
+                tokenOf(LoginType.TENANT_ADMIN, "tenant-admin")).statusCode()).isEqualTo(401);
+        assertThat(get("/test/user/me", LoginType.TENANT_USER,
+                tokenOf(LoginType.APP, "client")).statusCode()).isEqualTo(401);
+        assertThat(get("/test/user/me", LoginType.TENANT_USER,
+                tokenOf(LoginType.SERVICE, "service")).statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void guestSystemRegisteredButNeverIssuesAccount() {
+        assertThat(StpKit.guest().getLoginType()).isEqualTo("GUEST");
+        assertThat(accounts.findAccount("anyone", LoginType.GUEST)).isNull();
+        var response = post("/auth/login", LoginType.GUEST, null, """
+                {"username":"anyone","password":"Password#123","deviceType":"","deviceId":""}
+                """);
+        assertThat(response.body()).contains("账号不存在或密码错误");
+        assertThat(response.body()).doesNotContain("tokenValue");
+    }
+
+    @Test
     void userTokenCannotAccessAdminEndpoint() {
         String userToken = tokenOf(LoginType.TENANT_USER, "user");
         var response = get("/test/admin/panel", LoginType.PLATFORM_ADMIN, userToken);

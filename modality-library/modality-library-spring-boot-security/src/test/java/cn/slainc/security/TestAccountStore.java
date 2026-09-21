@@ -18,6 +18,8 @@ public class TestAccountStore implements AccountAuthProvider, AccountPasswordUpd
 
     public TestAccountStore() {
         register("admin", 1001L, LoginType.PLATFORM_ADMIN, true, false, null);
+        register("platform-user", 1101L, LoginType.PLATFORM_USER, true, false, null);
+        register("tenant-admin", 2101L, LoginType.TENANT_ADMIN, true, false, null);
         register("user", 2001L, LoginType.TENANT_USER, true, false, null);
         register("client", 3001L, LoginType.APP, true, false, null);
         register("service", 3101L, LoginType.SERVICE, true, false, null);
