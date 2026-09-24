@@ -2,19 +2,22 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality modules authentication'
+description = '认证中心'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-captcha')
     api project(':modality-library:modality-library-spring-boot-jwt')
+    api project(':modality-library:modality-library-spring-boot-session')
     api project(':modality-library:modality-library-spring-boot-oauth2')
     api project(':modality-library:modality-library-spring-boot-sso')
-    api project(':modality-library:modality-library-spring-boot-captcha')
-    api project(':modality-library:modality-library-spring-boot-session')
+    api project(':modality-library:modality-library-spring-boot-thirdauth')
     api project(':modality-library:modality-library-spring-boot-redis')
     api project(':modality-library:modality-library-spring-boot-sensitive')
-    api project(':modality-library:modality-library-spring-boot-logger')
-    api project(':modality-library:modality-library-spring-boot-policy')
+    api project(':modality-modules:modality-modules-upms')
+    implementation project(':modality-library:modality-library-spring-boot-monitor')
+    implementation libs.zxing.core
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    testRuntimeOnly libs.h2
 }

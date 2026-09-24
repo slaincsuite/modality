@@ -54,6 +54,7 @@ def thirdPartyAliases = [
         'ipaddress',
         'owasp-html-sanitizer',
         'justauth',
+        'zxing-core',
 ]
 
 dependencies {
