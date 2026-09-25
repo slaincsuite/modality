@@ -1,0 +1,62 @@
+CREATE TABLE IF NOT EXISTS t_audit_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    audit_id VARCHAR(64),
+    category VARCHAR(32) NOT NULL,
+    operation VARCHAR(32) NOT NULL,
+    level VARCHAR(16) NOT NULL,
+    module VARCHAR(64),
+    description VARCHAR(500),
+    success TINYINT NOT NULL DEFAULT 1,
+    user_id BIGINT,
+    login_id VARCHAR(64),
+    username VARCHAR(64),
+    login_type VARCHAR(32),
+    tenant_id BIGINT,
+    client_ip VARCHAR(64),
+    user_agent VARCHAR(256),
+    device_id VARCHAR(128),
+    request_path VARCHAR(256),
+    http_method VARCHAR(16),
+    target VARCHAR(256),
+    params TEXT,
+    result TEXT,
+    before_snapshot TEXT,
+    after_snapshot TEXT,
+    exception_class VARCHAR(256),
+    exception_message VARCHAR(1000),
+    cost_millis BIGINT NOT NULL DEFAULT 0,
+    trace_id VARCHAR(64),
+    create_time BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS t_audit_api_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    trace_id VARCHAR(64),
+    login_id VARCHAR(64),
+    login_type VARCHAR(32),
+    tenant_id BIGINT,
+    client_ip VARCHAR(64),
+    user_agent VARCHAR(256),
+    http_method VARCHAR(16),
+    request_path VARCHAR(256),
+    status_code INT,
+    cost_millis BIGINT NOT NULL DEFAULT 0,
+    slow TINYINT NOT NULL DEFAULT 0,
+    error TINYINT NOT NULL DEFAULT 0,
+    create_time BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS t_audit_policy_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    login_id VARCHAR(64),
+    login_type VARCHAR(32),
+    tenant_id BIGINT,
+    action VARCHAR(128),
+    resource VARCHAR(256),
+    decision VARCHAR(16) NOT NULL,
+    matched_statements TEXT,
+    reason VARCHAR(500),
+    client_ip VARCHAR(64),
+    request_path VARCHAR(256),
+    create_time BIGINT NOT NULL
+);
