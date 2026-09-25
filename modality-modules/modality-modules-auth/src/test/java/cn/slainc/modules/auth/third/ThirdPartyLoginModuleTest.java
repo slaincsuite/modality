@@ -1,0 +1,192 @@
+package cn.slainc.modules.auth.third;
+
+import cn.slainc.core.context.TenantContext;
+import cn.slainc.core.enums.LoginType;
+import cn.slainc.modules.auth.AuthModuleApplication;
+import cn.slainc.modules.auth.FakeWechatProvider;
+import cn.slainc.modules.upms.entity.UserRecord;
+import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.thirdauth.ThirdPartyPlatform;
+import cn.slainc.thirdauth.ThirdPartyUser;
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(classes = AuthModuleApplication.class,
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class ThirdPartyLoginModuleTest {
+
+    private static final String PASSWORD = "Password#123";
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private FakeWechatProvider fakeProvider;
+
+    @Autowired
+    private StringRedisTemplate redis;
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @LocalServerPort
+    private int port;
+
+    private HttpClient http;
+
+    @BeforeEach
+    void setUp() {
+        TenantContext.set(1L);
+        for (String prefix : new String[]{"satoken:", "modality:security:", "modality:auth:", "modality:thirdauth:"}) {
+            var keys = redis.keys(prefix + "*");
+            if (keys != null && !keys.isEmpty()) {
+                redis.delete(keys);
+            }
+        }
+        for (String table : new String[]{"t_third_account_binding", "t_user_login_record", "t_user"}) {
+            try {
+                jdbc.execute("DELETE FROM " + table);
+            } catch (org.springframework.dao.DataAccessException ignored) {
+                // thirdauth 绑定表懒建，首个用例前可能不存在
+            }
+        }
+        http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    }
+
+    private UserRecord createUser(String username) {
+        return userService.create(username, username, PASSWORD, null, null, null, LoginType.TENANT_USER, 1L,
+                "module-test");
+    }
+
+    @Test
+    void unboundCallbackIssuesBindTicketThenBindEstablishesSession() throws Exception {
+        UserRecord user = createUser("binduser");
+        fakeProvider.nextUser(userOf("open-100", "union-100"));
+
+        HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null);
+        assertThat(authorize.statusCode()).as(authorize.body()).isEqualTo(200);
+        String state = JsonPath.<String>read(authorize.body(), "$.data.state");
+        assertThat(JsonPath.<String>read(authorize.body(), "$.data.authorizeUrl")).contains(state);
+
+        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=auth-code-1&state=" + state, null);
+        assertThat(callback.statusCode()).as(callback.body()).isEqualTo(200);
+        assertThat((Boolean) JsonPath.<Boolean>read(callback.body(), "$.data.needBind")).isTrue();
+        String bindTicket = JsonPath.<String>read(callback.body(), "$.data.bindTicketId");
+        assertThat(bindTicket).isNotBlank();
+        assertThat(callback.body()).contains("open-100");
+
+        HttpResponse<String> bind = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"binduser\",\"password\":\"" + PASSWORD
+                        + "\"}", null);
+        assertThat(bind.statusCode()).as(bind.body()).isEqualTo(200);
+        String token = JsonPath.<String>read(bind.body(), "$.data.tokenValue");
+        assertThat(token).isNotBlank();
+
+        HttpResponse<String> me = get("/auth/test/me", token);
+        assertThat(me.statusCode()).as(me.body()).isEqualTo(200);
+        assertThat(me.body()).contains(String.valueOf(user.getId()));
+
+        HttpResponse<String> bindings = get("/auth/third/bindings", token);
+        assertThat(bindings.statusCode()).as(bindings.body()).isEqualTo(200);
+        assertThat(bindings.body()).contains("open-100");
+
+        HttpResponse<String> unbind = http.send(HttpRequest.newBuilder(
+                                URI.create("http://127.0.0.1:" + port + "/auth/third/bindings/wechat/open-100"))
+                        .header("satoken", token)
+                        .DELETE()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertThat(unbind.statusCode()).as(unbind.body()).isEqualTo(200);
+    }
+
+    @Test
+    void boundAccountLogsInDirectlyOnCallback() throws Exception {
+        createUser("bounduser");
+        fakeProvider.nextUser(userOf("open-200", "union-200"));
+        String state = stateOf();
+
+        HttpResponse<String> first = get("/auth/third/callback/wechat?code=code-a&state=" + state, null);
+        assertThat(first.statusCode()).as(first.body()).isEqualTo(200);
+        String bindTicket = JsonPath.<String>read(first.body(), "$.data.bindTicketId");
+        HttpResponse<String> bind = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"bounduser\",\"password\":\"" + PASSWORD
+                        + "\"}", null);
+        assertThat(bind.statusCode()).as(bind.body()).isEqualTo(200);
+
+        String secondState = stateOf();
+        HttpResponse<String> second = get("/auth/third/callback/wechat?code=code-b&state=" + secondState, null);
+        assertThat(second.statusCode()).as(second.body()).isEqualTo(200);
+        assertThat((Boolean) JsonPath.<Boolean>read(second.body(), "$.data.needBind")).isFalse();
+        String token = JsonPath.<String>read(second.body(), "$.data.login.tokenValue");
+        assertThat(get("/auth/test/me", token).statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void bindTicketIsSingleUseEvenWhenBindFails() throws Exception {
+        createUser("victim");
+        fakeProvider.nextUser(userOf("open-300", "union-300"));
+        String state = stateOf();
+        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=code-c&state=" + state, null);
+        String bindTicket = JsonPath.<String>read(callback.body(), "$.data.bindTicketId");
+
+        HttpResponse<String> wrongPassword = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"victim\",\"password\":\"Wrong#123\"}", null);
+        assertThat(wrongPassword.statusCode()).as(wrongPassword.body()).isEqualTo(400);
+        assertThat(wrongPassword.body()).contains("账号不存在或密码错误");
+
+        HttpResponse<String> retry = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"victim\",\"password\":\"" + PASSWORD
+                        + "\"}", null);
+        assertThat(retry.statusCode()).as(retry.body()).isEqualTo(400);
+        assertThat(retry.body()).contains("绑定凭证已过期或不存在");
+    }
+
+    private ThirdPartyUser userOf(String openId, String unionId) {
+        ThirdPartyUser user = new ThirdPartyUser();
+        user.setPlatform(ThirdPartyPlatform.WECHAT);
+        user.setOpenId(openId);
+        user.setUnionId(unionId);
+        user.setNickname("微信昵称" + openId);
+        user.setAvatar("https://cdn.example.com/" + openId + ".png");
+        return user;
+    }
+
+    private String stateOf() throws Exception {
+        HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null);
+        assertThat(authorize.statusCode()).as(authorize.body()).isEqualTo(200);
+        return JsonPath.<String>read(authorize.body(), "$.data.state");
+    }
+
+    private HttpResponse<String> get(String path, String token) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).GET();
+        if (token != null) {
+            builder.header("satoken", token);
+        }
+        return http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> post(String path, String body, String token) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+                .timeout(Duration.ofSeconds(15))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body));
+        if (token != null) {
+            builder.header("satoken", token);
+        }
+        return http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+}
