@@ -2,14 +2,21 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality modules audit'
+description = '审计中心'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-security')
     api project(':modality-library:modality-library-spring-boot-logger')
     api project(':modality-library:modality-library-spring-boot-mybatis')
+    api project(':modality-library:modality-library-spring-boot-session')
+    api project(':modality-library:modality-library-spring-boot-excel')
     api project(':modality-library:modality-library-spring-boot-redis')
     api project(':modality-library:modality-library-spring-boot-sensitive')
+    compileOnly project(':modality-library:modality-library-spring-boot-policy')
+    compileOnly project(':modality-library:modality-library-spring-boot-monitor')
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    testImplementation project(':modality-library:modality-library-spring-boot-policy')
+    testImplementation project(':modality-library:modality-library-spring-boot-monitor')
+    testRuntimeOnly libs.h2
 }
