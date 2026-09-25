@@ -1,0 +1,4 @@
+cn.slainc.modules.auth.autoconfigure.AuthAutoConfiguration
+cn.slainc.modules.auth.autoconfigure.AuthProtocolAutoConfiguration
+cn.slainc.modules.auth.autoconfigure.AuthThirdAutoConfiguration
+cn.slainc.modules.auth.autoconfigure.AuthClosureAutoConfiguration
