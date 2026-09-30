@@ -1,0 +1,6 @@
+cn.slainc.modules.audit.autoconfigure.AuditAutoConfiguration
+cn.slainc.modules.audit.autoconfigure.AuditMybatisAutoConfiguration
+cn.slainc.modules.audit.autoconfigure.AuditApiLogAutoConfiguration
+cn.slainc.modules.audit.autoconfigure.AuditPolicyLogAutoConfiguration
+cn.slainc.modules.audit.autoconfigure.AuditAlertAutoConfiguration
+cn.slainc.modules.audit.autoconfigure.AuditSchedulerAutoConfiguration
