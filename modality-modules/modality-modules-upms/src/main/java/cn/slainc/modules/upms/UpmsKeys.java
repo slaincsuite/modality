@@ -32,6 +32,25 @@ public final class UpmsKeys {
 
     public static final String LOGIN_RECORD_TABLE = "t_user_login_record";
 
+    // 管理端点权限码：控制器一律引用常量，不写字面量
+    public static final String PERMISSION_UPMS_ROLE_ASSIGN_PERMISSION = "upms:role:assign-permission";
+    public static final String PERMISSION_UPMS_ROLE_ASSIGN_USER = "upms:role:assign-user";
+    public static final String PERMISSION_UPMS_ROLE_CREATE = "upms:role:create";
+    public static final String PERMISSION_UPMS_ROLE_DATA_SCOPE = "upms:role:data-scope";
+    public static final String PERMISSION_UPMS_ROLE_DELETE = "upms:role:delete";
+    public static final String PERMISSION_UPMS_ROLE_QUERY = "upms:role:query";
+    public static final String PERMISSION_UPMS_ROLE_UPDATE = "upms:role:update";
+    public static final String PERMISSION_UPMS_USER_ASSIGN_ROLE = "upms:user:assign-role";
+    public static final String PERMISSION_UPMS_USER_CREATE = "upms:user:create";
+    public static final String PERMISSION_UPMS_USER_DELETE = "upms:user:delete";
+    public static final String PERMISSION_UPMS_USER_DISABLE = "upms:user:disable";
+    public static final String PERMISSION_UPMS_USER_EXPORT = "upms:user:export";
+    public static final String PERMISSION_UPMS_USER_IMPORT = "upms:user:import";
+    public static final String PERMISSION_UPMS_USER_MERGE = "upms:user:merge";
+    public static final String PERMISSION_UPMS_USER_QUERY = "upms:user:query";
+    public static final String PERMISSION_UPMS_USER_RESET_PASSWORD = "upms:user:reset-password";
+    public static final String PERMISSION_UPMS_USER_UPDATE = "upms:user:update";
+
     public static final String ACCESS_PERMISSION_SUFFIX = ":access";
 
     public static final String STATUS_ENABLED = "enabled";

@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.core.context.UserContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.upms.dto.AvatarRequest;
@@ -49,7 +51,7 @@ public class UserManageController {
     }
 
     @PostMapping
-    @RequirePermission(permissions = "upms:user:create")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_CREATE)
     public UserRecord create(@RequestBody UserCreateRequest request) {
         LoginType type = request.loginType() == null || request.loginType().isBlank()
                 ? LoginType.TENANT_USER : LoginType.of(request.loginType());
@@ -61,7 +63,7 @@ public class UserManageController {
     }
 
     @PutMapping("/{id}")
-    @RequirePermission(permissions = "upms:user:update")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_UPDATE)
     public UserRecord update(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         return userService.update(id, request.nickname(), request.email(), request.phone(), request.deptId(),
                 request.avatarUrl(), request.tags(), request.extJson(), request.allowedIps(),
@@ -69,13 +71,13 @@ public class UserManageController {
     }
 
     @GetMapping("/{id}")
-    @RequirePermission(permissions = "upms:user:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_QUERY)
     public UserRecord get(@PathVariable Long id) {
         return userService.get(id);
     }
 
     @GetMapping("/page")
-    @RequirePermission(permissions = "upms:user:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_QUERY)
     public Object page(@RequestParam(required = false) String username, @RequestParam(required = false) String nickname,
                        @RequestParam(required = false) String phone, @RequestParam(required = false) String email,
                        @RequestParam(required = false) String status, @RequestParam(required = false) Long deptId,
@@ -90,7 +92,7 @@ public class UserManageController {
     }
 
     @GetMapping("/{id}/detail")
-    @RequirePermission(permissions = "upms:user:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_QUERY)
     public Map<String, Object> detail(@PathVariable Long id) {
         UserRecord user = userService.get(id);
         Map<String, Object> detail = new LinkedHashMap<>();
@@ -101,13 +103,13 @@ public class UserManageController {
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(permissions = "upms:user:delete")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DELETE)
     public void delete(@PathVariable Long id) {
         userService.delete(id);
     }
 
     @PostMapping("/batch-delete")
-    @RequirePermission(permissions = "upms:user:delete")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DELETE)
     public Map<String, Object> batchDelete(@RequestBody List<Long> ids) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("deleted", userService.batchDelete(ids));
@@ -115,7 +117,7 @@ public class UserManageController {
     }
 
     @PostMapping("/batch-disable")
-    @RequirePermission(permissions = "upms:user:disable")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DISABLE)
     public Map<String, Object> batchDisable(@RequestBody List<Long> ids) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("disabled", userService.batchDisable(ids));
@@ -123,13 +125,13 @@ public class UserManageController {
     }
 
     @PutMapping("/{id}/status")
-    @RequirePermission(permissions = "upms:user:disable")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DISABLE)
     public void changeStatus(@PathVariable Long id, @RequestParam String status) {
         userService.changeStatus(id, status);
     }
 
     @PutMapping("/{id}/password/reset")
-    @RequirePermission(permissions = "upms:user:reset-password")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_RESET_PASSWORD)
     public void resetPassword(@PathVariable Long id, @RequestBody ResetPasswordRequest request) {
         passwordService.resetByAdmin(id, request.newPassword());
     }
@@ -142,13 +144,13 @@ public class UserManageController {
     }
 
     @PostMapping("/{id}/roles")
-    @RequirePermission(permissions = "upms:user:assign-role")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_ASSIGN_ROLE)
     public void assignRoles(@PathVariable Long id, @RequestBody RoleAssignRequest request) {
         userService.assignRoles(id, request.roleIds());
     }
 
     @PostMapping("/{id}/merge/{targetId}")
-    @RequirePermission(permissions = "upms:user:merge")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_MERGE)
     public void merge(@PathVariable Long id, @PathVariable Long targetId) {
         userService.merge(id, targetId);
     }
@@ -160,14 +162,14 @@ public class UserManageController {
     }
 
     @GetMapping("/{id}/recent-logins")
-    @RequirePermission(permissions = "upms:user:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_QUERY)
     public List<UserLoginRecordRecord> recentLogins(@PathVariable Long id,
                                                     @RequestParam(defaultValue = "10") int limit) {
         return userService.recentLogins(id, limit);
     }
 
     @GetMapping("/export")
-    @RequirePermission(permissions = "upms:user:export")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_EXPORT)
     public void export(@RequestParam(required = false) String username, @RequestParam(required = false) String status,
                        @RequestParam(required = false) Long deptId, @RequestParam(required = false) Long roleId,
                        @RequestParam(required = false) Long groupId, HttpServletResponse response)
@@ -180,14 +182,14 @@ public class UserManageController {
     }
 
     @PostMapping("/import")
-    @RequirePermission(permissions = "upms:user:import")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_IMPORT)
     public Map<String, Object> importUsers(@RequestParam("file") MultipartFile file,
                                            @RequestParam(required = false) Long tenantId) throws IOException {
         return userExcelService.importUsers(file.getInputStream(), tenantId, UserContext.username());
     }
 
     @GetMapping("/import-template")
-    @RequirePermission(permissions = "upms:user:import")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_IMPORT)
     public void importTemplate(HttpServletResponse response) throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=users-template.xlsx");
