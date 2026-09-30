@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.modules.upms.log.LoginRecordService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +23,7 @@ public class LoginRecordController {
     }
 
     @GetMapping("/page")
-    @RequirePermission(permissions = "upms:log:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_LOG_QUERY)
     public Object page(@RequestParam(required = false) Long userId, @RequestParam(required = false) String username,
                        @RequestParam(required = false) String loginType, @RequestParam(required = false) String clientIp,
                        @RequestParam(required = false) Boolean succeeded, @RequestParam(required = false) Long from,
@@ -31,13 +33,13 @@ public class LoginRecordController {
     }
 
     @GetMapping("/top-ips")
-    @RequirePermission(permissions = "upms:log:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_LOG_QUERY)
     public List<Map<String, Object>> topIps(@RequestParam(defaultValue = "10") int limit) {
         return loginRecordService.topIps(limit);
     }
 
     @GetMapping("/top-devices")
-    @RequirePermission(permissions = "upms:log:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_LOG_QUERY)
     public List<Map<String, Object>> topDevices(@RequestParam(defaultValue = "10") int limit) {
         return loginRecordService.topDevices(limit);
     }

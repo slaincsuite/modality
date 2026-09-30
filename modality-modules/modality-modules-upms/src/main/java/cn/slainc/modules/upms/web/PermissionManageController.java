@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.modules.upms.dto.PermissionRequest;
 import cn.slainc.modules.upms.entity.PermissionRecord;
 import cn.slainc.modules.upms.excel.PermissionExcelService;
@@ -36,40 +38,40 @@ public class PermissionManageController {
     }
 
     @PostMapping
-    @RequirePermission(permissions = "upms:permission:create")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_CREATE)
     public PermissionRecord create(@RequestBody PermissionRequest request) {
         return permissionService.create(request.code(), request.name(), request.type(), request.parentId(),
                 request.sort(), request.remark());
     }
 
     @PutMapping("/{id}")
-    @RequirePermission(permissions = "upms:permission:update")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_UPDATE)
     public PermissionRecord update(@PathVariable Long id, @RequestBody PermissionRequest request) {
         return permissionService.update(id, request.name(), request.type(), request.parentId(), request.sort(),
                 request.status(), request.remark());
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(permissions = "upms:permission:delete")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_DELETE)
     public void delete(@PathVariable Long id) {
         permissionService.delete(id);
     }
 
     @GetMapping("/search")
-    @RequirePermission(permissions = "upms:permission:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_QUERY)
     public List<PermissionRecord> search(@RequestParam(required = false) String keyword,
                                          @RequestParam(required = false) String type) {
         return permissionService.search(keyword, type);
     }
 
     @GetMapping("/tree")
-    @RequirePermission(permissions = "upms:permission:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_QUERY)
     public List<PermissionRecord> tree() {
         return permissionService.tree();
     }
 
     @GetMapping("/export")
-    @RequirePermission(permissions = "upms:permission:export")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_EXPORT)
     public void export(HttpServletResponse response) throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=permissions.xlsx");
@@ -77,7 +79,7 @@ public class PermissionManageController {
     }
 
     @PostMapping("/import")
-    @RequirePermission(permissions = "upms:permission:import")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_IMPORT)
     public Map<String, Object> importPermissions(@RequestParam("file") MultipartFile file) throws IOException {
         return permissionExcelService.importPermissions(file.getInputStream());
     }

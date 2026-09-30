@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.core.context.UserContext;
 import cn.slainc.modules.upms.dto.PolicyBindClientRequest;
 import cn.slainc.modules.upms.dto.PolicyBindRoleRequest;
@@ -29,32 +31,32 @@ public class PolicyBindingController {
     }
 
     @PostMapping("/user")
-    @RequirePermission(permissions = "upms:policy:bind")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_BIND)
     public PolicyBindingRecord bindUser(@RequestBody PolicyBindUserRequest request) {
         return bindingService.bindToUser(request.policyId(), request.userId(), request.loginType(),
                 UserContext.username());
     }
 
     @PostMapping("/role")
-    @RequirePermission(permissions = "upms:policy:bind")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_BIND)
     public PolicyBindingRecord bindRole(@RequestBody PolicyBindRoleRequest request) {
         return bindingService.bindToRole(request.policyId(), request.roleCode(), UserContext.username());
     }
 
     @PostMapping("/client")
-    @RequirePermission(permissions = "upms:policy:bind")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_BIND)
     public PolicyBindingRecord bindClient(@RequestBody PolicyBindClientRequest request) {
         return bindingService.bindToClient(request.policyId(), request.clientId(), UserContext.username());
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(permissions = "upms:policy:unbind")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_UNBIND)
     public void unbind(@PathVariable Long id) {
         bindingService.unbind(id);
     }
 
     @GetMapping("/query")
-    @RequirePermission(permissions = "upms:policy:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_QUERY)
     public List<PolicyBindingRecord> query(@RequestParam(required = false) String subjectType,
                                            @RequestParam(required = false) String subjectId,
                                            @RequestParam(required = false) String policyId) {

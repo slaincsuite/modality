@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.upms.dto.StatusRequest;
 import cn.slainc.modules.upms.dto.SystemRequest;
@@ -30,39 +32,39 @@ public class SystemRegistryController {
     }
 
     @PostMapping
-    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = "upms:system:create")
+    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_CREATE)
     public SystemRegistryRecord create(@RequestBody SystemRequest request) {
         return systemRegistryService.create(request.code(), request.name(), request.moduleCode(),
                 request.visibility(), request.groupName(), request.icon(), request.url(), request.sort());
     }
 
     @PutMapping("/{id}")
-    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = "upms:system:update")
+    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_UPDATE)
     public SystemRegistryRecord update(@PathVariable Long id, @RequestBody SystemRequest request) {
         return systemRegistryService.update(id, request.name(), request.groupName(), request.icon(), request.url(),
                 request.sort(), request.status());
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = "upms:system:delete")
+    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_DELETE)
     public void delete(@PathVariable Long id) {
         systemRegistryService.delete(id);
     }
 
     @PutMapping("/{id}/visibility")
-    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = "upms:system:visibility")
+    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_VISIBILITY)
     public SystemRegistryRecord changeVisibility(@PathVariable Long id, @RequestBody VisibilityRequest request) {
         return systemRegistryService.changeVisibility(id, request.visibility());
     }
 
     @PutMapping("/{id}/status")
-    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = "upms:system:update")
+    @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_UPDATE)
     public SystemRegistryRecord changeStatus(@PathVariable Long id, @RequestBody StatusRequest request) {
         return systemRegistryService.update(id, null, null, null, null, null, request.status());
     }
 
     @GetMapping("/list")
-    @RequirePermission(permissions = "upms:system:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_QUERY)
     public List<SystemRegistryRecord> list(@RequestParam(required = false) String groupName,
                                            @RequestParam(required = false) String status) {
         return systemRegistryService.list(groupName, status);

@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.modules.upms.excel.OperationLogExportService;
 import cn.slainc.modules.upms.log.OperationLogService;
 import cn.slainc.security.annotation.RequirePermission;
@@ -25,7 +27,7 @@ public class OperationLogController {
     }
 
     @GetMapping("/page")
-    @RequirePermission(permissions = "upms:log:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_LOG_QUERY)
     public Object page(@RequestParam(required = false) Long userId, @RequestParam(required = false) String username,
                        @RequestParam(required = false) String module, @RequestParam(required = false) String operation,
                        @RequestParam(required = false) Boolean success, @RequestParam(required = false) Long from,
@@ -35,7 +37,7 @@ public class OperationLogController {
     }
 
     @GetMapping("/export")
-    @RequirePermission(permissions = "upms:log:export")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_LOG_EXPORT)
     public void export(@RequestParam(defaultValue = "10000") int limit, HttpServletResponse response)
             throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

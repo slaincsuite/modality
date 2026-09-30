@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.modules.upms.dto.GrantRequest;
 import cn.slainc.modules.upms.entity.AccessControlRecord;
 import cn.slainc.modules.upms.service.AccessControlService;
@@ -28,7 +30,7 @@ public class AccessControlController {
     }
 
     @PostMapping("/grant")
-    @RequirePermission(permissions = "upms:access:grant")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ACCESS_GRANT)
     public Map<String, Object> grant(@RequestBody GrantRequest request) {
         List<AccessControlRecord> granted = accessControlService.grant(request.systemId(), request.userIds(), null);
         Map<String, Object> result = new LinkedHashMap<>();
@@ -37,13 +39,13 @@ public class AccessControlController {
     }
 
     @DeleteMapping("/revoke")
-    @RequirePermission(permissions = "upms:access:revoke")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ACCESS_REVOKE)
     public void revoke(@RequestParam Long systemId, @RequestParam Long userId) {
         accessControlService.revoke(systemId, userId);
     }
 
     @DeleteMapping("/system/{systemId}")
-    @RequirePermission(permissions = "upms:access:revoke")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ACCESS_REVOKE)
     public Map<String, Object> revokeBySystem(@PathVariable Long systemId) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("revoked", accessControlService.revokeBySystem(systemId));
@@ -51,7 +53,7 @@ public class AccessControlController {
     }
 
     @GetMapping("/query")
-    @RequirePermission(permissions = "upms:access:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ACCESS_QUERY)
     public List<AccessControlRecord> query(@RequestParam(required = false) Long systemId,
                                            @RequestParam(required = false) Long userId) {
         return accessControlService.query(systemId, userId);

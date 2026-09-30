@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.modules.upms.service.UserStatsService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,19 +23,19 @@ public class UserStatsController {
     }
 
     @GetMapping("/overview")
-    @RequirePermission(permissions = "upms:stats:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_STATS_QUERY)
     public Map<String, Object> overview() {
         return statsService.overview();
     }
 
     @GetMapping("/new-user-trend")
-    @RequirePermission(permissions = "upms:stats:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_STATS_QUERY)
     public List<Map<String, Object>> newUserTrend(@RequestParam(required = false) Integer days) {
         return statsService.newUserTrend(days == null ? 0 : days);
     }
 
     @GetMapping("/role-distribution")
-    @RequirePermission(permissions = "upms:stats:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_STATS_QUERY)
     public List<Map<String, Object>> roleDistribution() {
         return statsService.roleDistribution();
     }
