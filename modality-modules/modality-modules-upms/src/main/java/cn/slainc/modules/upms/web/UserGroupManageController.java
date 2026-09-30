@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.modules.upms.dto.GroupMembersRequest;
 import cn.slainc.modules.upms.dto.GroupRequest;
 import cn.slainc.modules.upms.entity.UserGroupRecord;
@@ -28,37 +30,37 @@ public class UserGroupManageController {
     }
 
     @PostMapping
-    @RequirePermission(permissions = "upms:group:create")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_CREATE)
     public UserGroupRecord create(@RequestBody GroupRequest request) {
         return groupService.create(request.name(), request.remark());
     }
 
     @PutMapping("/{id}")
-    @RequirePermission(permissions = "upms:group:update")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_UPDATE)
     public UserGroupRecord update(@PathVariable Long id, @RequestBody GroupRequest request) {
         return groupService.update(id, request.name(), request.remark());
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(permissions = "upms:group:delete")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_DELETE)
     public void delete(@PathVariable Long id) {
         groupService.delete(id);
     }
 
     @GetMapping("/list")
-    @RequirePermission(permissions = "upms:group:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_QUERY)
     public List<UserGroupRecord> list() {
         return groupService.list();
     }
 
     @PutMapping("/{id}/members")
-    @RequirePermission(permissions = "upms:group:assign")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_ASSIGN)
     public void assignMembers(@PathVariable Long id, @RequestBody GroupMembersRequest request) {
         groupService.assignMembers(id, request.userIds());
     }
 
     @GetMapping("/{id}/members")
-    @RequirePermission(permissions = "upms:group:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_QUERY)
     public List<UserRecord> members(@PathVariable Long id) {
         return groupService.membersOf(id);
     }

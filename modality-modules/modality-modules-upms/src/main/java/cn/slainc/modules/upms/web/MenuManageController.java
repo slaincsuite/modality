@@ -1,5 +1,7 @@
 package cn.slainc.modules.upms.web;
 
+import cn.slainc.modules.upms.UpmsKeys;
+
 import cn.slainc.core.context.UserContext;
 import cn.slainc.modules.upms.dto.MenuRequest;
 import cn.slainc.modules.upms.entity.MenuRecord;
@@ -28,14 +30,14 @@ public class MenuManageController {
     }
 
     @PostMapping
-    @RequirePermission(permissions = "upms:menu:create")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_CREATE)
     public MenuRecord create(@RequestBody MenuRequest request) {
         return menuService.create(request.name(), request.parentId(), request.type(), request.path(),
                 request.component(), request.icon(), request.permissionCode(), request.visible(), request.sort());
     }
 
     @PutMapping("/{id}")
-    @RequirePermission(permissions = "upms:menu:update")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_UPDATE)
     public MenuRecord update(@PathVariable Long id, @RequestBody MenuRequest request) {
         return menuService.update(id, request.name(), request.parentId(), request.type(), request.path(),
                 request.component(), request.icon(), request.permissionCode(), request.visible(), request.sort(),
@@ -43,13 +45,13 @@ public class MenuManageController {
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission(permissions = "upms:menu:delete")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_DELETE)
     public void delete(@PathVariable Long id) {
         menuService.delete(id);
     }
 
     @GetMapping("/tree")
-    @RequirePermission(permissions = "upms:menu:query")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_QUERY)
     public List<MenuRecord> tree() {
         return menuService.tree();
     }

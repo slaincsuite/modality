@@ -33,6 +33,19 @@ public final class UpmsKeys {
     public static final String LOGIN_RECORD_TABLE = "t_user_login_record";
 
     // 管理端点权限码：控制器一律引用常量，不写字面量
+    public static final String PERMISSION_UPMS_DEPT_CREATE = "upms:dept:create";
+    public static final String PERMISSION_UPMS_DEPT_DELETE = "upms:dept:delete";
+    public static final String PERMISSION_UPMS_DEPT_QUERY = "upms:dept:query";
+    public static final String PERMISSION_UPMS_DEPT_UPDATE = "upms:dept:update";
+    public static final String PERMISSION_UPMS_GROUP_ASSIGN = "upms:group:assign";
+    public static final String PERMISSION_UPMS_GROUP_CREATE = "upms:group:create";
+    public static final String PERMISSION_UPMS_GROUP_DELETE = "upms:group:delete";
+    public static final String PERMISSION_UPMS_GROUP_QUERY = "upms:group:query";
+    public static final String PERMISSION_UPMS_GROUP_UPDATE = "upms:group:update";
+    public static final String PERMISSION_UPMS_MENU_CREATE = "upms:menu:create";
+    public static final String PERMISSION_UPMS_MENU_DELETE = "upms:menu:delete";
+    public static final String PERMISSION_UPMS_MENU_QUERY = "upms:menu:query";
+    public static final String PERMISSION_UPMS_MENU_UPDATE = "upms:menu:update";
     public static final String PERMISSION_UPMS_ROLE_ASSIGN_PERMISSION = "upms:role:assign-permission";
     public static final String PERMISSION_UPMS_ROLE_ASSIGN_USER = "upms:role:assign-user";
     public static final String PERMISSION_UPMS_ROLE_CREATE = "upms:role:create";
