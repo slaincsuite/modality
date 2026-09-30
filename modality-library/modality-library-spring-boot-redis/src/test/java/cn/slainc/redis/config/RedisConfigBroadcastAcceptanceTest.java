@@ -33,6 +33,9 @@ class RedisConfigBroadcastAcceptanceTest {
 
     private static final long TIMEOUT_MILLIS = 10000L;
 
+    // 全量并行构建时默认频道会收到其它测试进程的广播帧（Pub/Sub 不随 database 隔离），换带 UUID 的唯一频道
+    private static final String CHANNEL = "broadcast-" + UUID.randomUUID();
+
     private static Node publisher;
 
     private static Node subscriber;
@@ -76,7 +79,7 @@ class RedisConfigBroadcastAcceptanceTest {
     @Order(1)
     void storeAndBroadcastNamingConventions() {
         assertThat(publisher.service.storeKey()).isEqualTo("modality:config:store");
-        assertThat(publisher.service.channel()).isEqualTo("modality:config:broadcast");
+        assertThat(publisher.service.channel()).isEqualTo("modality:config:" + CHANNEL);
         assertThat(publisher.service.nodeId()).isNotEqualTo(subscriber.service.nodeId());
         System.out.println("[验收] 存储键=" + publisher.service.storeKey() + "，广播频道=" + publisher.service.channel()
                 + "，节点A标识=" + publisher.service.nodeId() + "，节点B标识=" + subscriber.service.nodeId());
@@ -112,7 +115,7 @@ class RedisConfigBroadcastAcceptanceTest {
         System.out.println("[验收] 节点A改写入 值-2，广播版本号=" + publishedVersion);
 
         assertThat(storeValue(admin, key)).contains("值-2");
-        assertThat(subscriber.service.localCachedValue(key)).isEqualTo("值-1");
+        // 不在"写入值-2 后、广播帧到达前"断言订阅端缓存仍是值-1：该窗口依赖广播传播延迟，是时序竞态
 
         awaitValue(subscriber.service, key, "值-2");
         assertThat(subscriber.service.localCachedValue(key)).isEqualTo("值-2");
@@ -206,6 +209,7 @@ class RedisConfigBroadcastAcceptanceTest {
             RedisProperties properties = new RedisProperties();
             properties.getConfig().setPublishEnabled(publish);
             properties.getConfig().setSubscribeEnabled(subscribe);
+            properties.getConfig().setBroadcastChannel(CHANNEL);
 
             ConfigBroadcaster broadcaster = publish
                     ? new RedisConfigBroadcaster(stringRedisTemplate, RedisSerializers.plainMapper(),
