@@ -1,9 +1,9 @@
 package cn.slainc.modules.auth.autoconfigure;
 
-import cn.slainc.modules.auth.closure.AccountClosureController;
-import cn.slainc.modules.auth.closure.AccountClosureScheduler;
-import cn.slainc.modules.auth.closure.AccountClosureService;
-import cn.slainc.modules.auth.closure.AccountClosureStore;
+import cn.slainc.modules.auth.web.AccountClosureController;
+import cn.slainc.modules.auth.scheduler.AccountClosureScheduler;
+import cn.slainc.modules.auth.service.AccountClosureService;
+import cn.slainc.modules.auth.store.AccountClosureStore;
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.modules.upms.service.UserService;
 import org.springframework.beans.factory.ObjectProvider;

@@ -1,10 +1,11 @@
 package cn.slainc.boot;
+import cn.slainc.modules.auth.service.AccountClosureService;
 
 import cn.slainc.captcha.CaptchaChallenge;
 import cn.slainc.captcha.CaptchaService;
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
-import cn.slainc.modules.auth.closure.AccountClosureService;
+import cn.slainc.modules.auth.service.AccountClosureService;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.security.UpmsAccountAuthProvider;
