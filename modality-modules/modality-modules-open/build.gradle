@@ -2,16 +2,18 @@ plugins {
     id 'modality.spring-library-conventions'
 }
 
-description = 'Modality modules open platform'
+description = '开放平台业务中心'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-security')
     api project(':modality-library:modality-library-spring-boot-open-api')
+    api project(':modality-library:modality-library-spring-boot-oauth2')
     api project(':modality-library:modality-library-spring-boot-api-key')
-    api project(':modality-library:modality-library-spring-boot-sign')
-    api project(':modality-library:modality-library-spring-boot-redis')
     api project(':modality-library:modality-library-spring-boot-policy')
-    api project(':modality-library:modality-library-spring-boot-idempotent')
+    api project(':modality-library:modality-library-spring-boot-excel')
+    api project(':modality-library:modality-library-spring-boot-logger')
+    api project(':modality-modules:modality-modules-upms')
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    testRuntimeOnly libs.h2
 }
