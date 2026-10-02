@@ -32,3 +32,16 @@ CREATE TABLE IF NOT EXISTS t_infra_dict_item (
     create_time BIGINT NOT NULL,
     update_time BIGINT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS t_infra_notice (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    level VARCHAR(16) NOT NULL DEFAULT 'INFO',
+    status VARCHAR(16) NOT NULL DEFAULT 'DRAFT',
+    publish_time BIGINT,
+    expire_time BIGINT,
+    operator VARCHAR(64),
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL
+);

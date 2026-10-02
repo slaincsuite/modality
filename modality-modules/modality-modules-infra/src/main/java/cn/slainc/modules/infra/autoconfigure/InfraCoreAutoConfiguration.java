@@ -5,10 +5,12 @@ import cn.slainc.modules.infra.context.CurrentUser;
 import cn.slainc.modules.infra.excel.DictTransferService;
 import cn.slainc.modules.infra.service.ConfigAdminService;
 import cn.slainc.modules.infra.service.DictService;
+import cn.slainc.modules.infra.service.NoticeService;
 import cn.slainc.modules.infra.store.ConfigHistoryCipher;
 import cn.slainc.modules.infra.store.ConfigHistoryStore;
 import cn.slainc.modules.infra.web.ConfigAdminController;
 import cn.slainc.modules.infra.web.DictController;
+import cn.slainc.modules.infra.web.NoticeController;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +28,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @ConditionalOnBean(JdbcTemplate.class)
 @ConditionalOnProperty(prefix = "modality.infra", name = "enabled", matchIfMissing = true)
 @EnableConfigurationProperties(InfraModuleProperties.class)
-@Import({ConfigAdminController.class, DictController.class})
+@Import({ConfigAdminController.class, DictController.class, NoticeController.class})
 public class InfraCoreAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(InfraCoreAutoConfiguration.class);
@@ -79,5 +81,12 @@ public class InfraCoreAutoConfiguration {
     @ConditionalOnMissingBean
     public DictTransferService dictTransferService(DictService dictService) {
         return new DictTransferService(dictService);
+    }
+}
+
+    @Bean
+    @ConditionalOnMissingBean
+    public NoticeService noticeService(JdbcTemplate jdbc) {
+        return new NoticeService(jdbc);
     }
 }
