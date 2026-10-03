@@ -1,1 +1,2 @@
 cn.slainc.modules.infra.autoconfigure.InfraCoreAutoConfiguration
+cn.slainc.modules.infra.autoconfigure.InfraFileAutoConfiguration

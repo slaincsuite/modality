@@ -95,3 +95,21 @@ CREATE TABLE IF NOT EXISTS t_infra_notify_record (
     create_time BIGINT NOT NULL,
     sent_time BIGINT
 );
+
+CREATE TABLE IF NOT EXISTS t_infra_file_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    file_key VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    folder VARCHAR(255) NOT NULL DEFAULT '',
+    content_type VARCHAR(128),
+    ext VARCHAR(32),
+    size BIGINT NOT NULL DEFAULT 0,
+    backend VARCHAR(32),
+    md5 VARCHAR(64),
+    uploader_id BIGINT,
+    uploader_name VARCHAR(64),
+    tenant_id BIGINT,
+    status VARCHAR(16) NOT NULL DEFAULT 'NORMAL',
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL
+);
