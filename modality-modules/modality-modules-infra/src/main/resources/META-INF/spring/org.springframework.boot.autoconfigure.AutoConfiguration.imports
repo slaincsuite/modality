@@ -1,5 +1,7 @@
 cn.slainc.modules.infra.autoconfigure.InfraCoreAutoConfiguration
 cn.slainc.modules.infra.autoconfigure.InfraFileAutoConfiguration
 cn.slainc.modules.infra.autoconfigure.InfraCaptchaAutoConfiguration
+cn.slainc.modules.infra.autoconfigure.InfraLogConsoleAutoConfiguration
 cn.slainc.modules.infra.autoconfigure.InfraRedisConsoleAutoConfiguration
 cn.slainc.modules.infra.autoconfigure.InfraSqlConsoleAutoConfiguration
+cn.slainc.modules.infra.autoconfigure.InfraSystemAutoConfiguration
