@@ -10,5 +10,8 @@ dependencies {
     compileOnly libs.spring.boot.starter.validation
     compileOnly libs.spring.tx
     compileOnly libs.spring.boot.starter.actuator
+    compileOnly libs.spring.boot.starter.jdbc
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    testImplementation libs.spring.boot.starter.jdbc
+    testRuntimeOnly libs.h2
 }
