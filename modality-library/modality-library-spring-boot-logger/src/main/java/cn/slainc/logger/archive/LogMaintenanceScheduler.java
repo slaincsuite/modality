@@ -1,6 +1,7 @@
 package cn.slainc.logger.archive;
 
 import cn.slainc.logger.autoconfigure.LoggerProperties;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -9,7 +10,6 @@ import org.springframework.beans.factory.InitializingBean;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -53,11 +53,7 @@ public class LogMaintenanceScheduler implements InitializingBean, DisposableBean
         if (!properties.isEnabled() || properties.getIntervalMinutes() <= 0L) {
             return;
         }
-        executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "modality-log-maintenance");
-            thread.setDaemon(true);
-            return thread;
-        });
+        executor = ThreadPoolUtils.newDaemonSingleThreadScheduler("modality-log-maintenance");
         long interval = properties.getIntervalMinutes();
         executor.scheduleWithFixedDelay(this::runQuietly, interval, interval, TimeUnit.MINUTES);
         if (properties.isRunOnStartup()) {

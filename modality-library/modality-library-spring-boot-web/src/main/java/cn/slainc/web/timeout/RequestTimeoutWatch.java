@@ -1,5 +1,6 @@
 package cn.slainc.web.timeout;
 
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -10,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,8 +39,7 @@ public class RequestTimeoutWatch implements DisposableBean {
         this.clock = clock;
         if (isEnabled()) {
             long interval = Math.max(thresholdMillis() / 2, 1000L);
-            this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable ->
-                    Thread.ofPlatform().daemon(true).name("modality-request-timeout-", 0).unstarted(runnable));
+            this.scheduler = ThreadPoolUtils.newDaemonSingleThreadScheduler("modality-request-timeout-0");
             this.scheduler.scheduleWithFixedDelay(this::sweepQuietly, interval, interval, TimeUnit.MILLISECONDS);
         } else {
             this.scheduler = null;

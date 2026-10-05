@@ -1,5 +1,6 @@
 package cn.slainc.redis.stream;
 
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +47,7 @@ public class RedisStreamConsumer implements AutoCloseable {
             return;
         }
         streamTemplate.ensureGroup(stream, group);
-        worker = new Thread(this::loop, "modality-redis-stream-" + stream);
-        worker.setDaemon(true);
+        worker = ThreadPoolUtils.newDaemonThread("modality-redis-stream-" + stream, this::loop);
         worker.start();
     }
 

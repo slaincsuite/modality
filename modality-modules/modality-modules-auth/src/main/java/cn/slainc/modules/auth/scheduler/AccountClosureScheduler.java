@@ -2,10 +2,10 @@ package cn.slainc.modules.auth.scheduler;
 import cn.slainc.modules.auth.service.AccountClosureService;
 
 import cn.slainc.modules.auth.config.AuthProperties;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -29,11 +29,7 @@ public class AccountClosureScheduler implements AutoCloseable {
     public AccountClosureScheduler(AccountClosureService closureService, AuthProperties properties) {
         this.closureService = closureService;
         this.properties = properties;
-        this.executor = Executors.newSingleThreadScheduledExecutor(task -> {
-            Thread thread = new Thread(task, THREAD_NAME);
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.executor = ThreadPoolUtils.newDaemonSingleThreadScheduler(THREAD_NAME);
         scheduleNext();
     }
 

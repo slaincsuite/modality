@@ -1,5 +1,6 @@
 package cn.slainc.web.websocket;
 
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
@@ -9,7 +10,6 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -25,8 +25,8 @@ public class WebSocketHeartbeat implements SmartLifecycle {
 
     private final Clock clock;
 
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable ->
-            Thread.ofPlatform().daemon(true).name("modality-ws-heartbeat-", 0).unstarted(runnable));
+    private final ScheduledExecutorService scheduler =
+            ThreadPoolUtils.newDaemonSingleThreadScheduler("modality-ws-heartbeat-0");
 
     private volatile boolean running;
 

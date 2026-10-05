@@ -1,8 +1,8 @@
 package cn.slainc.modules.audit.scheduler;
 
 import cn.slainc.modules.audit.service.AuditAlertService;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -22,11 +22,7 @@ public class AuditAlertScheduler {
     public AuditAlertScheduler(AuditAlertService alertService, long intervalSeconds) {
         this.alertService = alertService;
         this.intervalSeconds = intervalSeconds;
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "modality-audit-alert");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.scheduler = ThreadPoolUtils.newDaemonSingleThreadScheduler("modality-audit-alert");
     }
 
     public void start() {

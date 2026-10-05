@@ -1,6 +1,7 @@
 package cn.slainc.mybatis.sql;
 
 import cn.slainc.mybatis.properties.MybatisProperties;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -20,7 +21,6 @@ import java.time.LocalDateTime;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Intercepts({
@@ -154,14 +154,9 @@ public class SqlLogInterceptor implements Interceptor {
     }
 
     private static ThreadPoolExecutor createExecutor(int capacity) {
-        AtomicInteger counter = new AtomicInteger(1);
         ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 60L, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(Math.max(capacity, 64)),
-                runnable -> {
-                    Thread thread = new Thread(runnable, "modality-sql-log-" + counter.getAndIncrement());
-                    thread.setDaemon(true);
-                    return thread;
-                },
+                ThreadPoolUtils.namedThreadFactory("modality-sql-log"),
                 new ThreadPoolExecutor.DiscardPolicy());
         executor.allowCoreThreadTimeOut(true);
         return executor;

@@ -2,11 +2,11 @@ package cn.slainc.monitor.alert;
 
 import cn.slainc.monitor.autoconfigure.MonitorProperties;
 import cn.slainc.monitor.config.MonitorDynamicConfig;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -45,11 +45,7 @@ public class AlertEvaluationScheduler implements SmartLifecycle {
         // 上下文 pause/restart 会 stop() 之后再 start()，这里必须能重建已被关闭的线程池
         ScheduledExecutorService current = executor;
         if (current == null || current.isShutdown()) {
-            current = Executors.newSingleThreadScheduledExecutor(runnable -> {
-                Thread thread = new Thread(runnable, "alert-evaluator");
-                thread.setDaemon(true);
-                return thread;
-            });
+            current = ThreadPoolUtils.newDaemonSingleThreadScheduler("alert-evaluator");
             executor = current;
         }
         current.scheduleWithFixedDelay(this::tick, 1000L, 1000L, TimeUnit.MILLISECONDS);

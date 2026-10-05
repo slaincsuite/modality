@@ -1,13 +1,13 @@
 package cn.slainc.jwt.rotate;
 
 import cn.slainc.jwt.key.JwtKeyManager;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.time.Duration;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -28,11 +28,7 @@ public class JwtKeyRotationScheduler implements InitializingBean, DisposableBean
 
     @Override
     public void afterPropertiesSet() {
-        executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "jwt-key-rotation");
-            thread.setDaemon(true);
-            return thread;
-        });
+        executor = ThreadPoolUtils.newDaemonSingleThreadScheduler("jwt-key-rotation");
         long delayMillis = Math.max(1, interval.toMillis());
         executor.scheduleWithFixedDelay(this::rotateSafely, delayMillis, delayMillis, TimeUnit.MILLISECONDS);
         log.info("jwt 密钥自动轮换已启动，周期：{}，首次轮换延迟一个周期执行", interval);

@@ -4,6 +4,7 @@ import cn.slainc.datasource.failover.DataSourceFailoverManager;
 import cn.slainc.datasource.manager.DataSourceHealth;
 import cn.slainc.datasource.manager.DynamicDataSourceManager;
 import cn.slainc.datasource.properties.DataSourceProperties;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
@@ -12,10 +13,8 @@ import javax.sql.DataSource;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class DataSourceHealthScheduler implements SmartLifecycle {
 
@@ -47,7 +46,8 @@ public class DataSourceHealthScheduler implements SmartLifecycle {
         if (!properties.getHealth().isEnabled() || !running.compareAndSet(false, true)) {
             return;
         }
-        executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory());
+        executor = Executors.newSingleThreadScheduledExecutor(
+                ThreadPoolUtils.namedThreadFactory("modality-datasource-health"));
         long interval = Math.max(properties.getHealth().getInterval(), 5_000L);
         executor.scheduleWithFixedDelay(this::probe, interval, interval, TimeUnit.MILLISECONDS);
         log.info("数据源健康检查已启动，间隔 {} 毫秒", interval);
@@ -81,17 +81,5 @@ public class DataSourceHealthScheduler implements SmartLifecycle {
     @Override
     public int getPhase() {
         return Integer.MAX_VALUE - 100;
-    }
-
-    private static class NamedThreadFactory implements ThreadFactory {
-
-        private final AtomicInteger counter = new AtomicInteger(1);
-
-        @Override
-        public Thread newThread(Runnable runnable) {
-            Thread thread = new Thread(runnable, "modality-datasource-health-" + counter.getAndIncrement());
-            thread.setDaemon(true);
-            return thread;
-        }
     }
 }

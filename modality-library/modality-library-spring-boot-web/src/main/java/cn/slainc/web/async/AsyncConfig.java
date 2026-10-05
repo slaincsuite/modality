@@ -1,6 +1,7 @@
 package cn.slainc.web.async;
 
 import cn.slainc.core.context.ContextTaskDecorator;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.task.TaskDecorator;
 import org.springframework.core.task.support.TaskExecutorAdapter;
@@ -26,7 +27,7 @@ public class AsyncConfig implements WebMvcConfigurer {
 
     private static ExecutorService createExecutor(AsyncProperties properties) {
         if (properties.isVirtualThreads()) {
-            return Executors.newThreadPerTaskExecutor(decoratingFactory("modality-async-", true));
+            return Executors.newThreadPerTaskExecutor(decoratingFactory("modality-async", true));
         }
         ThreadPoolExecutor pool = new ThreadPoolExecutor(
                 properties.getCorePoolSize(),
@@ -34,20 +35,17 @@ public class AsyncConfig implements WebMvcConfigurer {
                 0L,
                 TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(properties.getQueueCapacity()),
-                decoratingFactory("modality-async-", false),
+                decoratingFactory("modality-async", false),
                 new ThreadPoolExecutor.CallerRunsPolicy());
         pool.allowCoreThreadTimeOut(false);
         return pool;
     }
 
-    private static ThreadFactory decoratingFactory(String prefix, boolean virtual) {
+    private static ThreadFactory decoratingFactory(String threadName, boolean virtual) {
         TaskDecorator decorator = new ContextTaskDecorator();
-        return runnable -> {
-            Runnable decorated = decorator.decorate(runnable);
-            return virtual
-                    ? Thread.ofVirtual().name(prefix, 0).unstarted(decorated)
-                    : Thread.ofPlatform().daemon(true).name(prefix, 0).unstarted(decorated);
-        };
+        ThreadFactory factory = virtual ? ThreadPoolUtils.namedThreadFactory(threadName, true)
+                : ThreadPoolUtils.fixedNameThreadFactory(threadName);
+        return runnable -> factory.newThread(decorator.decorate(runnable));
     }
 
     @Override

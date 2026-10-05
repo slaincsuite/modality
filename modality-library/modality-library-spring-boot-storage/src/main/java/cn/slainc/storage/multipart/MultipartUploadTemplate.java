@@ -3,6 +3,7 @@ package cn.slainc.storage.multipart;
 import cn.slainc.storage.MultipartFileStorage;
 import cn.slainc.storage.StorageException;
 import cn.slainc.storage.model.PartInfo;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,11 +32,7 @@ public class MultipartUploadTemplate {
     public MultipartUploadTemplate(MultipartFileStorage storage, int partSize) {
         this.storage = storage;
         this.partSize = Math.max(partSize, 1);
-        this.executor = Executors.newFixedThreadPool(4, runnable -> {
-            Thread thread = new Thread(runnable, "storage-multipart");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.executor = Executors.newFixedThreadPool(4, ThreadPoolUtils.namedThreadFactory("storage-multipart"));
     }
 
     public MultipartSession init(String key, long totalSize, String contentType) {
@@ -82,11 +79,8 @@ public class MultipartUploadTemplate {
             return;
         }
         int limit = Math.max(1, Math.min(concurrency, pending.size()));
-        ExecutorService pool = Executors.newFixedThreadPool(limit, runnable -> {
-            Thread thread = new Thread(runnable, "storage-multipart-pool");
-            thread.setDaemon(true);
-            return thread;
-        });
+        ExecutorService pool = Executors.newFixedThreadPool(limit,
+                ThreadPoolUtils.namedThreadFactory("storage-multipart-pool"));
         Object lock = new Object();
         try {
             List<CompletableFuture<Void>> futures = new ArrayList<>();

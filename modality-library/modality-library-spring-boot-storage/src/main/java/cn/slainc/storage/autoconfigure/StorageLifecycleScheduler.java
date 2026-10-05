@@ -2,13 +2,13 @@ package cn.slainc.storage.autoconfigure;
 
 import cn.slainc.storage.lifecycle.LifecycleReport;
 import cn.slainc.storage.lifecycle.StorageLifecycleService;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import java.time.Duration;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -26,11 +26,7 @@ public class StorageLifecycleScheduler implements InitializingBean, DisposableBe
         this.lifecycleService = lifecycleService;
         this.fixedDelay = fixedDelay == null || fixedDelay.isNegative() || fixedDelay.isZero()
                 ? Duration.ofHours(6) : fixedDelay;
-        this.executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "storage-lifecycle");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.executor = ThreadPoolUtils.newDaemonSingleThreadScheduler("storage-lifecycle");
     }
 
     @Override

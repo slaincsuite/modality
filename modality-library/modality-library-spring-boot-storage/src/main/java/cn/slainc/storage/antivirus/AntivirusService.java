@@ -1,6 +1,7 @@
 package cn.slainc.storage.antivirus;
 
 import cn.slainc.storage.StorageException;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +35,7 @@ public class AntivirusService implements AutoCloseable {
         this.quarantineStore = quarantineStore;
         this.strategy = strategy;
         this.failClosed = failClosed;
-        this.executor = Executors.newFixedThreadPool(2, runnable -> {
-            Thread thread = new Thread(runnable, "storage-antivirus");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.executor = Executors.newFixedThreadPool(2, ThreadPoolUtils.namedThreadFactory("storage-antivirus"));
     }
 
     public VirusScanResult scan(InputStream data) {

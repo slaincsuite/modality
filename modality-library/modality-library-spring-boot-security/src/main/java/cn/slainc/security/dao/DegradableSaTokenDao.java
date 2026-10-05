@@ -4,12 +4,12 @@ import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
 import cn.dev33.satoken.session.SaSession;
 import cn.slainc.security.config.SecurityKeys;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,11 +89,7 @@ public class DegradableSaTokenDao implements SaTokenDao, AutoCloseable {
         if (probeScheduler != null) {
             return;
         }
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(task -> {
-            Thread thread = new Thread(task, "security-satoken-dao-probe");
-            thread.setDaemon(true);
-            return thread;
-        });
+        ScheduledExecutorService scheduler = ThreadPoolUtils.newDaemonSingleThreadScheduler("security-satoken-dao-probe");
         scheduler.scheduleWithFixedDelay(this::probeQuietly, retrySeconds, retrySeconds, TimeUnit.SECONDS);
         probeScheduler = scheduler;
     }

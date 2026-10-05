@@ -2,8 +2,8 @@ package cn.slainc.modules.audit.writer;
 
 import cn.slainc.modules.audit.entity.ApiLogRecord;
 import cn.slainc.modules.audit.mapper.ApiLogMapper;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,13 +27,9 @@ public class ApiLogWriter implements DisposableBean {
 
     public ApiLogWriter(ApiLogMapper apiLogMapper, int queueCapacity) {
         this.apiLogMapper = apiLogMapper;
-        ThreadFactory threadFactory = runnable -> {
-            Thread thread = new Thread(runnable, "modality-audit-api-log");
-            thread.setDaemon(true);
-            return thread;
-        };
         this.executor = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(Math.max(100, queueCapacity)), threadFactory,
+                new LinkedBlockingQueue<>(Math.max(100, queueCapacity)),
+                ThreadPoolUtils.fixedNameThreadFactory("modality-audit-api-log"),
                 (runnable, pool) -> warnDropped());
         this.executor.allowCoreThreadTimeOut(true);
     }

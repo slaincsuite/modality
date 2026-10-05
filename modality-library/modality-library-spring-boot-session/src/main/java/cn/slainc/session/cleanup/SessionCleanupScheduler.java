@@ -1,10 +1,10 @@
 package cn.slainc.session.cleanup;
 
 import cn.slainc.session.config.SessionConfigReader;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,11 +28,7 @@ public class SessionCleanupScheduler implements AutoCloseable {
     public SessionCleanupScheduler(SessionCleanupService cleanupService, SessionConfigReader config) {
         this.cleanupService = cleanupService;
         this.config = config;
-        this.executor = Executors.newSingleThreadScheduledExecutor(task -> {
-            Thread thread = new Thread(task, THREAD_NAME);
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.executor = ThreadPoolUtils.newDaemonSingleThreadScheduler(THREAD_NAME);
         scheduleNext();
     }
 

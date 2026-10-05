@@ -1,8 +1,8 @@
 package cn.slainc.modules.audit.scheduler;
 
 import cn.slainc.modules.audit.service.AuditCleanupService;
+import cn.slainc.utils.thread.ThreadPoolUtils;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -23,11 +23,7 @@ public class AuditCleanupScheduler {
     public AuditCleanupScheduler(AuditCleanupService cleanupService, long intervalSeconds) {
         this.cleanupService = cleanupService;
         this.intervalSeconds = intervalSeconds;
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "modality-audit-cleanup");
-            thread.setDaemon(true);
-            return thread;
-        });
+        this.scheduler = ThreadPoolUtils.newDaemonSingleThreadScheduler("modality-audit-cleanup");
     }
 
     public void start() {
