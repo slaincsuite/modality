@@ -2,6 +2,19 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
     id 'java-platform'
+    id 'maven-publish'
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+publishing {
+    publications {
+        mavenBom(MavenPublication) {
+            from components.javaPlatform
+        }
+    }
 }
 
 description = 'Modality Spring Boot library bill of materials'

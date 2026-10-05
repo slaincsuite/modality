@@ -2,6 +2,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
     id 'modality.java-conventions'
+    id 'maven-publish'
 }
 
 def catalog = extensions.getByType(VersionCatalogsExtension).named('libs')
@@ -13,4 +14,12 @@ dependencies {
     annotationProcessor catalog.findLibrary('spring-boot-autoconfigure-processor').get()
     testImplementation catalog.findLibrary('spring-boot-starter-test').get()
     testRuntimeOnly catalog.findLibrary('junit-platform-launcher').get()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
 }
