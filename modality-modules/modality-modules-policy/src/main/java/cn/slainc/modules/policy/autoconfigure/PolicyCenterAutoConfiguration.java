@@ -1,5 +1,6 @@
 package cn.slainc.modules.policy.autoconfigure;
 
+import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
 import cn.slainc.modules.policy.service.PolicyBindingPortalService;
 import cn.slainc.modules.policy.service.PolicyManageService;
 import cn.slainc.modules.policy.service.PolicyTestCaseService;
@@ -34,12 +35,12 @@ import javax.sql.DataSource;
         PolicyTransferController.class, PolicyBindingPortalController.class})
 public class PolicyCenterAutoConfiguration {
 
-    @Bean(initMethod = "init")
-    @ConditionalOnMissingBean(PolicyCenterSchemaInitializer.class)
+    @Bean
+    @ConditionalOnMissingBean(name = "policyCenterSchemaInitializer")
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnProperty(prefix = "modality.policy-center", name = "auto-create-table", matchIfMissing = true)
-    public PolicyCenterSchemaInitializer policyCenterSchemaInitializer(DataSource dataSource) {
-        return new PolicyCenterSchemaInitializer(dataSource);
+    public ClasspathSchemaInitializer policyCenterSchemaInitializer(DataSource dataSource) {
+        return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/policy/policy-center-schema.sql");
     }
 
     @Bean

@@ -1,7 +1,7 @@
 package cn.slainc.modules.upms.autoconfigure;
 
+import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
 import cn.slainc.modules.upms.UpmsKeys;
-import cn.slainc.modules.upms.config.UpmsProperties;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -44,12 +44,11 @@ public class UpmsMybatisAutoConfiguration {
     static class UpmsMapperConfiguration {
 
         @Bean
-        @ConditionalOnMissingBean(UpmsSchemaInitializer.class)
+        @ConditionalOnMissingBean(name = "upmsSchemaInitializer")
         @ConditionalOnBean(DataSource.class)
         @ConditionalOnProperty(prefix = "modality.upms", name = "auto-create-table", matchIfMissing = true)
-        public UpmsSchemaInitializer upmsSchemaInitializer(DataSource dataSource,
-                                                           ObjectProvider<UpmsProperties> properties) {
-            return new UpmsSchemaInitializer(dataSource);
+        public ClasspathSchemaInitializer upmsSchemaInitializer(DataSource dataSource) {
+            return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/upms/upms-schema.sql");
         }
     }
 }

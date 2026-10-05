@@ -1,5 +1,6 @@
 package cn.slainc.modules.open.autoconfigure;
 
+import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.modules.open.store.ConsentQueryDao;
 import cn.slainc.modules.open.store.JdbcAppLogStore;
@@ -25,12 +26,12 @@ import javax.sql.DataSource;
 @ConditionalOnProperty(prefix = "modality.open", name = "enabled", matchIfMissing = true)
 public class OpenStoreAutoConfiguration {
 
-    @Bean(initMethod = "init")
-    @ConditionalOnMissingBean(OpenSchemaInitializer.class)
+    @Bean
+    @ConditionalOnMissingBean(name = "openSchemaInitializer")
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnProperty(prefix = "modality.open", name = "auto-create-table", matchIfMissing = true)
-    public OpenSchemaInitializer openSchemaInitializer(DataSource dataSource) {
-        return new OpenSchemaInitializer(dataSource);
+    public ClasspathSchemaInitializer openSchemaInitializer(DataSource dataSource) {
+        return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/open/open-schema.sql");
     }
 
     @Bean

@@ -1,5 +1,6 @@
 package cn.slainc.modules.audit.autoconfigure;
 
+import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
 import cn.slainc.modules.audit.AuditKeys;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
@@ -43,12 +44,12 @@ public class AuditMybatisAutoConfiguration {
     @MapperScan("cn.slainc.modules.audit.mapper")
     static class AuditMapperConfiguration {
 
-        @Bean(initMethod = "init")
-        @ConditionalOnMissingBean(AuditSchemaInitializer.class)
+        @Bean
+        @ConditionalOnMissingBean(name = "auditSchemaInitializer")
         @ConditionalOnBean(DataSource.class)
         @ConditionalOnProperty(prefix = "modality.audit", name = "auto-create-table", matchIfMissing = true)
-        public AuditSchemaInitializer auditSchemaInitializer(DataSource dataSource) {
-            return new AuditSchemaInitializer(dataSource);
+        public ClasspathSchemaInitializer auditSchemaInitializer(DataSource dataSource) {
+            return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/audit/audit-schema.sql");
         }
     }
 }
