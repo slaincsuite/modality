@@ -1,0 +1,21 @@
+initscript {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.cyclonedx:cyclonedx-gradle-plugin:3.5.1'
+        classpath 'com.github.jk1:gradle-license-report:3.1.4'
+        classpath 'org.owasp:dependency-check-gradle:13.0.0'
+    }
+}
+
+gradle.afterProject { project ->
+    if (project.rootProject.name == 'modality' && project.plugins.hasPlugin('java-library')) {
+        project.apply plugin: org.cyclonedx.gradle.CyclonedxPlugin
+        project.apply plugin: com.github.jk1.license.LicenseReportPlugin
+        if (project.hasProperty('enableOwasp')) {
+            project.apply plugin: org.owasp.dependencycheck.gradle.DependencyCheckPlugin
+        }
+    }
+}
