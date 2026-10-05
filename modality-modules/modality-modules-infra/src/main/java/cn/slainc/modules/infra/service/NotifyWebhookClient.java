@@ -2,16 +2,16 @@ package cn.slainc.modules.infra.service;
 
 import cn.slainc.core.exception.ThirdPartyException;
 import cn.slainc.core.lang.BizAssert;
-import cn.slainc.crypto.hmac.HmacAlgorithm;
-import cn.slainc.crypto.hmac.HmacUtils;
+import cn.slainc.monitor.alert.WebhookSignatures;
+import cn.slainc.utils.json.JsonUtils;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class NotifyWebhookClient {
@@ -49,11 +49,10 @@ public class NotifyWebhookClient {
                 case "DINGTALK" -> dingtalkBody(title, content, level);
                 case "FEISHU" -> feishuBody(title, content, level);
                 case "WECOM" -> wecomBody(title, content, level);
-                default -> "{\"title\":" + quote(title) + ",\"content\":" + quote(content) + ",\"level\":"
-                        + quote(level == null ? "INFO" : level) + "}";
+                default -> customBody(title, content, level);
             };
             String url = "DINGTALK".equals(platform) && config.secret() != null && !config.secret().isBlank()
-                    ? signedDingtalkUrl(config.url(), config.secret())
+                    ? WebhookSignatures.dingTalkSignedUrl(config.url(), config.secret(), System.currentTimeMillis())
                     : config.url();
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                     .timeout(Duration.ofSeconds(10))
@@ -64,9 +63,10 @@ public class NotifyWebhookClient {
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 return SendOutcome.fail("HTTP " + response.statusCode() + "：" + truncate(response.body()));
             }
-            if (response.body() != null && response.body().contains("\"errcode\"")
-                    && !response.body().contains("\"errcode\":0")) {
-                return SendOutcome.fail("平台返回错误：" + truncate(response.body()));
+            try {
+                WebhookSignatures.verifyPlatformResponse(response.body());
+            } catch (IllegalStateException exception) {
+                return SendOutcome.fail(truncate(exception.getMessage()));
             }
             return SendOutcome.ok();
         } catch (ThirdPartyException exception) {
@@ -78,33 +78,44 @@ public class NotifyWebhookClient {
     }
 
     private static String dingtalkBody(String title, String content, String level) {
-        String text = "### " + nullToEmpty(title) + "\n\n" + nullToEmpty(content);
-        if (level != null && !"INFO".equals(level)) {
-            text = "### [" + level + "] " + nullToEmpty(title) + "\n\n" + nullToEmpty(content);
-        }
-        return "{\"msgtype\":\"markdown\",\"markdown\":{\"title\":" + quote(title) + ",\"text\":" + quote(text) + "}}";
+        String heading = level != null && !"INFO".equals(level)
+                ? "### [" + level + "] " + nullToEmpty(title)
+                : "### " + nullToEmpty(title);
+        Map<String, Object> markdown = new LinkedHashMap<>();
+        markdown.put("title", nullToEmpty(title));
+        markdown.put("text", heading + "\n\n" + nullToEmpty(content));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("msgtype", "markdown");
+        body.put("markdown", markdown);
+        return JsonUtils.toJson(body);
     }
 
     private static String feishuBody(String title, String content, String level) {
         String prefix = level == null || "INFO".equals(level) ? "" : "[" + level + "] ";
-        return "{\"msgtype\":\"text\",\"content\":{\"text\":" + quote(prefix + nullToEmpty(title) + "\n"
-                + nullToEmpty(content)) + "}}";
+        Map<String, Object> text = new LinkedHashMap<>();
+        text.put("text", prefix + nullToEmpty(title) + "\n" + nullToEmpty(content));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("msgtype", "text");
+        body.put("content", text);
+        return JsonUtils.toJson(body);
     }
 
     private static String wecomBody(String title, String content, String level) {
         String prefix = level == null || "INFO".equals(level) ? "" : "[" + level + "] ";
-        return "{\"msgtype\":\"markdown\",\"markdown\":{\"content\":" + quote(prefix + nullToEmpty(title) + "\n"
-                + nullToEmpty(content)) + "}}";
+        Map<String, Object> markdown = new LinkedHashMap<>();
+        markdown.put("content", prefix + nullToEmpty(title) + "\n" + nullToEmpty(content));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("msgtype", "markdown");
+        body.put("markdown", markdown);
+        return JsonUtils.toJson(body);
     }
 
-    private static String signedDingtalkUrl(String url, String secret) {
-        long timestamp = System.currentTimeMillis();
-        String stringToSign = timestamp + "\n" + secret;
-        String sign = Base64.getEncoder().encodeToString(
-                HmacUtils.hmac(HmacAlgorithm.HMAC_SHA256, secret.getBytes(StandardCharsets.UTF_8), stringToSign));
-        String separator = url.contains("?") ? "&" : "?";
-        return url + separator + "timestamp=" + timestamp + "&sign="
-                + URLEncoder.encode(sign, StandardCharsets.UTF_8);
+    private static String customBody(String title, String content, String level) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("title", nullToEmpty(title));
+        body.put("content", nullToEmpty(content));
+        body.put("level", level == null ? "INFO" : level);
+        return JsonUtils.toJson(body);
     }
 
     private static String nullToEmpty(String value) {
@@ -116,10 +127,5 @@ public class NotifyWebhookClient {
             return "";
         }
         return value.length() <= 300 ? value : value.substring(0, 300);
-    }
-
-    private static String quote(String value) {
-        return "\"" + nullToEmpty(value).replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
-                .replace("\r", "") + "\"";
     }
 }
