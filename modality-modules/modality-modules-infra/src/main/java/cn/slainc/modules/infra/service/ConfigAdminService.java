@@ -2,6 +2,7 @@ package cn.slainc.modules.infra.service;
 
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.exception.BizException;
+import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.ResultCode;
@@ -52,8 +53,6 @@ public class ConfigAdminService {
     }
 
     public PageResult<ConfigView> page(long current, long size, String keyword, String group) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         StringBuilder where = new StringBuilder(" WHERE deleted = 0");
         List<Object> args = new ArrayList<>();
         if (keyword != null && !keyword.isBlank()) {
@@ -66,19 +65,15 @@ public class ConfigAdminService {
             where.append(" AND config_group = ?");
             args.add(group.trim());
         }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM t_dynamic_config" + where, Long.class, args.toArray());
-        List<Object> pageArgs = new ArrayList<>(args);
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<ConfigView> records = jdbc.query(
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM t_dynamic_config" + where,
                 "SELECT config_key, config_group, description, encrypted, enabled, version, config_value"
-                        + " FROM t_dynamic_config" + where + " ORDER BY config_key LIMIT ? OFFSET ?",
+                        + " FROM t_dynamic_config" + where + " ORDER BY config_key",
+                args, current, size, 500,
                 (rs, rowNum) -> new ConfigView(rs.getString("config_key"), rs.getString("config_group"),
                         rs.getString("description"), rs.getInt("encrypted") == 1, rs.getInt("enabled") == 1,
                         rs.getInt("version"),
-                        rs.getInt("encrypted") == 1 ? null : preview(rs.getString("config_value"))),
-                pageArgs.toArray());
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+                        rs.getInt("encrypted") == 1 ? null : preview(rs.getString("config_value"))));
     }
 
     public ConfigView detail(String key) {
@@ -144,14 +139,8 @@ public class ConfigAdminService {
 
     public PageResult<HistoryView> historyPage(String key, long current, long size) {
         BizAssert.hasText(key, "配置键不能为空");
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
-        long total = history.count(key);
-        List<HistoryView> views = history.page(key, (safeCurrent - 1) * safeSize, safeSize).stream()
-                .map(row -> new HistoryView(row.id(), row.configKey(), row.configGroup(), row.operation(),
-                        row.operator(), row.createTime()))
-                .toList();
-        return PageResult.of(views, total, safeCurrent, safeSize);
+        return history.page(key, current, size).map(row -> new HistoryView(row.id(), row.configKey(),
+                row.configGroup(), row.operation(), row.operator(), row.createTime()));
     }
 
     public void rollback(Long historyId) {

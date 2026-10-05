@@ -1,6 +1,10 @@
 package cn.slainc.modules.infra.store;
 
+import cn.slainc.core.jdbc.JdbcPager;
+import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.infra.InfraKeys;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -28,35 +32,27 @@ public class ConfigHistoryStore {
                 encrypted ? 1 : 0, operation, operator, System.currentTimeMillis());
     }
 
-    public List<HistoryRow> page(String configKey, long offset, int size) {
-        return jdbc.query("SELECT id, config_key, config_group, description, old_value, new_value, encrypted,"
+    public PageResult<HistoryRow> page(String configKey, long current, long size) {
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.CONFIG_HISTORY_TABLE + " WHERE config_key = ?",
+                "SELECT id, config_key, config_group, description, old_value, new_value, encrypted,"
                         + " operation, operator, create_time FROM " + InfraKeys.CONFIG_HISTORY_TABLE
-                        + " WHERE config_key = ? ORDER BY id DESC LIMIT " + size + " OFFSET " + offset,
-                (rs, rowNum) -> new HistoryRow(rs.getLong("id"), rs.getString("config_key"),
-                        rs.getString("config_group"), rs.getString("description"),
-                        cipher.decrypt(rs.getString("old_value")), cipher.decrypt(rs.getString("new_value")),
-                        rs.getInt("encrypted") == 1, rs.getString("operation"), rs.getString("operator"),
-                        rs.getLong("create_time")),
-                configKey);
-    }
-
-    public long count(String configKey) {
-        Long count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM " + InfraKeys.CONFIG_HISTORY_TABLE + " WHERE config_key = ?", Long.class,
-                configKey);
-        return count == null ? 0 : count;
+                        + " WHERE config_key = ? ORDER BY id DESC",
+                List.of(configKey), current, size, 500, this::mapRow);
     }
 
     public HistoryRow find(Long id) {
         List<HistoryRow> rows = jdbc.query("SELECT id, config_key, config_group, description, old_value, new_value,"
                         + " encrypted, operation, operator, create_time FROM " + InfraKeys.CONFIG_HISTORY_TABLE
                         + " WHERE id = ?",
-                (rs, rowNum) -> new HistoryRow(rs.getLong("id"), rs.getString("config_key"),
-                        rs.getString("config_group"), rs.getString("description"),
-                        cipher.decrypt(rs.getString("old_value")), cipher.decrypt(rs.getString("new_value")),
-                        rs.getInt("encrypted") == 1, rs.getString("operation"), rs.getString("operator"),
-                        rs.getLong("create_time")),
-                id);
+                this::mapRow, id);
         return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    private HistoryRow mapRow(ResultSet rs, int rowNum) throws SQLException {
+        return new HistoryRow(rs.getLong("id"), rs.getString("config_key"), rs.getString("config_group"),
+                rs.getString("description"), cipher.decrypt(rs.getString("old_value")),
+                cipher.decrypt(rs.getString("new_value")), rs.getInt("encrypted") == 1, rs.getString("operation"),
+                rs.getString("operator"), rs.getLong("create_time"));
     }
 }

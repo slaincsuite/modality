@@ -1,8 +1,11 @@
 package cn.slainc.modules.infra.service;
 
+import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.infra.InfraKeys;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -23,8 +26,6 @@ public class NoticeService {
     }
 
     public PageResult<NoticeView> page(long current, long size, String keyword, String status) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> args = new ArrayList<>();
         if (keyword != null && !keyword.isBlank()) {
@@ -35,13 +36,11 @@ public class NoticeService {
             where.append(" AND status = ?");
             args.add(status.trim());
         }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.NOTICE_TABLE + where, Long.class,
-                args.toArray());
-        List<Object> pageArgs = new ArrayList<>(args);
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<NoticeView> records = query(where + " ORDER BY id DESC LIMIT ? OFFSET ?", pageArgs);
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.NOTICE_TABLE + where,
+                "SELECT id, title, content, level, status, publish_time, expire_time, operator,"
+                        + " create_time, update_time FROM " + InfraKeys.NOTICE_TABLE + where + " ORDER BY id DESC",
+                args, current, size, 500, NoticeService::mapRow);
     }
 
     public List<NoticeView> activeNotices() {
@@ -106,11 +105,14 @@ public class NoticeService {
     private List<NoticeView> query(String suffix, List<Object> args) {
         return jdbc.query("SELECT id, title, content, level, status, publish_time, expire_time, operator,"
                         + " create_time, update_time FROM " + InfraKeys.NOTICE_TABLE + suffix,
-                (rs, rowNum) -> new NoticeView(rs.getLong("id"), rs.getString("title"), rs.getString("content"),
-                        rs.getString("level"), rs.getString("status"),
-                        rs.getObject("publish_time") == null ? null : rs.getLong("publish_time"),
-                        rs.getObject("expire_time") == null ? null : rs.getLong("expire_time"),
-                        rs.getString("operator"), rs.getLong("create_time"), rs.getLong("update_time")),
-                args.toArray());
+                NoticeService::mapRow, args.toArray());
+    }
+
+    private static NoticeView mapRow(ResultSet rs, int rowNum) throws SQLException {
+        return new NoticeView(rs.getLong("id"), rs.getString("title"), rs.getString("content"),
+                rs.getString("level"), rs.getString("status"),
+                rs.getObject("publish_time") == null ? null : rs.getLong("publish_time"),
+                rs.getObject("expire_time") == null ? null : rs.getLong("expire_time"),
+                rs.getString("operator"), rs.getLong("create_time"), rs.getLong("update_time"));
     }
 }

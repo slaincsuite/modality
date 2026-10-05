@@ -1,5 +1,6 @@
 package cn.slainc.modules.infra.service;
 
+import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.infra.InfraKeys;
@@ -28,8 +29,6 @@ public class DictService {
     }
 
     public PageResult<DictTypeView> typePage(long current, long size, String keyword) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> args = new ArrayList<>();
         if (keyword != null && !keyword.isBlank()) {
@@ -38,21 +37,16 @@ public class DictService {
             args.add(like);
             args.add(like);
         }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.DICT_TYPE_TABLE + where, Long.class,
-                args.toArray());
-        List<Object> pageArgs = new ArrayList<>(args);
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<DictTypeView> records = jdbc.query(
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.DICT_TYPE_TABLE + where,
                 "SELECT t.id, t.code, t.name, t.remark, t.enabled, t.create_time, t.update_time,"
                         + " (SELECT COUNT(*) FROM " + InfraKeys.DICT_ITEM_TABLE + " i WHERE i.type_code = t.code)"
                         + " AS item_count FROM " + InfraKeys.DICT_TYPE_TABLE + " t" + where
-                        + " ORDER BY t.code LIMIT ? OFFSET ?",
+                        + " ORDER BY t.code",
+                args, current, size, 500,
                 (rs, rowNum) -> new DictTypeView(rs.getLong("id"), rs.getString("code"), rs.getString("name"),
                         rs.getString("remark"), rs.getInt("enabled") == 1, rs.getLong("create_time"),
-                        rs.getLong("update_time"), rs.getLong("item_count")),
-                pageArgs.toArray());
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+                        rs.getLong("update_time"), rs.getLong("item_count")));
     }
 
     public void createType(String code, String name, String remark) {
@@ -95,8 +89,6 @@ public class DictService {
     }
 
     public PageResult<DictItemView> itemPage(long current, long size, String typeCode, String keyword) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> args = new ArrayList<>();
         if (typeCode != null && !typeCode.isBlank()) {
@@ -109,19 +101,14 @@ public class DictService {
             args.add(like);
             args.add(like);
         }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.DICT_ITEM_TABLE + where, Long.class,
-                args.toArray());
-        List<Object> pageArgs = new ArrayList<>(args);
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<DictItemView> records = jdbc.query(
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.DICT_ITEM_TABLE + where,
                 "SELECT id, type_code, label, item_value, sort, enabled, remark, create_time, update_time FROM "
-                        + InfraKeys.DICT_ITEM_TABLE + where + " ORDER BY type_code, sort, id LIMIT ? OFFSET ?",
+                        + InfraKeys.DICT_ITEM_TABLE + where + " ORDER BY type_code, sort, id",
+                args, current, size, 500,
                 (rs, rowNum) -> new DictItemView(rs.getLong("id"), rs.getString("type_code"), rs.getString("label"),
-                        rs.getString("item_value"), rs.getInt("sort"), rs.getInt("enabled") == 1, rs.getString("remark"),
-                        rs.getLong("create_time"), rs.getLong("update_time")),
-                pageArgs.toArray());
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+                        rs.getString("item_value"), rs.getInt("sort"), rs.getInt("enabled") == 1,
+                        rs.getString("remark"), rs.getLong("create_time"), rs.getLong("update_time")));
     }
 
     public void createItem(String typeCode, String label, String value, Integer sort, String remark) {

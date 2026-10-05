@@ -1,16 +1,17 @@
 package cn.slainc.modules.infra.service;
 
 import cn.slainc.core.exception.BizException;
+import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.infra.InfraKeys;
-import cn.slainc.web.websocket.WebSocketBroadcaster;
+import cn.slainc.web.websocket.WebSocketPusher;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class NotifyService {
@@ -37,37 +38,30 @@ public class NotifyService {
 
     private final NotifyWebhookClient webhookClient;
 
-    private final ObjectProvider<WebSocketBroadcaster> broadcaster;
+    private final WebSocketPusher pusher;
 
     private final int maxRetry;
 
     public NotifyService(JdbcTemplate jdbc, NotifyWebhookClient webhookClient,
-                         ObjectProvider<WebSocketBroadcaster> broadcaster, int maxRetry) {
+                         WebSocketPusher pusher, int maxRetry) {
         this.jdbc = jdbc;
         this.webhookClient = webhookClient;
-        this.broadcaster = broadcaster;
+        this.pusher = pusher;
         this.maxRetry = maxRetry;
     }
 
     public PageResult<TemplateView> templatePage(long current, long size, String keyword) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         String where = keyword == null || keyword.isBlank() ? "" : " WHERE code LIKE ? OR name LIKE ?";
-        Object[] args = where.isEmpty() ? new Object[0]
-                : new Object[]{"%" + keyword.trim() + "%", "%" + keyword.trim() + "%"};
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_TEMPLATE_TABLE + where,
-                Long.class, args);
-        List<Object> pageArgs = new ArrayList<>(List.of(args));
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<TemplateView> records = jdbc.query(
+        List<Object> args = where.isEmpty() ? List.of()
+                : List.of("%" + keyword.trim() + "%", "%" + keyword.trim() + "%");
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_TEMPLATE_TABLE + where,
                 "SELECT id, code, name, title_template, content_template, channel, enabled FROM "
-                        + InfraKeys.NOTIFY_TEMPLATE_TABLE + where + " ORDER BY code LIMIT ? OFFSET ?",
+                        + InfraKeys.NOTIFY_TEMPLATE_TABLE + where + " ORDER BY code",
+                args, current, size, 500,
                 (rs, rowNum) -> new TemplateView(rs.getLong("id"), rs.getString("code"), rs.getString("name"),
                         rs.getString("title_template"), rs.getString("content_template"), rs.getString("channel"),
-                        rs.getInt("enabled") == 1),
-                pageArgs.toArray());
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+                        rs.getInt("enabled") == 1));
     }
 
     public void createTemplate(String code, String name, String titleTemplate, String contentTemplate, String channel) {
@@ -117,11 +111,10 @@ public class NotifyService {
                             + " (receiver_id, login_type, title, content, level, template_code, read_flag,"
                             + " create_time) VALUES (?, ?, ?, ?, 'INFO', ?, 0, ?)",
                     receiver, safeLoginType, title, content, templateCode, now);
-            WebSocketBroadcaster pusher = broadcaster.getIfAvailable();
-            if (pusher != null) {
-                pusher.sendToUser(String.valueOf(receiver),
-                        "{\"topic\":\"" + InfraKeys.DEFAULT_NOTIFY_TOPIC + "\",\"title\":" + jsonQuote(title) + "}");
-            }
+            Map<String, Object> push = new LinkedHashMap<>();
+            push.put("topic", InfraKeys.DEFAULT_NOTIFY_TOPIC);
+            push.put("title", title);
+            pusher.sendToUser(String.valueOf(receiver), push);
         }
         String target = receivers.stream().map(receiver -> "user:" + receiver).reduce((a, b) -> a + "," + b).orElse("");
         jdbc.update("INSERT INTO " + InfraKeys.NOTIFY_RECORD_TABLE
@@ -185,16 +178,12 @@ public class NotifyService {
     }
 
     public PageResult<WebhookView> webhookPage(long current, long size) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE, Long.class);
-        List<WebhookView> records = jdbc.query(
-                "SELECT id, name, platform, url, enabled FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE
-                        + " ORDER BY id LIMIT ? OFFSET ?",
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE,
+                "SELECT id, name, platform, url, enabled FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE + " ORDER BY id",
+                List.of(), current, size, 500,
                 (rs, rowNum) -> new WebhookView(rs.getLong("id"), rs.getString("name"), rs.getString("platform"),
-                        rs.getString("url"), rs.getInt("enabled") == 1),
-                safeSize, (safeCurrent - 1) * safeSize);
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+                        rs.getString("url"), rs.getInt("enabled") == 1));
     }
 
     public void createWebhook(String name, String platform, String url, String secret) {
@@ -222,8 +211,6 @@ public class NotifyService {
     }
 
     public PageResult<RecordView> recordPage(long current, long size, String channel, String status) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> args = new ArrayList<>();
         if (channel != null && !channel.isBlank()) {
@@ -234,48 +221,35 @@ public class NotifyService {
             where.append(" AND status = ?");
             args.add(status.trim().toUpperCase());
         }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_RECORD_TABLE + where,
-                Long.class, args.toArray());
-        List<Object> pageArgs = new ArrayList<>(args);
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<RecordView> records = jdbc.query(
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_RECORD_TABLE + where,
                 "SELECT id, channel, target, template_code, title, content, status, error, retry_count, create_time, sent_time"
-                        + " FROM " + InfraKeys.NOTIFY_RECORD_TABLE + where + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                        + " FROM " + InfraKeys.NOTIFY_RECORD_TABLE + where + " ORDER BY id DESC",
+                args, current, size, 500,
                 (rs, rowNum) -> new RecordView(rs.getLong("id"), rs.getString("channel"), rs.getString("target"),
-                        rs.getString("template_code"), rs.getString("title"), rs.getString("content"), rs.getString("status"),
-                        rs.getString("error"), rs.getInt("retry_count"), rs.getLong("create_time"),
-                        rs.getObject("sent_time") == null ? null : rs.getLong("sent_time")),
-                pageArgs.toArray());
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+                        rs.getString("template_code"), rs.getString("title"), rs.getString("content"),
+                        rs.getString("status"), rs.getString("error"), rs.getInt("retry_count"),
+                        rs.getLong("create_time"), rs.getObject("sent_time") == null ? null : rs.getLong("sent_time")));
     }
 
     public PageResult<MessageView> myMessages(long receiverId, String loginType, long current, long size,
                                               Boolean read) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         StringBuilder where = new StringBuilder(" WHERE receiver_id = ? AND login_type = ?");
         List<Object> args = new ArrayList<>(List.of(receiverId, loginType));
         if (read != null) {
             where.append(" AND read_flag = ?");
             args.add(read ? 1 : 0);
         }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE + where,
-                Long.class, args.toArray());
-        List<Object> pageArgs = new ArrayList<>(args);
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<MessageView> records = jdbc.query(
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE + where,
                 "SELECT id, receiver_id, login_type, title, content, level, template_code, read_flag, read_time,"
-                        + " create_time FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE + where
-                        + " ORDER BY id DESC LIMIT ? OFFSET ?",
+                        + " create_time FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE + where + " ORDER BY id DESC",
+                args, current, size, 500,
                 (rs, rowNum) -> new MessageView(rs.getLong("id"), rs.getLong("receiver_id"),
                         rs.getString("login_type"), rs.getString("title"), rs.getString("content"),
                         rs.getString("level"), rs.getString("template_code"), rs.getInt("read_flag") == 1,
                         rs.getObject("read_time") == null ? null : rs.getLong("read_time"),
-                        rs.getLong("create_time")),
-                pageArgs.toArray());
-        return PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+                        rs.getLong("create_time")));
     }
 
     public long unreadCount(long receiverId, String loginType) {
@@ -368,9 +342,5 @@ public class NotifyService {
                         rs.getObject("sent_time") == null ? null : rs.getLong("sent_time")),
                 id);
         return rows.isEmpty() ? null : rows.get(0);
-    }
-
-    private static String jsonQuote(String value) {
-        return "\"" + (value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"")) + "\"";
     }
 }

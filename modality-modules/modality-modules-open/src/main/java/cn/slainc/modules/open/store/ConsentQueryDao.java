@@ -1,5 +1,6 @@
 package cn.slainc.modules.open.store;
 
+import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.openapi.model.ConsentRecord;
@@ -42,22 +43,17 @@ public class ConsentQueryDao {
             where.append(" AND granted_at <= ?");
             args.add(to);
         }
-        Long total = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM " + OpenKeys.CONSENT_TABLE + where, Long.class, args.toArray());
-        long currentPage = Math.max(current, 1);
-        long pageSize = size <= 0 ? 10 : Math.min(size, 200);
-        long offset = (currentPage - 1) * pageSize;
-        List<Object> queryArgs = new ArrayList<>(args);
-        queryArgs.add(pageSize);
-        queryArgs.add(offset);
-        List<ConsentRecord> records = jdbcTemplate.query(
-                "SELECT * FROM " + OpenKeys.CONSENT_TABLE + where + " ORDER BY granted_at DESC LIMIT ? OFFSET ?",
-                ConsentQueryDao::mapRow, queryArgs.toArray());
+        PageResult<ConsentRecord> result = JdbcPager.page(jdbcTemplate,
+                "SELECT COUNT(*) FROM " + OpenKeys.CONSENT_TABLE + where,
+                "SELECT * FROM " + OpenKeys.CONSENT_TABLE + where + " ORDER BY granted_at DESC",
+                args, current, size, ConsentQueryDao::mapRow);
         if (scope != null && !scope.isBlank()) {
-            // scope 过滤在内存做：scopes 是 JSON 列，先按其余条件收敛再精确匹配
-            records = records.stream().filter(record -> record.getScopes().contains(scope.trim())).toList();
+            // scope 过滤在内存做：scopes 是 JSON 列，先按其余条件收敛再精确匹配，total 保持过滤前的口径
+            List<ConsentRecord> filtered = result.records().stream()
+                    .filter(record -> record.getScopes().contains(scope.trim())).toList();
+            result = PageResult.of(filtered, result.total(), result.current(), result.size());
         }
-        return PageResult.of(records, total == null ? 0 : total, currentPage, pageSize);
+        return result;
     }
 
     public List<String> activeUserIds() {

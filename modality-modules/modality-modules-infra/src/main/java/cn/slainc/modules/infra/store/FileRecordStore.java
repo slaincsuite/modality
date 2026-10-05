@@ -1,5 +1,6 @@
 package cn.slainc.modules.infra.store;
 
+import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.modules.infra.InfraKeys;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +41,6 @@ public class FileRecordStore {
 
     public cn.slainc.core.result.PageResult<FileView> page(long current, long size, String keyword, String folder,
                                                             String contentType, Long uploaderId, Long from, Long to) {
-        long safeCurrent = Math.max(current, 1);
-        int safeSize = (int) Math.min(Math.max(size, 1), 500);
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> args = new ArrayList<>();
         if (keyword != null && !keyword.isBlank()) {
@@ -70,14 +69,10 @@ public class FileRecordStore {
             where.append(" AND create_time <= ?");
             args.add(to);
         }
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.FILE_RECORD_TABLE + where,
-                Long.class, args.toArray());
-        List<Object> pageArgs = new ArrayList<>(args);
-        pageArgs.add(safeSize);
-        pageArgs.add((safeCurrent - 1) * safeSize);
-        List<FileView> records = jdbc.query(
-                selectSql() + where + " ORDER BY id DESC LIMIT ? OFFSET ?", mapper(), pageArgs.toArray());
-        return cn.slainc.core.result.PageResult.of(records, total == null ? 0 : total, safeCurrent, safeSize);
+        return JdbcPager.page(jdbc,
+                "SELECT COUNT(*) FROM " + InfraKeys.FILE_RECORD_TABLE + where,
+                selectSql() + where + " ORDER BY id DESC",
+                args, current, size, 500, mapper());
     }
 
     public int updateStatus(long id, String status) {
