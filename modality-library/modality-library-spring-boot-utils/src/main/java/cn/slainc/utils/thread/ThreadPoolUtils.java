@@ -47,6 +47,25 @@ public final class ThreadPoolUtils {
         return Executors.newScheduledThreadPool(poolSize, namedThreadFactory(threadNamePrefix));
     }
 
+    public static ScheduledExecutorService newDaemonSingleThreadScheduler(String threadName) {
+        return Executors.newSingleThreadScheduledExecutor(fixedNameThreadFactory(threadName));
+    }
+
+    public static Thread newDaemonThread(String threadName, Runnable runnable) {
+        Thread thread = new Thread(runnable, threadName);
+        thread.setDaemon(true);
+        return thread;
+    }
+
+    public static ThreadFactory fixedNameThreadFactory(String threadName) {
+        String name = threadName == null || threadName.isBlank() ? "modality-daemon" : threadName;
+        return runnable -> {
+            Thread thread = new Thread(runnable, name);
+            thread.setDaemon(true);
+            return thread;
+        };
+    }
+
     public static ExecutorService newVirtualThreadPerTaskExecutor(String threadNamePrefix) {
         return Executors.newThreadPerTaskExecutor(
                 Thread.ofVirtual().name(threadNamePrefix + "-", 0).factory());
