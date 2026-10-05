@@ -7,6 +7,7 @@ description = '监控'
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
     api project(':modality-library:modality-library-spring-boot-web')
+    implementation project(':modality-library:modality-library-spring-boot-crypto')
     api libs.spring.boot.starter.actuator
     implementation libs.oshi.core
     compileOnly project(':modality-library:modality-library-spring-boot-redis')
