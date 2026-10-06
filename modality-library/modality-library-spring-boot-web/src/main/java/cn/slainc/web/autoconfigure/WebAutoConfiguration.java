@@ -21,6 +21,9 @@ import cn.slainc.web.result.ApiResponseAdvice;
 import cn.slainc.web.serialize.JacksonCustomizer;
 import cn.slainc.web.trace.TraceIdFilter;
 import cn.slainc.web.trace.TraceIdGenerator;
+import cn.slainc.web.websocket.WebSocketBroadcaster;
+import cn.slainc.web.websocket.WebSocketPusher;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -57,6 +60,14 @@ public class WebAutoConfiguration {
             matchIfMissing = true)
     public ApiResponseAdvice apiResponseAdvice(ResponseWrapProperties properties) {
         return new ApiResponseAdvice(properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "modality.web.websocket", name = "pusher-enabled", havingValue = "true",
+            matchIfMissing = true)
+    public WebSocketPusher webSocketPusher(ObjectProvider<WebSocketBroadcaster> broadcaster) {
+        return new WebSocketPusher(broadcaster);
     }
 
     @Bean
