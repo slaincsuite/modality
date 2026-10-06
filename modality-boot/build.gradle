@@ -47,6 +47,8 @@ dependencies {
     implementation project(':modality-modules:modality-modules-policy')
     implementation project(':modality-modules:modality-modules-infra')
 
+    testImplementation libs.archunit.junit5
+
     developmentOnly platform(project(':modality-library:modality-library-spring-boot-bom'))
     developmentOnly libs.h2
     testRuntimeOnly libs.h2

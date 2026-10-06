@@ -22,6 +22,7 @@ awssdk = "2.55.14"
 s3mock = "5.2.3"
 justauth = "1.16.7"
 zxing = "3.5.3"
+archunit = "1.4.1"
 
 [libraries]
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -67,6 +68,7 @@ s3mock = { module = "com.adobe.testing:s3mock", version.ref = "s3mock" }
 s3mock-junit5 = { module = "com.adobe.testing:s3mock-junit5", version.ref = "s3mock" }
 justauth = { module = "me.zhyd.oauth:JustAuth", version.ref = "justauth" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 oshi-core = { module = "com.github.oshi:oshi-core", version.ref = "oshi" }
 resilience4j-circuitbreaker = { module = "io.github.resilience4j:resilience4j-circuitbreaker", version.ref = "resilience4j" }
 resilience4j-timelimiter = { module = "io.github.resilience4j:resilience4j-timelimiter", version.ref = "resilience4j" }
