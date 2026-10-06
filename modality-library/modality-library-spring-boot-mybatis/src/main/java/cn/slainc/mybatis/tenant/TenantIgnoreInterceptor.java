@@ -1,5 +1,7 @@
 package cn.slainc.mybatis.tenant;
 
+import cn.slainc.mybatis.interceptor.MapperAnnotations;
+
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -39,23 +41,6 @@ public class TenantIgnoreInterceptor implements Interceptor {
     }
 
     private boolean isIgnoredMethod(MappedStatement statement) {
-        String id = statement.getId();
-        int index = id.lastIndexOf('.');
-        if (index <= 0) {
-            return false;
-        }
-        try {
-            Class<?> mapperType = Class.forName(id.substring(0, index));
-            String methodName = id.substring(index + 1);
-            for (Method method : mapperType.getMethods()) {
-                if (method.getName().equals(methodName)
-                        && AnnotationUtils.findAnnotation(method, IgnoreTenant.class) != null) {
-                    return true;
-                }
-            }
-            return AnnotationUtils.findAnnotation(mapperType, IgnoreTenant.class) != null;
-        } catch (ClassNotFoundException exception) {
-            return false;
-        }
+        return MapperAnnotations.findMapperAnnotation(statement, IgnoreTenant.class) != null;
     }
 }
