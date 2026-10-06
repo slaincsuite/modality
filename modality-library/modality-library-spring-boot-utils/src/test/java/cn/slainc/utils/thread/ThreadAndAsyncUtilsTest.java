@@ -87,4 +87,41 @@ class ThreadAndAsyncUtilsTest {
         });
         assertTrue(virtual.isVirtual());
     }
+
+    @Test
+    void daemonSingleThreadSchedulerRunsTaskWithFixedName() throws Exception {
+        java.util.concurrent.ScheduledExecutorService scheduler =
+                ThreadPoolUtils.newDaemonSingleThreadScheduler("test-scheduler");
+        try {
+            java.util.concurrent.atomic.AtomicReference<String> threadName = new java.util.concurrent.atomic.AtomicReference<>();
+            java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            scheduler.execute(() -> {
+                threadName.set(Thread.currentThread().getName());
+                latch.countDown();
+            });
+            assertTrue(latch.await(5, java.util.concurrent.TimeUnit.SECONDS));
+            assertEquals("test-scheduler", threadName.get());
+        } finally {
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void newDaemonThreadHasFixedNameAndDaemonFlag() {
+        Thread thread = ThreadPoolUtils.newDaemonThread("test-worker", () -> {
+        });
+        assertEquals("test-worker", thread.getName());
+        assertTrue(thread.isDaemon());
+    }
+
+    @Test
+    void fixedNameThreadFactoryKeepsExactNameAndDaemonFlag() {
+        Thread thread = ThreadPoolUtils.fixedNameThreadFactory("fixed-name").newThread(() -> {
+        });
+        assertEquals("fixed-name", thread.getName());
+        assertTrue(thread.isDaemon());
+        Thread fallback = ThreadPoolUtils.fixedNameThreadFactory(null).newThread(() -> {
+        });
+        assertEquals("modality-daemon", fallback.getName());
+    }
 }
