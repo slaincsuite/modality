@@ -3,20 +3,14 @@ package cn.slainc.apikey.service;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.slainc.apikey.ApiKeyRecord;
 import cn.slainc.apikey.ApiKeyStatus;
+import cn.slainc.utils.date.DateUtils;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public class ApiKeyCsvWriter {
 
     public static final String BOM = "\uFEFF";
-
-    private static final DateTimeFormatter TIME_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT).withZone(ZoneId.systemDefault());
 
     private static final Map<String, String> STATUS_TEXT = Map.of(
             ApiKeyStatus.ENABLED, "启用",
@@ -37,7 +31,8 @@ public class ApiKeyCsvWriter {
                         .append(cell(record.getLoginId())).append(',')
                         .append(cell(record.getScopes())).append(',')
                         .append(cell(statusText(record.getStatus()))).append(',')
-                        .append(cell(format(record.getCreateTime()))).append(',')
+                        .append(cell(record.getCreateTime() == null ? ""
+                                : DateUtils.format(DateUtils.fromEpochMilli(record.getCreateTime())))).append(',')
                         .append(cell(formatExpiry(record.getExpiresTime()))).append('\n');
             }
         }
@@ -48,15 +43,12 @@ public class ApiKeyCsvWriter {
         return STATUS_TEXT.getOrDefault(status, status);
     }
 
-    private String format(Long millis) {
-        return millis == null ? "" : TIME_FORMAT.format(Instant.ofEpochMilli(millis));
-    }
-
     private String formatExpiry(Long millis) {
         if (millis == null) {
             return "";
         }
-        return millis == SaTokenDao.NEVER_EXPIRE ? "永不过期" : TIME_FORMAT.format(Instant.ofEpochMilli(millis));
+        return millis == SaTokenDao.NEVER_EXPIRE ? "永不过期"
+                : DateUtils.format(DateUtils.fromEpochMilli(millis));
     }
 
     private String cell(String value) {

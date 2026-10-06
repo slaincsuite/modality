@@ -4,8 +4,8 @@ import cn.slainc.modules.audit.AuditKeys;
 import cn.slainc.modules.audit.service.ApiLogService;
 import cn.slainc.modules.audit.excel.ApiLogExportService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -67,10 +67,9 @@ public class ApiLogController {
                        @RequestParam(required = false) Long from,
                        @RequestParam(required = false) Long to,
                        @RequestParam(defaultValue = "10000") int limit,
-                       HttpServletResponse response) throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=api-logs.xlsx");
-        exportService.export(response.getOutputStream(), path, method, statusCode, loginId, loginType, from, to,
+                       HttpServletResponse response) {
+        exportService.export(DownloadResponses.attachmentStream(response, "api-logs.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), path, method, statusCode, loginId, loginType, from, to,
                 limit);
     }
 }

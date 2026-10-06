@@ -1,5 +1,6 @@
 package cn.slainc.excel.format;
 
+import cn.slainc.utils.date.DateUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
@@ -15,13 +16,10 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class LegacyWorkbookReader {
-
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private LegacyWorkbookReader() {
     }
@@ -111,7 +109,7 @@ public final class LegacyWorkbookReader {
 
     private static String numericText(Cell cell) {
         if (DateUtil.isCellDateFormatted(cell)) {
-            return cell.getLocalDateTimeCellValue().format(DATE_FORMAT);
+            return DateUtils.format(cell.getLocalDateTimeCellValue());
         }
         return BigDecimal.valueOf(cell.getNumericCellValue()).stripTrailingZeros().toPlainString();
     }

@@ -5,13 +5,12 @@ import cn.slainc.modules.upms.UpmsKeys;
 import cn.slainc.modules.upms.excel.OperationLogExportService;
 import cn.slainc.modules.upms.log.OperationLogService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/upms/operation-log")
@@ -38,10 +37,8 @@ public class OperationLogController {
 
     @GetMapping("/export")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_LOG_EXPORT)
-    public void export(@RequestParam(defaultValue = "10000") int limit, HttpServletResponse response)
-            throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=operation-logs.xlsx");
-        exportService.export(response.getOutputStream(), limit);
+    public void export(@RequestParam(defaultValue = "10000") int limit, HttpServletResponse response) {
+        exportService.export(DownloadResponses.attachmentStream(response, "operation-logs.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), limit);
     }
 }

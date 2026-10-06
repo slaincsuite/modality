@@ -4,6 +4,7 @@ import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.upms.entity.UserOperationLogRecord;
 import cn.slainc.modules.upms.log.OperationLogService;
+import cn.slainc.utils.date.DateUtils;
 
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -24,7 +25,9 @@ public class OperationLogExportService {
         for (UserOperationLogRecord record : records) {
             rows.add(new OperationLogExportRow(record.getUsername(), record.getModuleName(), record.getOperation(),
                     record.getDescription(), record.getSuccess() ? "成功" : "失败", record.getClientIp(),
-                    UserExcelService.formatTime(record.getCreateTime()), record.getCostMillis()));
+                    record.getCreateTime() == null ? ""
+                            : DateUtils.format(DateUtils.fromEpochMilli(record.getCreateTime())),
+                    record.getCostMillis()));
         }
         ExcelUtils.write(outputStream, OperationLogExportRow.class, rows, "操作日志");
     }

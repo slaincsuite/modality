@@ -4,17 +4,13 @@ import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.audit.service.ApiLogService;
 import cn.slainc.modules.audit.entity.ApiLogRecord;
+import cn.slainc.utils.date.DateUtils;
 import java.io.OutputStream;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class ApiLogExportService {
-
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final ApiLogService apiLogService;
 
@@ -33,16 +29,11 @@ public class ApiLogExportService {
                     Boolean.TRUE.equals(record.getSlow()) ? "是" : "否",
                     Boolean.TRUE.equals(record.getError()) ? "是" : "否",
                     record.getCostMillis(), record.getLoginId(), record.getLoginType(), record.getClientIp(),
-                    formatTime(record.getCreateTime()), record.getTraceId()));
+                    record.getCreateTime() == null ? null
+                            : DateUtils.format(DateUtils.fromEpochMilli(record.getCreateTime())),
+                    record.getTraceId()));
         }
         ExcelUtils.write(outputStream, ApiLogExportRow.class, rows, "API访问日志");
-    }
-
-    private String formatTime(Long epochMillis) {
-        if (epochMillis == null) {
-            return null;
-        }
-        return TIME_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()));
     }
 
     public static class ApiLogExportRow {

@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import cn.slainc.web.websocket.WebSocketBroadcaster;
+import cn.slainc.web.websocket.WebSocketPusher;
 
 @AutoConfiguration(afterName = "org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration")
 @ConditionalOnBean(JdbcTemplate.class)
@@ -39,7 +39,7 @@ public class InfraCoreAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(InfraCoreAutoConfiguration.class);
 
-    @Bean(initMethod = "init")
+    @Bean
     @ConditionalOnMissingBean(InfraSchemaInitializer.class)
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnProperty(prefix = "modality.infra", name = "auto-create-table", matchIfMissing = true)
@@ -104,8 +104,8 @@ public class InfraCoreAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public NotifyService notifyService(JdbcTemplate jdbc, NotifyWebhookClient webhookClient,
-                                       ObjectProvider<WebSocketBroadcaster> broadcaster,
+                                       WebSocketPusher pusher,
                                        InfraModuleProperties properties) {
-        return new NotifyService(jdbc, webhookClient, broadcaster, properties.getNotify().getMaxRetry());
+        return new NotifyService(jdbc, webhookClient, pusher, properties.getNotify().getMaxRetry());
     }
 }

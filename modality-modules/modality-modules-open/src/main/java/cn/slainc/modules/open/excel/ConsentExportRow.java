@@ -3,16 +3,11 @@ package cn.slainc.modules.open.excel;
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.openapi.model.App;
 import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.utils.date.DateUtils;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 public class ConsentExportRow {
-
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @ExcelProperty("记录ID")
     private String id;
@@ -47,14 +42,10 @@ public class ConsentExportRow {
         this.appId = record.getAppId();
         this.appName = app == null ? "" : app.getName();
         this.scopes = String.join(", ", record.getScopes());
-        this.grantedAt = format(record.getGrantedAt());
-        this.revokedAt = Optional.ofNullable(record.getRevokedAt()).map(ConsentExportRow::format).orElse("");
+        this.grantedAt = DateUtils.format(DateUtils.fromEpochMilli(record.getGrantedAt()));
+        this.revokedAt = Optional.ofNullable(record.getRevokedAt())
+                .map(millis -> DateUtils.format(DateUtils.fromEpochMilli(millis))).orElse("");
         this.source = record.getSource();
-    }
-
-    private static String format(long epochMillis) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault())
-                .format(TIME_FORMAT);
     }
 
     public String getId() {

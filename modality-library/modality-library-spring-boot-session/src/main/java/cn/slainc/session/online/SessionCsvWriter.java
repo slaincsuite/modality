@@ -1,16 +1,13 @@
 package cn.slainc.session.online;
 
 import cn.slainc.session.SessionInfo;
+import cn.slainc.utils.date.DateUtils;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class SessionCsvWriter {
 
     public static final String BOM = "\uFEFF";
-
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private static final String[] HEADERS = {"账号体系", "登录账号", "Token", "设备类型", "设备分类", "设备标识", "客户端IP",
             "User-Agent", "登录时间", "最后活跃时间", "剩余有效期(秒)"};
@@ -28,16 +25,12 @@ public class SessionCsvWriter {
                         .append(cell(session.deviceId())).append(',')
                         .append(cell(session.clientIp())).append(',')
                         .append(cell(session.userAgent())).append(',')
-                        .append(cell(format(session.loginTime()))).append(',')
-                        .append(cell(format(session.lastActiveTime()))).append(',')
+                        .append(cell(DateUtils.format(session.loginTime()))).append(',')
+                        .append(cell(DateUtils.format(session.lastActiveTime()))).append(',')
                         .append(session.remainingSeconds()).append('\n');
             }
         }
         return builder.toString();
-    }
-
-    private String format(LocalDateTime time) {
-        return time == null ? "" : TIME_FORMAT.format(time);
     }
 
     private String cell(String value) {

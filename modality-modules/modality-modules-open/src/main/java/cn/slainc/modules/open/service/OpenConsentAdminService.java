@@ -6,8 +6,7 @@ import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.open.store.ConsentQueryDao;
 import cn.slainc.openapi.model.ConsentRecord;
 import cn.slainc.openapi.spi.ConsentService;
-import cn.slainc.utils.json.JsonUtils;
-import cn.slainc.web.websocket.WebSocketBroadcaster;
+import cn.slainc.web.websocket.WebSocketPusher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -25,13 +24,13 @@ public class OpenConsentAdminService {
 
     private final ObjectProvider<ConsentQueryDao> queryDao;
 
-    private final ObjectProvider<WebSocketBroadcaster> broadcaster;
+    private final WebSocketPusher pusher;
 
     public OpenConsentAdminService(ConsentService consentService, ObjectProvider<ConsentQueryDao> queryDao,
-                                   ObjectProvider<WebSocketBroadcaster> broadcaster) {
+                                   WebSocketPusher pusher) {
         this.consentService = consentService;
         this.queryDao = queryDao;
-        this.broadcaster = broadcaster;
+        this.pusher = pusher;
     }
 
     public PageResult<ConsentRecord> page(String userId, String appId, String scope, Boolean active,
@@ -93,19 +92,16 @@ public class OpenConsentAdminService {
         return dao;
     }
 
-    // 有 WebSocketBroadcaster 时按用户推送解约通知，宿主未提供则记录日志降级
+    // 有 WebSocketPusher 时按用户推送解约通知，宿主未提供则记录日志降级
     private void notifyRevoked(String userId, String appId, String reason) {
-        WebSocketBroadcaster sender = broadcaster.getIfAvailable();
-        if (sender == null) {
-            log.info("用户 {} 对应用 {} 的授权已解约: {}", userId, appId, reason);
-            return;
-        }
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("type", "open-consent-revoked");
         payload.put("userId", userId);
         payload.put("appId", appId);
         payload.put("reason", reason);
         payload.put("timestamp", System.currentTimeMillis());
-        sender.sendToUser(userId, JsonUtils.toJson(payload));
+        if (!pusher.sendToUser(userId, payload)) {
+            log.info("用户 {} 对应用 {} 的授权已解约: {}", userId, appId, reason);
+        }
     }
 }

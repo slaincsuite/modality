@@ -7,6 +7,7 @@ import cn.slainc.logger.audit.AuditOperation;
 import cn.slainc.modules.policy.PolicyCenterKeys;
 import cn.slainc.modules.policy.service.PolicyTransferService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,10 +36,8 @@ public class PolicyTransferController {
     @GetMapping(value = "/export/json", produces = MediaType.APPLICATION_JSON_VALUE)
     @RequirePermission(permissions = PolicyCenterKeys.PERMISSION_POLICY_TRANSFER)
     public void exportJson(@RequestParam(required = false) List<String> ids,
-                           HttpServletResponse response) throws IOException {
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getOutputStream().write(transferService.exportJson(ids, UserContext.username())
+                           HttpServletResponse response) {
+        DownloadResponses.writeJson(response, transferService.exportJson(ids, UserContext.username())
                 .getBytes(StandardCharsets.UTF_8));
     }
 
@@ -53,10 +52,9 @@ public class PolicyTransferController {
     @GetMapping("/export/excel")
     @RequirePermission(permissions = PolicyCenterKeys.PERMISSION_POLICY_TRANSFER)
     public void exportExcel(@RequestParam(required = false) List<String> ids,
-                            HttpServletResponse response) throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=policies.xlsx");
-        transferService.exportExcel(ids, response.getOutputStream());
+                            HttpServletResponse response) {
+        transferService.exportExcel(ids, DownloadResponses.attachmentStream(response, "policies.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL));
     }
 
     @PostMapping("/import/excel")

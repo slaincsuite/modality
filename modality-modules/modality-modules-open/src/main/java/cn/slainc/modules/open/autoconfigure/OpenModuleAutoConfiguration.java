@@ -20,7 +20,7 @@ import cn.slainc.openapi.spi.ConsentService;
 import cn.slainc.openapi.spi.CredentialService;
 import cn.slainc.openapi.spi.CredentialStore;
 import cn.slainc.openapi.spi.ScopeService;
-import cn.slainc.web.websocket.WebSocketBroadcaster;
+import cn.slainc.web.websocket.WebSocketPusher;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -70,8 +70,8 @@ public class OpenModuleAutoConfiguration {
     @ConditionalOnMissingBean
     public OpenConsentAdminService openConsentAdminService(ConsentService consentService,
                                                            ObjectProvider<ConsentQueryDao> queryDao,
-                                                           ObjectProvider<WebSocketBroadcaster> broadcaster) {
-        return new OpenConsentAdminService(consentService, queryDao, broadcaster);
+                                                           WebSocketPusher pusher) {
+        return new OpenConsentAdminService(consentService, queryDao, pusher);
     }
 
     @Bean

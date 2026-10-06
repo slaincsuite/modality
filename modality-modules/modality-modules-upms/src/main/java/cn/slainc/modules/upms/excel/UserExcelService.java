@@ -4,22 +4,18 @@ import cn.slainc.core.enums.LoginType;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.utils.date.DateUtils;
+import cn.slainc.utils.string.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class UserExcelService {
-
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final UserService userService;
 
@@ -31,8 +27,10 @@ public class UserExcelService {
         List<UserExportRow> rows = new ArrayList<>();
         for (UserRecord user : users) {
             rows.add(new UserExportRow(user.getId(), user.getUsername(), user.getNickname(), user.getLoginType(),
-                    maskPhone(user.getPhone()), maskEmail(user.getEmail()), user.getStatus(),
-                    formatTime(user.getCreateTime())));
+                    StringUtils.maskMobile(user.getPhone()), StringUtils.maskEmail(user.getEmail()),
+                    user.getStatus(),
+                    user.getCreateTime() == null ? ""
+                            : DateUtils.format(DateUtils.fromEpochMilli(user.getCreateTime()))));
         }
         ExcelUtils.write(outputStream, UserExportRow.class, rows, "用户");
     }
@@ -73,32 +71,5 @@ public class UserExcelService {
         report.put("failure", failures.size());
         report.put("failures", failures);
         return report;
-    }
-
-    static String maskPhone(String phone) {
-        if (phone == null || phone.length() < 7) {
-            return phone;
-        }
-        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
-    }
-
-    static String maskEmail(String email) {
-        if (email == null) {
-            return null;
-        }
-        int at = email.indexOf('@');
-        if (at <= 0) {
-            return email;
-        }
-        String name = email.substring(0, at);
-        String visible = name.length() <= 1 ? name : name.substring(0, 1);
-        return visible + "***" + email.substring(at);
-    }
-
-    static String formatTime(Long epochMillis) {
-        if (epochMillis == null) {
-            return "";
-        }
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault()).format(TIME_FORMAT);
     }
 }

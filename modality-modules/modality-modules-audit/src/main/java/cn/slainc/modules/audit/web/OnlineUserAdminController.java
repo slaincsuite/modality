@@ -16,9 +16,9 @@ import cn.slainc.session.SessionInfo;
 import cn.slainc.session.SessionSortField;
 import cn.slainc.session.kick.KickSessionService;
 import cn.slainc.session.online.OnlineUserService;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -96,13 +96,12 @@ public class OnlineUserAdminController {
                        @RequestParam(required = false) String keyword,
                        @RequestParam(defaultValue = "LOGIN_TIME") String sortField,
                        @RequestParam(defaultValue = "true") boolean descending,
-                       HttpServletResponse response) throws IOException {
+                       HttpServletResponse response) {
         OnlineQuery query = toQuery(type, tenantId, deviceType, loginAfter, loginBefore, keyword, 1,
                 OnlineQuery.MAX_SIZE, sortField, descending);
         List<SessionInfo> sessions = onlineUserService.list(query);
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=online-users.xlsx");
-        excelService.export(response.getOutputStream(), sessions);
+        excelService.export(DownloadResponses.attachmentStream(response, "online-users.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), sessions);
     }
 
     @PostMapping("/kick")

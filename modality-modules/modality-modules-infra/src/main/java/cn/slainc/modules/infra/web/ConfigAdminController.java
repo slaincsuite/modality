@@ -5,8 +5,9 @@ import cn.slainc.core.result.Result;
 import cn.slainc.modules.infra.InfraKeys;
 import cn.slainc.modules.infra.service.ConfigAdminService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.utils.json.JsonUtils;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -93,23 +94,10 @@ public class ConfigAdminController {
     @RequirePermission(permissions = InfraKeys.PERMISSION_CONFIG_TRANSFER)
     @GetMapping("/export")
     public void export(@RequestParam(required = false) String group, @RequestParam(required = false) String keyword,
-                       HttpServletResponse response) throws IOException {
+                       HttpServletResponse response) {
         List<ConfigAdminService.ExportItem> items = configAdminService.exportItems(group, keyword);
-        response.setContentType("application/json");
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.setHeader("Content-Disposition", "attachment; filename=dynamic-config.json");
-        StringBuilder json = new StringBuilder("{\"items\":[");
-        for (ConfigAdminService.ExportItem item : items) {
-            if (json.length() > 10) {
-                json.append(',');
-            }
-            json.append("{\"key\":").append(quote(item.key())).append(",\"value\":").append(quote(item.value()))
-                    .append(",\"group\":").append(quote(item.group())).append(",\"description\":")
-                    .append(quote(item.description())).append(",\"encrypted\":").append(item.encrypted())
-                    .append('}');
-        }
-        json.append("]}");
-        response.getOutputStream().write(json.toString().getBytes(StandardCharsets.UTF_8));
+        DownloadResponses.writeAttachment(response, "dynamic-config.json", DownloadResponses.CONTENT_TYPE_JSON,
+                JsonUtils.toJson(Map.of("items", items)).getBytes(StandardCharsets.UTF_8));
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_CONFIG_TRANSFER)
@@ -124,12 +112,5 @@ public class ConfigAdminController {
 
     private static String text(Object value) {
         return value == null ? null : String.valueOf(value);
-    }
-
-    private static String quote(String value) {
-        if (value == null) {
-            return "null";
-        }
-        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "") + "\"";
     }
 }

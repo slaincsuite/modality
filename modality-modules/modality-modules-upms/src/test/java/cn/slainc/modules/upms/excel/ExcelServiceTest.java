@@ -36,7 +36,7 @@ class ExcelServiceTest extends UpmsIntegrationTestBase {
                 .head(UserExportRow.class).sheet().doReadSync();
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).getPhone()).isEqualTo("138****8888");
-        assertThat(rows.get(0).getEmail()).isEqualTo("s***@example.com");
+        assertThat(rows.get(0).getEmail()).isEqualTo("s******@example.com");
         assertThat(rows.get(0).getUsername()).isEqualTo("excel-user");
     }
 

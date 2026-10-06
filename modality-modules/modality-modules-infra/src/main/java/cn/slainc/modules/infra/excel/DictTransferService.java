@@ -3,6 +3,7 @@ package cn.slainc.modules.infra.excel;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.infra.service.DictService;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,10 +33,8 @@ public class DictTransferService {
             row.setEnabled(item.enabled() ? "是" : "否");
             rows.add(row);
         }
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setCharacterEncoding("UTF-8");
-        response.setHeader("Content-Disposition", "attachment; filename=dict-items.xlsx");
-        ExcelUtils.write(response.getOutputStream(), DictItemRow.class, rows, "字典项");
+        ExcelUtils.write(DownloadResponses.attachmentStream(response, "dict-items.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), DictItemRow.class, rows, "字典项");
     }
 
     public ImportSummary importItems(InputStream input) throws IOException {

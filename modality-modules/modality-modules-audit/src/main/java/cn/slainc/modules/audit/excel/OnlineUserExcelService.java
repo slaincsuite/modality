@@ -3,35 +3,26 @@ package cn.slainc.modules.audit.excel;
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.session.SessionInfo;
+import cn.slainc.utils.date.DateUtils;
+import cn.slainc.utils.string.StringUtils;
 import java.io.OutputStream;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class OnlineUserExcelService {
 
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     public void export(OutputStream outputStream, List<SessionInfo> sessions) {
         List<OnlineUserExportRow> rows = new ArrayList<>();
         for (SessionInfo session : sessions) {
             rows.add(new OnlineUserExportRow(session.loginType(), session.loginId(),
-                    session.tokenValue() == null ? null : maskToken(session.tokenValue()),
+                    StringUtils.mask(session.tokenValue(), 4, 4),
                     session.deviceType(), session.deviceId(), session.clientIp(),
-                    session.loginTime() == null ? null : TIME_FORMATTER.format(session.loginTime()),
-                    session.lastActiveTime() == null ? null : TIME_FORMATTER.format(session.lastActiveTime()),
+                    DateUtils.format(session.loginTime()),
+                    DateUtils.format(session.lastActiveTime()),
                     session.remainingSeconds()));
         }
         ExcelUtils.write(outputStream, OnlineUserExportRow.class, rows, "在线用户");
-    }
-
-    // 导出文件中的 token 只保留首尾各 4 位，避免完整凭证离开服务端
-    private String maskToken(String tokenValue) {
-        if (tokenValue.length() <= 8) {
-            return "****";
-        }
-        return tokenValue.substring(0, 4) + "****" + tokenValue.substring(tokenValue.length() - 4);
     }
 
     public static class OnlineUserExportRow {

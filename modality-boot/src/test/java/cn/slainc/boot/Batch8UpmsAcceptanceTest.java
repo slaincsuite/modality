@@ -241,7 +241,7 @@ class Batch8UpmsAcceptanceTest {
                 .head(UserExportRow.class).sheet().doReadSync();
         assertThat(rows).extracting(UserExportRow::getUsername).contains("batch8-export-user");
         assertThat(rows).extracting(UserExportRow::getPhone).contains("138****8888");
-        assertThat(rows).extracting(UserExportRow::getEmail).contains("m***@example.com");
+        assertThat(rows).extracting(UserExportRow::getEmail).contains("m*****@example.com");
         assertThat(rows).extracting(UserExportRow::getPhone)
                 .noneMatch(phone -> phone != null && phone.contains("1381234"));
     }

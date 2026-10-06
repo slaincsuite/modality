@@ -8,6 +8,7 @@ import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.modules.open.excel.ConsentExportService;
 import cn.slainc.modules.open.service.OpenConsentAdminService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/open/admin/consents")
@@ -54,10 +53,9 @@ public class OpenConsentAdminController {
                        @RequestParam(required = false) Long from,
                        @RequestParam(required = false) Long to,
                        @RequestParam(defaultValue = "10000") int limit,
-                       HttpServletResponse response) throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=open-consents.xlsx");
-        exportService.export(response.getOutputStream(), userId, appId, active, from, to, limit);
+                       HttpServletResponse response) {
+        exportService.export(DownloadResponses.attachmentStream(response, "open-consents.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), userId, appId, active, from, to, limit);
     }
 
     @DeleteMapping("/{userId}/{appId}")

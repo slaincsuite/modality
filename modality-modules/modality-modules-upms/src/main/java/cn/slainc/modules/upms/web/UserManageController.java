@@ -15,6 +15,7 @@ import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.excel.UserExcelService;
 import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -172,13 +173,11 @@ public class UserManageController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_EXPORT)
     public void export(@RequestParam(required = false) String username, @RequestParam(required = false) String status,
                        @RequestParam(required = false) Long deptId, @RequestParam(required = false) Long roleId,
-                       @RequestParam(required = false) Long groupId, HttpServletResponse response)
-            throws IOException {
+                       @RequestParam(required = false) Long groupId, HttpServletResponse response) {
         List<UserRecord> users = userService.search(username, null, null, null, status, deptId, roleId, groupId,
                 null, null, null, 1, 100000).records();
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=users.xlsx");
-        userExcelService.export(response.getOutputStream(), users);
+        userExcelService.export(DownloadResponses.attachmentStream(response, "users.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), users);
     }
 
     @PostMapping("/import")
@@ -190,9 +189,8 @@ public class UserManageController {
 
     @GetMapping("/import-template")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_IMPORT)
-    public void importTemplate(HttpServletResponse response) throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=users-template.xlsx");
-        userExcelService.template(response.getOutputStream());
+    public void importTemplate(HttpServletResponse response) {
+        userExcelService.template(DownloadResponses.attachmentStream(response, "users-template.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL));
     }
 }

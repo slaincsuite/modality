@@ -6,8 +6,8 @@ import cn.slainc.modules.audit.excel.AuditLogExportService;
 import cn.slainc.modules.audit.service.AuditLogService;
 import cn.slainc.modules.audit.service.PolicyEvaluationLogService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -81,10 +81,9 @@ public class AuditLogController {
                        @RequestParam(required = false) Long from,
                        @RequestParam(required = false) Long to,
                        @RequestParam(defaultValue = "10000") int limit,
-                       HttpServletResponse response) throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=audit-logs.xlsx");
-        exportService.export(response.getOutputStream(), category, operation, level, module, username, loginType,
+                       HttpServletResponse response) {
+        exportService.export(DownloadResponses.attachmentStream(response, "audit-logs.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), category, operation, level, module, username, loginType,
                 success, from, to, limit);
     }
 }

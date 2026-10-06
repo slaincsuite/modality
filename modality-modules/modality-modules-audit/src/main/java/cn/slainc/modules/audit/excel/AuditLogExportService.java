@@ -4,17 +4,13 @@ import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.audit.service.AuditLogService;
 import cn.slainc.modules.audit.entity.AuditLogRecord;
+import cn.slainc.utils.date.DateUtils;
 import java.io.OutputStream;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class AuditLogExportService {
-
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final AuditLogService auditLogService;
 
@@ -33,16 +29,11 @@ public class AuditLogExportService {
                     Boolean.TRUE.equals(record.getSuccess()) ? "成功" : "失败",
                     record.getUsername() == null ? record.getLoginId() : record.getUsername(),
                     record.getLoginType(), record.getClientIp(), record.getRequestPath(),
-                    formatTime(record.getCreateTime()), record.getCostMillis(), record.getTraceId()));
+                    record.getCreateTime() == null ? null
+                            : DateUtils.format(DateUtils.fromEpochMilli(record.getCreateTime())),
+                    record.getCostMillis(), record.getTraceId()));
         }
         ExcelUtils.write(outputStream, AuditLogExportRow.class, rows, "审计日志");
-    }
-
-    private String formatTime(Long epochMillis) {
-        if (epochMillis == null) {
-            return null;
-        }
-        return TIME_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()));
     }
 
     public static class AuditLogExportRow {

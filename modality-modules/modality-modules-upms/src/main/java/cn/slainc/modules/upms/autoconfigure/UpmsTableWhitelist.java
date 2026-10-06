@@ -2,6 +2,7 @@ package cn.slainc.modules.upms.autoconfigure;
 
 import cn.slainc.mybatis.properties.MybatisProperties;
 import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
+import cn.slainc.mybatis.tenant.TenantIgnoreTables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -32,16 +33,6 @@ public class UpmsTableWhitelist implements InitializingBean {
             log.debug("未启用 MyBatis 租户条件，UPMS 表白名单仅在模块内生效");
             return;
         }
-        List<String> ignoreTables = mybatisProperties.getTenant().getIgnoreTables();
-        for (String table : tables) {
-            if (table != null && !table.isBlank()
-                    && ignoreTables.stream().noneMatch(current -> current != null
-                            && current.trim().equalsIgnoreCase(table))) {
-                ignoreTables.add(table);
-            }
-        }
-        if (tenantLineHandler != null) {
-            tenantLineHandler.refresh();
-        }
+        TenantIgnoreTables.merge(tables, mybatisProperties, tenantLineHandler);
     }
 }

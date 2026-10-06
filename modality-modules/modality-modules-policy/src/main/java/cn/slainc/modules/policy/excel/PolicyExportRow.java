@@ -2,15 +2,9 @@ package cn.slainc.modules.policy.excel;
 
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.modules.policy.dto.PolicyView;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import cn.slainc.utils.date.DateUtils;
 
 public class PolicyExportRow {
-
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @ExcelProperty("策略名称")
     private String name;
@@ -47,8 +41,8 @@ public class PolicyExportRow {
         this.group = view.group();
         this.description = view.description();
         this.document = view.document();
-        this.createTime = view.createdAt() <= 0 ? "" : LocalDateTime
-                .ofInstant(Instant.ofEpochMilli(view.createdAt()), ZoneId.systemDefault()).format(TIME_FORMAT);
+        this.createTime = view.createdAt() <= 0 ? ""
+                : DateUtils.format(DateUtils.fromEpochMilli(view.createdAt()));
     }
 
     public String getName() {

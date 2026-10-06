@@ -7,6 +7,7 @@ import cn.slainc.modules.upms.entity.PermissionRecord;
 import cn.slainc.modules.upms.excel.PermissionExcelService;
 import cn.slainc.modules.upms.service.PermissionService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -72,10 +73,9 @@ public class PermissionManageController {
 
     @GetMapping("/export")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_EXPORT)
-    public void export(HttpServletResponse response) throws IOException {
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=permissions.xlsx");
-        permissionExcelService.export(response.getOutputStream());
+    public void export(HttpServletResponse response) {
+        permissionExcelService.export(DownloadResponses.attachmentStream(response, "permissions.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL));
     }
 
     @PostMapping("/import")
