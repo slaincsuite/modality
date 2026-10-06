@@ -8,8 +8,7 @@ import cn.slainc.core.exception.BizException;
 import cn.slainc.security.StpKit;
 import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.security.spi.PasswordAccount;
-import cn.slainc.utils.json.JsonUtils;
-import cn.slainc.web.websocket.WebSocketBroadcaster;
+import cn.slainc.web.websocket.WebSocketPusher;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -21,13 +20,13 @@ public class AuthLogoutService {
 
     private final ObjectProvider<AccountAuthProvider> authProvider;
 
-    private final ObjectProvider<WebSocketBroadcaster> broadcaster;
+    private final WebSocketPusher pusher;
 
     public AuthLogoutService(ApplicationEventPublisher publisher, ObjectProvider<AccountAuthProvider> authProvider,
-                             ObjectProvider<WebSocketBroadcaster> broadcaster) {
+                             WebSocketPusher pusher) {
         this.publisher = publisher;
         this.authProvider = authProvider;
-        this.broadcaster = broadcaster;
+        this.pusher = pusher;
     }
 
     public boolean logoutCurrent(LoginType type) {
@@ -71,12 +70,8 @@ public class AuthLogoutService {
     private void publishLogout(LoginType type, Object loginId, PasswordAccount account, boolean forced) {
         Long userId = CurrentLogin.userId(loginId);
         publisher.publishEvent(new LogoutEvent(userId, account == null ? null : account.username(), type, forced));
-        WebSocketBroadcaster socket = broadcaster.getIfAvailable();
-        if (socket != null) {
-            socket.sendToUser(String.valueOf(loginId),
-                    JsonUtils.toJson(Map.of("type", "logout", "loginType", type.value(), "at",
-                            System.currentTimeMillis())));
-        }
+        pusher.sendToUser(String.valueOf(loginId), Map.of("type", "logout", "loginType", type.value(), "at",
+                System.currentTimeMillis()));
     }
 
     public String username(LoginType type, Long userId) {

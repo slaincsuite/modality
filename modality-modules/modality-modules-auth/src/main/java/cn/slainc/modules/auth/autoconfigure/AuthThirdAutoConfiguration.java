@@ -2,9 +2,8 @@ package cn.slainc.modules.auth.autoconfigure;
 
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.modules.auth.service.AuthSessionService;
-import cn.slainc.modules.auth.store.MemoryThirdBindTicketStore;
-import cn.slainc.modules.auth.store.RedisThirdBindTicketStore;
-import cn.slainc.modules.auth.store.ThirdBindTicketStore;
+import cn.slainc.modules.auth.store.AuthTicketStore;
+import cn.slainc.modules.auth.third.ThirdBindTicket;
 import cn.slainc.modules.auth.web.ThirdPartyLoginController;
 import cn.slainc.modules.auth.service.ThirdPartyLoginService;
 import cn.slainc.security.lock.AccountLockService;
@@ -28,10 +27,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class AuthThirdAutoConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean
-    public ThirdBindTicketStore thirdBindTicketStore(ObjectProvider<StringRedisTemplate> redis) {
-        StringRedisTemplate template = redis.getIfAvailable();
-        return template == null ? new MemoryThirdBindTicketStore() : new RedisThirdBindTicketStore(template);
+    // 返回类型同为 AuthTicketStore，按 bean 名判重避免与扫码票据存储相互误退避
+    @ConditionalOnMissingBean(name = "thirdBindTicketStore")
+    public AuthTicketStore<ThirdBindTicket> thirdBindTicketStore(ObjectProvider<StringRedisTemplate> redis) {
+        return AuthTicketStore.of(redis.getIfAvailable(), AuthTicketStore.BIND_KEY_PREFIX,
+                ThirdBindTicket::getTicketId, ThirdBindTicket.class);
     }
 
     @Configuration(proxyBeanMethods = false)
@@ -42,7 +42,7 @@ public class AuthThirdAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         public ThirdPartyLoginService thirdPartyLoginService(ThirdAuthService thirdAuthService,
-                                                             ThirdBindTicketStore bindStore,
+                                                             AuthTicketStore<ThirdBindTicket> bindStore,
                                                              AuthProperties properties,
                                                              AuthSessionService sessionService,
                                                              ObjectProvider<AccountAuthProvider> authProvider,

@@ -1,7 +1,7 @@
 package cn.slainc.modules.auth.service;
 import cn.slainc.modules.auth.context.CurrentLogin;
 import cn.slainc.modules.auth.third.ThirdBindTicket;
-import cn.slainc.modules.auth.store.ThirdBindTicketStore;
+import cn.slainc.modules.auth.store.AuthTicketStore;
 
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
@@ -32,7 +32,7 @@ public class ThirdPartyLoginService {
 
     private final ThirdAuthService thirdAuthService;
 
-    private final ThirdBindTicketStore bindStore;
+    private final AuthTicketStore<ThirdBindTicket> bindStore;
 
     private final AuthProperties properties;
 
@@ -44,7 +44,7 @@ public class ThirdPartyLoginService {
 
     private final ObjectProvider<XssSanitizer> sanitizer;
 
-    public ThirdPartyLoginService(ThirdAuthService thirdAuthService, ThirdBindTicketStore bindStore,
+    public ThirdPartyLoginService(ThirdAuthService thirdAuthService, AuthTicketStore<ThirdBindTicket> bindStore,
                                   AuthProperties properties, AuthSessionService sessionService,
                                   ObjectProvider<AccountAuthProvider> authProvider,
                                   ObjectProvider<AccountLockService> lockService,
@@ -140,12 +140,8 @@ public class ThirdPartyLoginService {
     }
 
     private ThirdBindTicket consume(String ticketId) {
-        ThirdBindTicket ticket = bindStore.find(ticketId).orElse(null);
-        if (ticket == null) {
-            throw new BizException("绑定凭证已过期或不存在，请重新发起第三方登录");
-        }
-        bindStore.delete(ticketId);
-        return ticket;
+        return bindStore.consume(ticketId)
+                .orElseThrow(() -> new BizException("绑定凭证已过期或不存在，请重新发起第三方登录"));
     }
 
     private ThirdPartyUser toUser(ThirdBindTicket ticket) {

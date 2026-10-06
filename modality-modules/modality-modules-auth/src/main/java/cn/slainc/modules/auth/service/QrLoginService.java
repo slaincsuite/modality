@@ -1,7 +1,7 @@
 package cn.slainc.modules.auth.service;
 import cn.slainc.modules.auth.qrcode.QrLoginStatus;
 import cn.slainc.modules.auth.qrcode.QrLoginTicket;
-import cn.slainc.modules.auth.store.QrLoginTicketStore;
+import cn.slainc.modules.auth.store.AuthTicketStore;
 
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
@@ -10,8 +10,7 @@ import cn.slainc.modules.auth.service.AuthSessionService;
 import cn.slainc.security.login.LoginResult;
 import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.security.spi.PasswordAccount;
-import cn.slainc.utils.json.JsonUtils;
-import cn.slainc.web.websocket.WebSocketBroadcaster;
+import cn.slainc.web.websocket.WebSocketPusher;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.security.SecureRandom;
@@ -23,7 +22,7 @@ public class QrLoginService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final QrLoginTicketStore store;
+    private final AuthTicketStore<QrLoginTicket> store;
 
     private final QrImageService imageService;
 
@@ -33,17 +32,18 @@ public class QrLoginService {
 
     private final ObjectProvider<AccountAuthProvider> authProvider;
 
-    private final ObjectProvider<WebSocketBroadcaster> broadcaster;
+    private final WebSocketPusher pusher;
 
-    public QrLoginService(QrLoginTicketStore store, QrImageService imageService, AuthProperties properties,
-                          AuthSessionService sessionService, ObjectProvider<AccountAuthProvider> authProvider,
-                          ObjectProvider<WebSocketBroadcaster> broadcaster) {
+    public QrLoginService(AuthTicketStore<QrLoginTicket> store, QrImageService imageService,
+                          AuthProperties properties, AuthSessionService sessionService,
+                          ObjectProvider<AccountAuthProvider> authProvider,
+                          WebSocketPusher pusher) {
         this.store = store;
         this.imageService = imageService;
         this.properties = properties;
         this.sessionService = sessionService;
         this.authProvider = authProvider;
-        this.broadcaster = broadcaster;
+        this.pusher = pusher;
     }
 
     public record QrTicketBundle(String ticketId, String content, String imageBase64, long ttlSeconds,
@@ -118,8 +118,10 @@ public class QrLoginService {
         if (ticket.getStatus() != QrLoginStatus.CONFIRMED) {
             throw new BizException("二维码尚未确认，请先在移动端确认登录");
         }
-        // 先删除再建立会话，保证确认码只能被交换一次
-        store.delete(ticketId);
+        // 原子消费确认码，并发下只有一次交换能成功
+        if (store.consume(ticketId).isEmpty()) {
+            throw new BizException("二维码已被使用，请刷新后重试");
+        }
         return sessionService.establish(type, ticket.getLoginId(), deviceType, deviceId);
     }
 
@@ -141,13 +143,9 @@ public class QrLoginService {
     }
 
     private void push(QrLoginTicket ticket) {
-        WebSocketBroadcaster socket = broadcaster.getIfAvailable();
-        if (socket == null) {
-            return;
-        }
-        socket.broadcast(PUSH_TOPIC_PREFIX + ticket.getTicketId(),
-                JsonUtils.toJson(Map.of("ticketId", ticket.getTicketId(), "status", ticket.getStatus().name(),
-                        "statusLabel", ticket.getStatus().label(), "at", System.currentTimeMillis())));
+        pusher.broadcast(PUSH_TOPIC_PREFIX + ticket.getTicketId(),
+                Map.of("ticketId", ticket.getTicketId(), "status", ticket.getStatus().name(),
+                        "statusLabel", ticket.getStatus().label(), "at", System.currentTimeMillis()));
     }
 
     private String usernameOf(LoginType type, Object loginId) {

@@ -1,5 +1,6 @@
 package cn.slainc.modules.auth.autoconfigure;
 
+import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
 import cn.slainc.modules.auth.web.AccountClosureController;
 import cn.slainc.modules.auth.scheduler.AccountClosureScheduler;
 import cn.slainc.modules.auth.service.AccountClosureService;
@@ -28,11 +29,12 @@ import javax.sql.DataSource;
 public class AuthClosureAutoConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean(AuthSchemaInitializer.class)
+    // 多个模块的初始化器同为 ClasspathSchemaInitializer 类型，必须按 bean 名判重，避免跨模块误判导致建表被跳过
+    @ConditionalOnMissingBean(name = "authSchemaInitializer")
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnProperty(prefix = "modality.auth.closure", name = "auto-create-table", matchIfMissing = true)
-    public AuthSchemaInitializer authSchemaInitializer(DataSource dataSource) {
-        return new AuthSchemaInitializer(dataSource);
+    public ClasspathSchemaInitializer authSchemaInitializer(DataSource dataSource) {
+        return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/auth/auth-schema.sql");
     }
 
     @Bean

@@ -12,12 +12,11 @@ import cn.slainc.modules.auth.listener.LogoutRecordCollector;
 import cn.slainc.modules.auth.filter.SessionRenewalFilter;
 import cn.slainc.modules.auth.web.AuthPasswordController;
 import cn.slainc.modules.auth.service.AuthPasswordService;
-import cn.slainc.modules.auth.store.MemoryQrLoginTicketStore;
+import cn.slainc.modules.auth.store.AuthTicketStore;
 import cn.slainc.modules.auth.service.QrImageService;
 import cn.slainc.modules.auth.web.QrLoginController;
 import cn.slainc.modules.auth.service.QrLoginService;
-import cn.slainc.modules.auth.store.QrLoginTicketStore;
-import cn.slainc.modules.auth.store.RedisQrLoginTicketStore;
+import cn.slainc.modules.auth.qrcode.QrLoginTicket;
 import cn.slainc.modules.auth.web.SafeAuthController;
 import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.security.audit.SecurityAuditRecorder;
@@ -81,8 +80,8 @@ public class AuthAutoConfiguration {
     @ConditionalOnMissingBean
     public AuthLogoutService authLogoutService(ApplicationEventPublisher publisher,
                                                ObjectProvider<AccountAuthProvider> authProvider,
-                                               ObjectProvider<cn.slainc.web.websocket.WebSocketBroadcaster> broadcaster) {
-        return new AuthLogoutService(publisher, authProvider, broadcaster);
+                                               cn.slainc.web.websocket.WebSocketPusher pusher) {
+        return new AuthLogoutService(publisher, authProvider, pusher);
     }
 
     @Bean
@@ -101,19 +100,20 @@ public class AuthAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
-    public QrLoginTicketStore qrLoginTicketStore(ObjectProvider<StringRedisTemplate> redis) {
-        StringRedisTemplate template = redis.getIfAvailable();
-        return template == null ? new MemoryQrLoginTicketStore() : new RedisQrLoginTicketStore(template);
+    // 返回类型同为 AuthTicketStore，按 bean 名判重避免同型 Bean 相互误退避
+    @ConditionalOnMissingBean(name = "qrLoginTicketStore")
+    public AuthTicketStore<QrLoginTicket> qrLoginTicketStore(ObjectProvider<StringRedisTemplate> redis) {
+        return AuthTicketStore.of(redis.getIfAvailable(), AuthTicketStore.QR_KEY_PREFIX,
+                QrLoginTicket::getTicketId, QrLoginTicket.class);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public QrLoginService qrLoginService(QrLoginTicketStore store, QrImageService imageService,
+    public QrLoginService qrLoginService(AuthTicketStore<QrLoginTicket> store, QrImageService imageService,
                                          AuthProperties properties, AuthSessionService sessionService,
                                          ObjectProvider<AccountAuthProvider> authProvider,
-                                         ObjectProvider<cn.slainc.web.websocket.WebSocketBroadcaster> broadcaster) {
-        return new QrLoginService(store, imageService, properties, sessionService, authProvider, broadcaster);
+                                         cn.slainc.web.websocket.WebSocketPusher pusher) {
+        return new QrLoginService(store, imageService, properties, sessionService, authProvider, pusher);
     }
 
     @Bean
