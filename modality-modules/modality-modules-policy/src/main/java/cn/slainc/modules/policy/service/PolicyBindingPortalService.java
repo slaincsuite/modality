@@ -5,8 +5,8 @@ import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.policy.dto.BindingBatchRequest;
 import cn.slainc.modules.policy.dto.PolicyView;
-import cn.slainc.modules.upms.entity.PolicyBindingRecord;
-import cn.slainc.modules.upms.service.PolicyBindingService;
+import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.policy.model.PolicyBinding;
 import cn.slainc.policy.model.PolicySubjectType;
 import org.springframework.beans.factory.ObjectProvider;
 
@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// 绑定写操作复用 upms 批次 8 的 PolicyBindingService（派生策略 + t_policy_binding 镜像），本模块补批量绑定与主体视角查询
+// 绑定写操作委托 policy 库的 PolicyBindingService（派生策略 + 绑定镜像），本模块补批量绑定与主体视角查询
 public class PolicyBindingPortalService {
 
     private final ObjectProvider<PolicyBindingService> bindingService;
@@ -28,18 +28,18 @@ public class PolicyBindingPortalService {
         this.manageService = manageService;
     }
 
-    public PolicyBindingRecord bindToUser(String policyId, Long userId, String loginType, String operator) {
+    public PolicyBinding bindToUser(String policyId, Long userId, String loginType, String operator) {
         if (loginType == null || loginType.isBlank()) {
             throw new BizException(ResultCode.PARAM_MISSING, "绑定用户策略必须指定账号体系");
         }
         return delegate().bindToUser(policyId, userId, LoginType.of(loginType.trim()), operator);
     }
 
-    public PolicyBindingRecord bindToRole(String policyId, String roleCode, String operator) {
+    public PolicyBinding bindToRole(String policyId, String roleCode, String operator) {
         return delegate().bindToRole(policyId, roleCode, operator);
     }
 
-    public PolicyBindingRecord bindToClient(String policyId, Long clientId, String operator) {
+    public PolicyBinding bindToClient(String policyId, Long clientId, String operator) {
         return delegate().bindToClient(policyId, clientId, operator);
     }
 
@@ -50,11 +50,11 @@ public class PolicyBindingPortalService {
         if (normalizeSubjectType(request.subjectType()) == null) {
             throw new BizException(ResultCode.PARAM_MISSING, "批量绑定必须指定主体类型");
         }
-        List<PolicyBindingRecord> succeeded = new ArrayList<>();
+        List<PolicyBinding> succeeded = new ArrayList<>();
         List<String> failures = new ArrayList<>();
         for (String subjectId : request.subjectIds()) {
             try {
-                PolicyBindingRecord record = switch (normalizeSubjectType(request.subjectType())) {
+                PolicyBinding record = switch (normalizeSubjectType(request.subjectType())) {
                     case "user" -> bindToUser(request.policyId(), Long.valueOf(subjectId.trim()),
                             request.loginType(), operator);
                     case "role" -> bindToRole(request.policyId(), subjectId.trim(), operator);
@@ -79,7 +79,7 @@ public class PolicyBindingPortalService {
         delegate().unbind(bindingId);
     }
 
-    public List<PolicyBindingRecord> query(String subjectType, String subjectId, String policyId) {
+    public List<PolicyBinding> query(String subjectType, String subjectId, String policyId) {
         return delegate().query(querySubjectType(subjectType), subjectId, policyId);
     }
 
@@ -89,7 +89,7 @@ public class PolicyBindingPortalService {
             throw new BizException(ResultCode.PARAM_MISSING, "主体查询必须提供主体标识");
         }
         List<PolicyView> direct = directPolicies(type, subjectId.trim());
-        List<PolicyBindingRecord> bound = delegate().query(querySubjectType(type), subjectId.trim(), null);
+        List<PolicyBinding> bound = delegate().query(querySubjectType(type), subjectId.trim(), null);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("directPolicies", direct);
         result.put("boundPolicies", bound);
@@ -130,7 +130,7 @@ public class PolicyBindingPortalService {
     private PolicyBindingService delegate() {
         PolicyBindingService service = bindingService.getIfAvailable();
         if (service == null) {
-            throw new BizException(ResultCode.SERVICE_UNAVAILABLE, "upms 模块未装配，策略绑定能力不可用");
+            throw new BizException(ResultCode.SERVICE_UNAVAILABLE, "策略绑定能力未装配");
         }
         return service;
     }
