@@ -18,6 +18,11 @@ public class AuthModuleApplication {
         return new FakeWechatProvider();
     }
 
+    @Bean
+    public TestAccountRegistry testAccountRegistry() {
+        return new TestAccountRegistry();
+    }
+
     @RestController
     static class ProbeController {
 

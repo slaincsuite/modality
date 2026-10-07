@@ -1,10 +1,9 @@
 package cn.slainc.modules.auth.qrcode;
 
 import cn.slainc.core.context.TenantContext;
-import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.auth.AuthModuleApplication;
-import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.auth.TestAccountRegistry;
+import cn.slainc.security.spi.PasswordAccount;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -27,16 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class QrLoginModuleTest {
 
-    private static final String PASSWORD = "Password#123";
-
     @Autowired
-    private UserService userService;
+    private TestAccountRegistry registry;
 
     @Autowired
     private StringRedisTemplate redis;
-
-    @Autowired
-    private JdbcTemplate jdbc;
 
     @LocalServerPort
     private int port;
@@ -52,20 +45,12 @@ class QrLoginModuleTest {
                 redis.delete(keys);
             }
         }
-        for (String table : new String[]{"t_user_login_record", "t_user_operation_log", "t_user"}) {
-            jdbc.execute("DELETE FROM " + table);
-        }
         http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-    }
-
-    private UserRecord createUser(String username) {
-        return userService.create(username, username, PASSWORD, null, null, null, LoginType.TENANT_USER, 1L,
-                "module-test");
     }
 
     @Test
     void qrFullChainEstablishesSessionOnExchange() throws Exception {
-        UserRecord user = createUser("scanner");
+        PasswordAccount account = registry.create("scanner");
         String mobileToken = login("scanner", "mobile-1");
 
         HttpResponse<String> create = post("/auth/qrcode", "{}", null);
@@ -94,12 +79,12 @@ class QrLoginModuleTest {
 
         HttpResponse<String> me = get("/auth/test/me", pcToken);
         assertThat(me.statusCode()).as(me.body()).isEqualTo(200);
-        assertThat(me.body()).contains(String.valueOf(user.getId()));
+        assertThat(me.body()).contains(String.valueOf(account.userId()));
     }
 
     @Test
     void exchangeIsSingleUse() throws Exception {
-        createUser("once");
+        registry.create("once");
         String mobileToken = login("once", "mobile-2");
         String ticketId = createTicket();
         post("/auth/qrcode/" + ticketId + "/scan", "{}", mobileToken);
@@ -113,8 +98,8 @@ class QrLoginModuleTest {
 
     @Test
     void onlyScanningUserCanConfirm() throws Exception {
-        createUser("scannerA");
-        createUser("scannerB");
+        registry.create("scannerA");
+        registry.create("scannerB");
         String tokenA = login("scannerA", "mobile-3");
         String tokenB = login("scannerB", "mobile-4");
         String ticketId = createTicket();
@@ -129,7 +114,7 @@ class QrLoginModuleTest {
 
     @Test
     void cancelStopsExchange() throws Exception {
-        createUser("canceller");
+        registry.create("canceller");
         String token = login("canceller", "mobile-5");
         String ticketId = createTicket();
         post("/auth/qrcode/" + ticketId + "/scan", "{}", token);
@@ -166,8 +151,8 @@ class QrLoginModuleTest {
 
     private String login(String username, String deviceId) throws Exception {
         HttpResponse<String> response = post("/auth/login",
-                "{\"username\":\"" + username + "\",\"password\":\"" + PASSWORD + "\",\"deviceId\":\"" + deviceId
-                        + "\"}", null);
+                "{\"username\":\"" + username + "\",\"password\":\"" + TestAccountRegistry.PASSWORD
+                        + "\",\"deviceId\":\"" + deviceId + "\"}", null);
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         return JsonPath.<String>read(response.body(), "$.data.tokenValue");
     }

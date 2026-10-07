@@ -2,10 +2,9 @@ package cn.slainc.modules.auth.closure;
 import cn.slainc.modules.auth.service.AccountClosureService;
 
 import cn.slainc.core.context.TenantContext;
-import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.auth.AuthModuleApplication;
-import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.auth.TestAccountRegistry;
+import cn.slainc.security.spi.PasswordAccount;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "modality.auth.closure.cleanup-interval-seconds=3600"})
 class AccountClosureModuleTest {
 
-    private static final String PASSWORD = "Password#123";
-
     @Autowired
-    private UserService userService;
+    private TestAccountRegistry registry;
 
     @Autowired
     private AccountClosureService closureService;
@@ -58,13 +55,12 @@ class AccountClosureModuleTest {
             }
         }
         jdbc.execute("DELETE FROM t_auth_account_closure");
-        jdbc.execute("DELETE FROM t_user");
         http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     }
 
     @Test
     void closureAppliesCancelsAndExecutesAfterCoolDown() throws Exception {
-        UserRecord user = createUser("leaver");
+        PasswordAccount account = registry.create("leaver");
         String token = login("leaver");
 
         HttpResponse<String> wrongPassword = post("/auth/account/close",
@@ -73,7 +69,7 @@ class AccountClosureModuleTest {
         assertThat(wrongPassword.body()).contains("密码错误");
 
         HttpResponse<String> apply = post("/auth/account/close",
-                "{\"password\":\"" + PASSWORD + "\",\"reason\":\"不再使用\"}", token);
+                "{\"password\":\"" + TestAccountRegistry.PASSWORD + "\",\"reason\":\"不再使用\"}", token);
         assertThat(apply.statusCode()).as(apply.body()).isEqualTo(200);
         assertThat(apply.body()).contains("PENDING");
 
@@ -88,31 +84,25 @@ class AccountClosureModuleTest {
         assertThat(get("/auth/account/close/status", token).body()).contains("CANCELLED");
 
         HttpResponse<String> reapply = post("/auth/account/close",
-                "{\"password\":\"" + PASSWORD + "\",\"reason\":\"想清楚了\"}", token);
+                "{\"password\":\"" + TestAccountRegistry.PASSWORD + "\",\"reason\":\"想清楚了\"}", token);
         assertThat(reapply.statusCode()).as(reapply.body()).isEqualTo(200);
 
         // 模拟冷静期结束：把到期时间拨到过去
         jdbc.update("UPDATE t_auth_account_closure SET cool_down_until = ? WHERE user_id = ? AND status = 'PENDING'",
-                System.currentTimeMillis() - 1000, user.getId());
+                System.currentTimeMillis() - 1000, account.userId());
 
         int executed = closureService.executeDue();
         assertThat(executed).isEqualTo(1);
-        Integer deleted = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM t_user WHERE id = ? AND deleted = 1", Integer.class, user.getId());
-        assertThat(deleted).isEqualTo(1);
+        assertThat(registry.isDeleted(account.userId())).as("注销到期后账号被软删").isTrue();
         String recordStatus = jdbc.queryForObject(
-                "SELECT status FROM t_auth_account_closure WHERE user_id = ? ORDER BY id DESC LIMIT 1", String.class, user.getId());
+                "SELECT status FROM t_auth_account_closure WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+                String.class, account.userId());
         assertThat(recordStatus).isEqualTo("EXECUTED");
-    }
-
-    private UserRecord createUser(String username) {
-        return userService.create(username, username, PASSWORD, null, null, null, LoginType.TENANT_USER, 1L,
-                "module-test");
     }
 
     private String login(String username) throws Exception {
         HttpResponse<String> response = post("/auth/login",
-                "{\"username\":\"" + username + "\",\"password\":\"" + PASSWORD + "\"}", null);
+                "{\"username\":\"" + username + "\",\"password\":\"" + TestAccountRegistry.PASSWORD + "\"}", null);
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         return JsonPath.<String>read(response.body(), "$.data.tokenValue");
     }

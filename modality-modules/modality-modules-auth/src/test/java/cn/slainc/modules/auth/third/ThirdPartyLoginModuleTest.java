@@ -1,11 +1,10 @@
 package cn.slainc.modules.auth.third;
 
 import cn.slainc.core.context.TenantContext;
-import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.auth.AuthModuleApplication;
 import cn.slainc.modules.auth.FakeWechatProvider;
-import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.auth.TestAccountRegistry;
+import cn.slainc.security.spi.PasswordAccount;
 import cn.slainc.thirdauth.ThirdPartyPlatform;
 import cn.slainc.thirdauth.ThirdPartyUser;
 import com.jayway.jsonpath.JsonPath;
@@ -32,7 +31,7 @@ class ThirdPartyLoginModuleTest {
     private static final String PASSWORD = "Password#123";
 
     @Autowired
-    private UserService userService;
+    private TestAccountRegistry registry;
 
     @Autowired
     private FakeWechatProvider fakeProvider;
@@ -57,7 +56,7 @@ class ThirdPartyLoginModuleTest {
                 redis.delete(keys);
             }
         }
-        for (String table : new String[]{"t_third_account_binding", "t_user_login_record", "t_user"}) {
+        for (String table : new String[]{"t_third_account_binding"}) {
             try {
                 jdbc.execute("DELETE FROM " + table);
             } catch (org.springframework.dao.DataAccessException ignored) {
@@ -67,14 +66,13 @@ class ThirdPartyLoginModuleTest {
         http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     }
 
-    private UserRecord createUser(String username) {
-        return userService.create(username, username, PASSWORD, null, null, null, LoginType.TENANT_USER, 1L,
-                "module-test");
+    private PasswordAccount createUser(String username) {
+        return registry.create(username);
     }
 
     @Test
     void unboundCallbackIssuesBindTicketThenBindEstablishesSession() throws Exception {
-        UserRecord user = createUser("binduser");
+        PasswordAccount user = createUser("binduser");
         fakeProvider.nextUser(userOf("open-100", "union-100"));
 
         HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null);
@@ -98,7 +96,7 @@ class ThirdPartyLoginModuleTest {
 
         HttpResponse<String> me = get("/auth/test/me", token);
         assertThat(me.statusCode()).as(me.body()).isEqualTo(200);
-        assertThat(me.body()).contains(String.valueOf(user.getId()));
+        assertThat(me.body()).contains(String.valueOf(user.userId()));
 
         HttpResponse<String> bindings = get("/auth/third/bindings", token);
         assertThat(bindings.statusCode()).as(bindings.body()).isEqualTo(200);

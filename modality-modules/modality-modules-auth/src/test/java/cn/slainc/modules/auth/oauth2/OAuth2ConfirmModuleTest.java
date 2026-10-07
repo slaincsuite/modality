@@ -1,9 +1,8 @@
 package cn.slainc.modules.auth.oauth2;
 
 import cn.slainc.core.context.TenantContext;
-import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.auth.AuthModuleApplication;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.auth.TestAccountRegistry;
 import cn.slainc.oauth2.client.ClientAdminService;
 import cn.slainc.oauth2.client.Oauth2ClientRecord;
 import com.jayway.jsonpath.JsonPath;
@@ -40,7 +39,7 @@ class OAuth2ConfirmModuleTest {
     private ClientAdminService clientAdminService;
 
     @Autowired
-    private UserService userService;
+    private TestAccountRegistry registry;
 
     @Autowired
     private StringRedisTemplate redis;
@@ -67,7 +66,6 @@ class OAuth2ConfirmModuleTest {
         } catch (org.springframework.dao.DataAccessException ignored) {
             // t_consent_record 由 oauth2 库懒建，首次注册 Client 前可能不存在
         }
-        jdbc.execute("DELETE FROM t_user");
         clientAdminService.remove(CLIENT_ID);
         Oauth2ClientRecord client = new Oauth2ClientRecord();
         client.setClientId(CLIENT_ID);
@@ -83,8 +81,7 @@ class OAuth2ConfirmModuleTest {
 
     @Test
     void confirmPageFlowAndConsentLifecycle() throws Exception {
-        var user = userService.create("consentuser", "consentuser", PASSWORD, null, null, null, LoginType.TENANT_USER,
-                1L, "module-test");
+        registry.create("consentuser");
         String token = login("consentuser");
 
         String authorizeUrl = "/oauth2/authorize?response_type=code&client_id=" + CLIENT_ID
