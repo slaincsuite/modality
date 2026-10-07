@@ -7,6 +7,7 @@ import cn.slainc.modules.upms.excel.PermissionExcelService;
 import cn.slainc.modules.upms.excel.UserExcelService;
 import cn.slainc.modules.upms.log.LoginRecordCollector;
 import cn.slainc.modules.upms.log.LoginRecordService;
+import cn.slainc.modules.upms.log.LogoutRecordCollector;
 import cn.slainc.modules.upms.log.OperationLogService;
 import cn.slainc.modules.upms.log.OperationLogStore;
 import cn.slainc.modules.upms.mapper.AccessControlMapper;
@@ -23,16 +24,18 @@ import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserOperationLogMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
+import cn.slainc.modules.upms.security.UpmsAccountAdminPort;
 import cn.slainc.modules.upms.security.UpmsAccountAuthProvider;
 import cn.slainc.modules.upms.security.UpmsAccountPasswordUpdater;
+import cn.slainc.modules.upms.security.UpmsAccountRestrictionPort;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
 import cn.slainc.modules.upms.security.UpmsPermissionProvider;
 import cn.slainc.modules.upms.service.AccessControlService;
 import cn.slainc.modules.upms.service.DeptService;
 import cn.slainc.modules.upms.service.MenuService;
 import cn.slainc.modules.upms.service.PermissionService;
-import cn.slainc.modules.upms.service.PolicyBindingService;
 import cn.slainc.modules.upms.service.RoleService;
+import cn.slainc.modules.upms.service.UpmsPolicyBindingStore;
 import cn.slainc.modules.upms.service.SystemRegistryService;
 import cn.slainc.modules.upms.service.UserGroupService;
 import cn.slainc.modules.upms.service.UserPasswordService;
@@ -50,14 +53,16 @@ import cn.slainc.modules.upms.web.SystemRegistryController;
 import cn.slainc.modules.upms.web.UserGroupManageController;
 import cn.slainc.modules.upms.web.UserManageController;
 import cn.slainc.modules.upms.web.UserStatsController;
-import cn.slainc.modules.upms.web.UpmsContextBindingFilter;
 import cn.slainc.mybatis.datascope.DataScopeProvider;
 import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.storage.PolicyBindingStore;
 import cn.slainc.security.cache.SecurityPermissionCache;
 import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.security.password.PasswordPolicyService;
+import cn.slainc.security.spi.AccountAdminPort;
 import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.security.spi.AccountPasswordUpdater;
+import cn.slainc.security.spi.AccountRestrictionPort;
 import cn.slainc.security.spi.SecurityPermissionProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -71,9 +76,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
-// 必须先于 security 与 mybatis 库装配：三个 SPI 与数据权限 provider 在此抢先注册，宿主自定义 Bean 仍可整体覆盖
+// 必须先于 security、mybatis 与 policy 库装配：SPI、数据权限 provider 与策略绑定存储在此抢先注册，宿主自定义 Bean 仍可整体覆盖
 @AutoConfiguration(beforeName = {"cn.slainc.security.autoconfigure.SecurityAutoConfiguration",
-        "cn.slainc.mybatis.autoconfigure.MybatisAutoConfiguration"})
+        "cn.slainc.mybatis.autoconfigure.MybatisAutoConfiguration",
+        "cn.slainc.policy.autoconfigure.PolicyAutoConfiguration"})
 @ConditionalOnProperty(prefix = "modality.upms", name = "enabled", matchIfMissing = true)
 @EnableConfigurationProperties(UpmsProperties.class)
 @Import({UserManageController.class, RoleManageController.class, PermissionManageController.class,
@@ -100,6 +106,18 @@ public class UpmsAutoConfiguration {
     @ConditionalOnMissingBean(AccountPasswordUpdater.class)
     public UpmsAccountPasswordUpdater upmsAccountPasswordUpdater(UserMapper userMapper) {
         return new UpmsAccountPasswordUpdater(userMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AccountAdminPort.class)
+    public UpmsAccountAdminPort upmsAccountAdminPort(UserService userService) {
+        return new UpmsAccountAdminPort(userService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(AccountRestrictionPort.class)
+    public UpmsAccountRestrictionPort upmsAccountRestrictionPort(UserService userService) {
+        return new UpmsAccountRestrictionPort(userService);
     }
 
     @Bean
@@ -203,10 +221,9 @@ public class UpmsAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
-    public PolicyBindingService policyBindingService(PolicyBindingMapper bindingMapper,
-                                                     ObjectProvider<PolicyAdminService> policyAdminService) {
-        return new PolicyBindingService(bindingMapper, policyAdminService);
+    @ConditionalOnMissingBean(PolicyBindingStore.class)
+    public UpmsPolicyBindingStore upmsPolicyBindingStore(PolicyBindingMapper bindingMapper) {
+        return new UpmsPolicyBindingStore(bindingMapper);
     }
 
     @Bean
@@ -214,6 +231,14 @@ public class UpmsAutoConfiguration {
     public LoginRecordCollector loginRecordCollector(UserLoginRecordMapper loginRecordMapper, UserMapper userMapper,
                                                      ObjectProvider<CurrentRequestReader> requestReader) {
         return new LoginRecordCollector(loginRecordMapper, userMapper, requestReader.getIfAvailable());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public LogoutRecordCollector logoutRecordCollector(UserOperationLogMapper operationLogMapper,
+                                                       UserMapper userMapper,
+                                                       ObjectProvider<CurrentRequestReader> requestReader) {
+        return new LogoutRecordCollector(operationLogMapper, userMapper, requestReader);
     }
 
     @Bean
@@ -258,17 +283,5 @@ public class UpmsAutoConfiguration {
     @ConditionalOnMissingBean
     public OperationLogExportService operationLogExportService(OperationLogService operationLogService) {
         return new OperationLogExportService(operationLogService);
-    }
-
-    // 紧随 Sa-Token 过滤器之后绑定 UserContext：数据权限与用户菜单依赖请求内的用户/角色/权限上下文
-    // StpInterface 必须运行期解析：本配置先于 security 装配，条件期直查会判 false
-    @Bean
-    @org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-    public org.springframework.boot.web.servlet.FilterRegistrationBean<UpmsContextBindingFilter> upmsContextBindingFilter(
-            ObjectProvider<cn.dev33.satoken.stp.StpInterface> stpInterface) {
-        var registration = new org.springframework.boot.web.servlet.FilterRegistrationBean<>(
-                new UpmsContextBindingFilter(stpInterface));
-        registration.setOrder(-5900);
-        return registration;
     }
 }

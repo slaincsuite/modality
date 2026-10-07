@@ -6,8 +6,8 @@ import cn.slainc.core.context.UserContext;
 import cn.slainc.modules.upms.dto.PolicyBindClientRequest;
 import cn.slainc.modules.upms.dto.PolicyBindRoleRequest;
 import cn.slainc.modules.upms.dto.PolicyBindUserRequest;
-import cn.slainc.modules.upms.entity.PolicyBindingRecord;
-import cn.slainc.modules.upms.service.PolicyBindingService;
+import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.policy.model.PolicyBinding;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,20 +32,20 @@ public class PolicyBindingController {
 
     @PostMapping("/user")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_BIND)
-    public PolicyBindingRecord bindUser(@RequestBody PolicyBindUserRequest request) {
+    public PolicyBinding bindUser(@RequestBody PolicyBindUserRequest request) {
         return bindingService.bindToUser(request.policyId(), request.userId(), request.loginType(),
                 UserContext.username());
     }
 
     @PostMapping("/role")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_BIND)
-    public PolicyBindingRecord bindRole(@RequestBody PolicyBindRoleRequest request) {
+    public PolicyBinding bindRole(@RequestBody PolicyBindRoleRequest request) {
         return bindingService.bindToRole(request.policyId(), request.roleCode(), UserContext.username());
     }
 
     @PostMapping("/client")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_BIND)
-    public PolicyBindingRecord bindClient(@RequestBody PolicyBindClientRequest request) {
+    public PolicyBinding bindClient(@RequestBody PolicyBindClientRequest request) {
         return bindingService.bindToClient(request.policyId(), request.clientId(), UserContext.username());
     }
 
@@ -57,7 +57,7 @@ public class PolicyBindingController {
 
     @GetMapping("/query")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_POLICY_QUERY)
-    public List<PolicyBindingRecord> query(@RequestParam(required = false) String subjectType,
+    public List<PolicyBinding> query(@RequestParam(required = false) String subjectType,
                                            @RequestParam(required = false) String subjectId,
                                            @RequestParam(required = false) String policyId) {
         return bindingService.query(subjectType, subjectId, policyId);
