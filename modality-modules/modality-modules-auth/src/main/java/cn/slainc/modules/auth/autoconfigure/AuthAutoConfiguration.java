@@ -8,7 +8,6 @@ import cn.slainc.modules.auth.service.AuthLoginService;
 import cn.slainc.modules.auth.web.AuthLogoutController;
 import cn.slainc.modules.auth.service.AuthLogoutService;
 import cn.slainc.modules.auth.service.AuthSessionService;
-import cn.slainc.modules.auth.listener.LogoutRecordCollector;
 import cn.slainc.modules.auth.filter.SessionRenewalFilter;
 import cn.slainc.modules.auth.web.AuthPasswordController;
 import cn.slainc.modules.auth.service.AuthPasswordService;
@@ -18,7 +17,6 @@ import cn.slainc.modules.auth.web.QrLoginController;
 import cn.slainc.modules.auth.service.QrLoginService;
 import cn.slainc.modules.auth.qrcode.QrLoginTicket;
 import cn.slainc.modules.auth.web.SafeAuthController;
-import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.security.audit.SecurityAuditRecorder;
 import cn.slainc.security.ban.AccountBanService;
 import cn.slainc.security.config.SecurityConfigReader;
@@ -27,6 +25,7 @@ import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.security.login.SecurityLoginService;
 import cn.slainc.security.password.PasswordPolicyService;
 import cn.slainc.security.spi.AccountAuthProvider;
+import cn.slainc.security.spi.AccountRestrictionPort;
 import cn.slainc.session.extend.SessionExtender;
 import cn.slainc.session.extend.SessionRenewalService;
 import org.springframework.beans.factory.ObjectProvider;
@@ -67,12 +66,12 @@ public class AuthAutoConfiguration {
     @ConditionalOnMissingBean
     public AuthLoginService authLoginService(SecurityLoginService delegate, AuthProperties properties,
                                              ObjectProvider<CaptchaService> captchaService,
-                                             ObjectProvider<UserService> userService,
+                                             ObjectProvider<AccountRestrictionPort> restrictionPort,
                                              ObjectProvider<SessionRenewalService> renewalService,
                                              ObjectProvider<SessionExtender> sessionExtender,
                                              ObjectProvider<CurrentRequestReader> requestReader,
                                              ApplicationEventPublisher publisher) {
-        return new AuthLoginService(delegate, properties, captchaService, userService, renewalService,
+        return new AuthLoginService(delegate, properties, captchaService, restrictionPort, renewalService,
                 sessionExtender, requestReader, publisher);
     }
 
@@ -82,15 +81,6 @@ public class AuthAutoConfiguration {
                                                ObjectProvider<AccountAuthProvider> authProvider,
                                                cn.slainc.web.websocket.WebSocketPusher pusher) {
         return new AuthLogoutService(publisher, authProvider, pusher);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public LogoutRecordCollector logoutRecordCollector(
-            ObjectProvider<cn.slainc.modules.upms.mapper.UserOperationLogMapper> operationLogMapper,
-            ObjectProvider<cn.slainc.modules.upms.mapper.UserMapper> userMapper,
-            ObjectProvider<CurrentRequestReader> requestReader) {
-        return new LogoutRecordCollector(operationLogMapper, userMapper, requestReader);
     }
 
     @Bean
@@ -118,10 +108,9 @@ public class AuthAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AuthPasswordService authPasswordService(
-            ObjectProvider<cn.slainc.modules.upms.service.UserPasswordService> upmsPasswordService,
-            PasswordPolicyService passwordPolicy, ObjectProvider<AccountAuthProvider> authProvider) {
-        return new AuthPasswordService(upmsPasswordService, passwordPolicy, authProvider);
+    public AuthPasswordService authPasswordService(PasswordPolicyService passwordPolicy,
+                                                   ObjectProvider<AccountAuthProvider> authProvider) {
+        return new AuthPasswordService(passwordPolicy, authProvider);
     }
 
     @Bean
@@ -131,7 +120,7 @@ public class AuthAutoConfiguration {
                                                                               SessionExtender sessionExtender) {
         FilterRegistrationBean<SessionRenewalFilter> registration = new FilterRegistrationBean<>(
                 new SessionRenewalFilter(properties, renewalService, sessionExtender));
-        // 紧随 Sa-Token(-6000) 与 UPMS 上下文绑定(-5900) 之后，保证读到的令牌已通过认证
+        // 紧随 Sa-Token(-6000) 与安全上下文绑定(-5900) 之后，保证读到的令牌已通过认证
         registration.setOrder(-5800);
         return registration;
     }

@@ -7,12 +7,11 @@ import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.event.LoginEvent;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.auth.config.AuthProperties;
-import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.security.login.LoginRequest;
 import cn.slainc.security.login.LoginResult;
 import cn.slainc.security.login.SecurityLoginService;
+import cn.slainc.security.spi.AccountRestrictionPort;
 import cn.slainc.session.extend.SessionExtender;
 import cn.slainc.session.extend.SessionRenewalService;
 import org.springframework.beans.factory.ObjectProvider;
@@ -28,7 +27,7 @@ public class AuthLoginService {
 
     private final ObjectProvider<CaptchaService> captchaService;
 
-    private final ObjectProvider<UserService> userService;
+    private final ObjectProvider<AccountRestrictionPort> restrictionPort;
 
     private final ObjectProvider<SessionRenewalService> renewalService;
 
@@ -39,7 +38,8 @@ public class AuthLoginService {
     private final ApplicationEventPublisher publisher;
 
     public AuthLoginService(SecurityLoginService delegate, AuthProperties properties,
-                            ObjectProvider<CaptchaService> captchaService, ObjectProvider<UserService> userService,
+                            ObjectProvider<CaptchaService> captchaService,
+                            ObjectProvider<AccountRestrictionPort> restrictionPort,
                             ObjectProvider<SessionRenewalService> renewalService,
                             ObjectProvider<SessionExtender> sessionExtender,
                             ObjectProvider<CurrentRequestReader> requestReader,
@@ -47,7 +47,7 @@ public class AuthLoginService {
         this.delegate = delegate;
         this.properties = properties;
         this.captchaService = captchaService;
-        this.userService = userService;
+        this.restrictionPort = restrictionPort;
         this.renewalService = renewalService;
         this.sessionExtender = sessionExtender;
         this.requestReader = requestReader;
@@ -109,15 +109,11 @@ public class AuthLoginService {
 
     // 用户级登录限制（IP/时段/设备）在交给 security 之前先行裁决，这是批次 8 预留的强制执行接入点
     private void checkUserRestrictions(LoginType type, LoginCommand command, String clientIp) {
-        UserService service = userService.getIfAvailable();
-        if (service == null) {
+        AccountRestrictionPort port = restrictionPort.getIfAvailable();
+        if (port == null) {
             return;
         }
-        UserRecord user = service.findByUsername(command.username(), type);
-        if (user == null) {
-            return;
-        }
-        List<String> violations = service.validateRestrictions(user, clientIp, command.deviceType());
+        List<String> violations = port.validate(command.username(), type, clientIp, command.deviceType());
         if (violations != null && !violations.isEmpty()) {
             throw failure(type, command.username(), clientIp, String.join("；", violations));
         }

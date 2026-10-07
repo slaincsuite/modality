@@ -6,7 +6,7 @@ import cn.slainc.modules.auth.scheduler.AccountClosureScheduler;
 import cn.slainc.modules.auth.service.AccountClosureService;
 import cn.slainc.modules.auth.store.AccountClosureStore;
 import cn.slainc.modules.auth.config.AuthProperties;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.security.spi.AccountAdminPort;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -46,8 +46,8 @@ public class AuthClosureAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AccountClosureService accountClosureService(AccountClosureStore store, AuthProperties properties,
-                                                       ObjectProvider<UserService> userService) {
-        return new AccountClosureService(store, properties, userService);
+                                                       ObjectProvider<AccountAdminPort> adminPort) {
+        return new AccountClosureService(store, properties, adminPort);
     }
 
     @Bean(destroyMethod = "close")

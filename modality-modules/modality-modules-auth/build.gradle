@@ -15,9 +15,10 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-thirdauth')
     api project(':modality-library:modality-library-spring-boot-redis')
     api project(':modality-library:modality-library-spring-boot-sensitive')
-    api project(':modality-modules:modality-modules-upms')
     implementation project(':modality-library:modality-library-spring-boot-monitor')
     implementation libs.zxing.core
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    compileOnly libs.spring.boot.starter.jdbc
+    testImplementation libs.spring.boot.starter.jdbc
     testRuntimeOnly libs.h2
 }

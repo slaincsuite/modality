@@ -5,8 +5,8 @@ import cn.slainc.modules.auth.store.AccountClosureStore;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.auth.config.AuthProperties;
-import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.security.StpKit;
+import cn.slainc.security.spi.AccountAdminPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -23,13 +23,13 @@ public class AccountClosureService {
 
     private final AuthProperties properties;
 
-    private final ObjectProvider<UserService> userService;
+    private final ObjectProvider<AccountAdminPort> adminPort;
 
     public AccountClosureService(AccountClosureStore store, AuthProperties properties,
-                                 ObjectProvider<UserService> userService) {
+                                 ObjectProvider<AccountAdminPort> adminPort) {
         this.store = store;
         this.properties = properties;
-        this.userService = userService;
+        this.adminPort = adminPort;
     }
 
     public AccountClosureRecord apply(LoginType type, Long userId, String username, String reason) {
@@ -38,6 +38,7 @@ public class AccountClosureService {
         }
         long now = System.currentTimeMillis();
         AccountClosureRecord record = new AccountClosureRecord();
+        record.setTenantId(resolveTenantId(type, userId));
         record.setUserId(userId);
         record.setLoginType(type.value());
         record.setUsername(username);
@@ -58,16 +59,27 @@ public class AccountClosureService {
         return store.findLatest(userId);
     }
 
+    private Long resolveTenantId(LoginType type, Long userId) {
+        if (type != LoginType.TENANT_USER) {
+            return null;
+        }
+        AccountAdminPort port = adminPort.getIfAvailable();
+        if (port == null) {
+            throw new IllegalStateException("未接入账号数据源，无法记录注销申请的租户归属");
+        }
+        return port.tenantIdOf(userId);
+    }
+
     public int executeDue() {
         List<AccountClosureRecord> due = store.findDue(System.currentTimeMillis(), 100);
         int executed = 0;
         for (AccountClosureRecord record : due) {
             try {
-                UserService service = userService.getIfAvailable();
-                if (service == null) {
-                    throw new IllegalStateException("未接入用户模块，无法执行注销");
+                AccountAdminPort port = adminPort.getIfAvailable();
+                if (port == null) {
+                    throw new IllegalStateException("未接入账号数据源，无法执行注销");
                 }
-                service.delete(record.getUserId());
+                port.delete(record.getUserId());
                 LoginType type = LoginType.of(record.getLoginType());
                 if (type != null) {
                     StpKit.of(type).logout(record.getUserId());
