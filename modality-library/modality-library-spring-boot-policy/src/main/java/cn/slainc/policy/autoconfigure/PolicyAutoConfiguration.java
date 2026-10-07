@@ -2,13 +2,16 @@ package cn.slainc.policy.autoconfigure;
 
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.admin.PolicyBindingService;
 import cn.slainc.policy.admin.PolicyDiffService;
 import cn.slainc.policy.aspect.PolicyAspect;
 import cn.slainc.policy.bridge.PolicySecurityBridge;
 import cn.slainc.policy.config.PolicyProperties;
 import cn.slainc.policy.engine.PolicyEngine;
 import cn.slainc.policy.simulate.PolicySimulator;
+import cn.slainc.policy.storage.InMemoryPolicyBindingStore;
 import cn.slainc.policy.storage.InMemoryPolicyStore;
+import cn.slainc.policy.storage.PolicyBindingStore;
 import cn.slainc.policy.storage.PolicyStore;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -48,6 +51,19 @@ public class PolicyAutoConfiguration {
                                                  ObjectProvider<ApplicationEventPublisher> eventPublisher) {
         return new PolicyAdminService(policyStore, policyEngine, properties, configService,
                 eventPublisher.getIfAvailable());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(PolicyBindingStore.class)
+    public InMemoryPolicyBindingStore policyBindingStore() {
+        return new InMemoryPolicyBindingStore();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PolicyBindingService policyBindingService(PolicyBindingStore bindingStore,
+                                                     PolicyAdminService policyAdminService) {
+        return new PolicyBindingService(bindingStore, policyAdminService);
     }
 
     @Bean
