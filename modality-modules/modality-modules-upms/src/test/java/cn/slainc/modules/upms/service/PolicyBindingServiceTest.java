@@ -3,9 +3,10 @@ package cn.slainc.modules.upms.service;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
-import cn.slainc.modules.upms.entity.PolicyBindingRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.policy.model.PolicyBinding;
 import cn.slainc.policy.engine.PolicyEngine;
 import cn.slainc.policy.model.Effect;
 import cn.slainc.policy.model.PolicyDocument;
@@ -48,9 +49,9 @@ class PolicyBindingServiceTest extends UpmsIntegrationTestBase {
         String policyId = seedPolicy();
         UserRecord user = userService.create("policy-user", null, "Policy#12345", null, null, null,
                 LoginType.TENANT_USER, 1L, "admin");
-        PolicyBindingRecord binding = bindingService.bindToUser(policyId, user.getId(), LoginType.TENANT_USER,
+        PolicyBinding binding = bindingService.bindToUser(policyId, user.getId(), LoginType.TENANT_USER,
                 "tester");
-        assertThat(binding.getSubjectType()).isEqualTo(PolicyBindingRecord.SUBJECT_USER);
+        assertThat(binding.getSubjectType()).isEqualTo(PolicyBinding.SUBJECT_USER);
         assertThat(binding.getSubjectId()).isEqualTo(String.valueOf(user.getId()));
 
         policyEngine.invalidate();
@@ -61,7 +62,7 @@ class PolicyBindingServiceTest extends UpmsIntegrationTestBase {
         bindingService.unbind(binding.getId());
         policyEngine.invalidate();
         assertThat(policyEngine.evaluate(request).allowed()).isFalse();
-        assertThat(bindingService.query(PolicyBindingRecord.SUBJECT_USER, String.valueOf(user.getId()), null))
+        assertThat(bindingService.query(PolicyBinding.SUBJECT_USER, String.valueOf(user.getId()), null))
                 .isEmpty();
     }
 
@@ -70,8 +71,8 @@ class PolicyBindingServiceTest extends UpmsIntegrationTestBase {
         String policyId = seedPolicy();
         RoleService roleService = applicationContext.getBean(RoleService.class);
         roleService.create("analyst", "分析员", null, null, null, null, null);
-        PolicyBindingRecord binding = bindingService.bindToRole(policyId, "analyst", "tester");
-        assertThat(binding.getSubjectType()).isEqualTo(PolicyBindingRecord.SUBJECT_ROLE);
+        PolicyBinding binding = bindingService.bindToRole(policyId, "analyst", "tester");
+        assertThat(binding.getSubjectType()).isEqualTo(PolicyBinding.SUBJECT_ROLE);
         policyEngine.invalidate();
         PolicyRequest request = PolicyRequest.of("report:export", "finance:quarterly").roles(List.of("analyst"));
         assertThat(policyEngine.evaluate(request).allowed()).isTrue();
@@ -80,8 +81,8 @@ class PolicyBindingServiceTest extends UpmsIntegrationTestBase {
     @Test
     void bindToClientMapsToAppLoginType() {
         String policyId = seedPolicy();
-        PolicyBindingRecord binding = bindingService.bindToClient(policyId, 3001L, "tester");
-        assertThat(binding.getSubjectType()).isEqualTo(PolicyBindingRecord.SUBJECT_CLIENT);
+        PolicyBinding binding = bindingService.bindToClient(policyId, 3001L, "tester");
+        assertThat(binding.getSubjectType()).isEqualTo(PolicyBinding.SUBJECT_CLIENT);
         assertThat(binding.getSubjectId()).isEqualTo("3001");
         policyEngine.invalidate();
         PolicyRequest request = PolicyRequest.of("report:read", "finance:quarterly")
