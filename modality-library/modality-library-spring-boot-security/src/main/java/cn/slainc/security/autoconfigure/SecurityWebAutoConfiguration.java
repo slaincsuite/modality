@@ -9,6 +9,7 @@ import cn.slainc.security.metrics.SecurityCounters;
 import cn.slainc.security.metrics.SecurityMetricsPort;
 import cn.slainc.security.web.SecurityExceptionHandler;
 import cn.slainc.security.web.SecurityFilterFactory;
+import cn.slainc.security.web.UserContextBindingFilter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -35,6 +36,18 @@ public class SecurityWebAutoConfiguration {
             SecurityProperties properties, SecurityConfigReader config,
             ObjectProvider<SecurityMetricsPort> metrics) {
         return SecurityFilterFactory.create(properties, config, metrics.getIfAvailable(SecurityCounters::new));
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "userContextBindingFilterRegistration")
+    @ConditionalOnProperty(prefix = "modality.security", name = "user-context.enabled", matchIfMissing = true)
+    public FilterRegistrationBean<UserContextBindingFilter> userContextBindingFilterRegistration(
+            ObjectProvider<cn.dev33.satoken.stp.StpInterface> stpInterface) {
+        FilterRegistrationBean<UserContextBindingFilter> registration =
+                new FilterRegistrationBean<>(new UserContextBindingFilter(stpInterface));
+        // 紧随 Sa-Token 安全过滤器(-6000)之后，保证业务过滤器与端点读到的用户上下文已就绪
+        registration.setOrder(-5900);
+        return registration;
     }
 
     @Bean
