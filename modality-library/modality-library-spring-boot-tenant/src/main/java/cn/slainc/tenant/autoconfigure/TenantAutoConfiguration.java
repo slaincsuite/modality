@@ -3,8 +3,10 @@ package cn.slainc.tenant.autoconfigure;
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.datasource.manager.DynamicDataSourceManager;
 import cn.slainc.mybatis.entity.MybatisBaseEntity;
+import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import cn.slainc.redis.cache.CacheInvalidationPublisher;
+import cn.slainc.tenant.context.TenantConsistencyFilter;
 import cn.slainc.tenant.context.TenantFilter;
 import cn.slainc.tenant.context.TenantStatusChecker;
 import cn.slainc.tenant.entity.Tenant;
@@ -57,7 +59,7 @@ import java.util.List;
 
 @AutoConfiguration
 @AutoConfigureAfter(name = "com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration")
-@ConditionalOnProperty(prefix = "modality.tenant", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "modality.tenant", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties({TenantProperties.class, TenantStatusCheckProperties.class})
 public class TenantAutoConfiguration {
 
@@ -65,8 +67,7 @@ public class TenantAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "modality.tenant.resolver.header", name = "enabled", havingValue = "true",
-            matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "modality.tenant.resolver.header", name = "enabled", havingValue = "true")
     public HeaderTenantResolver headerTenantResolver(TenantProperties properties,
                                                      ObjectProvider<TenantLookup> lookup) {
         return new HeaderTenantResolver(properties.getResolver().getHeader().getName(), lookup.getIfAvailable());
@@ -151,10 +152,53 @@ public class TenantAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "modality.tenant.consistency", name = "enabled", havingValue = "true",
+            matchIfMissing = true)
+    public TenantConsistencyFilter tenantConsistencyFilter(
+            ObjectProvider<cn.slainc.tenant.resolver.SessionTenantResolver> sessionResolver,
+            ObjectProvider<cn.slainc.tenant.resolver.HeaderTenantResolver> headerResolver,
+            ObjectProvider<cn.slainc.tenant.resolver.ParamTenantResolver> paramResolver,
+            ObjectProvider<cn.slainc.tenant.resolver.PathTenantResolver> pathResolver,
+            ObjectProvider<cn.slainc.tenant.resolver.DomainTenantResolver> domainResolver) {
+        List<cn.slainc.tenant.resolver.TenantResolver> claims = new ArrayList<>();
+        addIfPresent(claims, headerResolver);
+        addIfPresent(claims, paramResolver);
+        addIfPresent(claims, pathResolver);
+        addIfPresent(claims, domainResolver);
+        return new TenantConsistencyFilter(sessionResolver.getIfAvailable(), claims);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "tenantConsistencyFilterRegistration")
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    @ConditionalOnProperty(prefix = "modality.tenant.consistency", name = "enabled", havingValue = "true",
+            matchIfMissing = true)
+    public FilterRegistrationBean<TenantConsistencyFilter> tenantConsistencyFilterRegistration(
+            TenantConsistencyFilter tenantConsistencyFilter) {
+        FilterRegistrationBean<TenantConsistencyFilter> registration =
+                new FilterRegistrationBean<>(tenantConsistencyFilter);
+        registration.setName("tenantConsistencyFilter");
+        registration.setOrder(FilterOrder.TENANT_GUARD);
+        registration.addUrlPatterns("/*");
+        registration.setEnabled(true);
+        return registration;
+    }
+
+    private static void addIfPresent(List<cn.slainc.tenant.resolver.TenantResolver> target,
+                                     ObjectProvider<? extends cn.slainc.tenant.resolver.TenantResolver> provider) {
+        cn.slainc.tenant.resolver.TenantResolver resolver = provider.getIfAvailable();
+        if (resolver != null) {
+            target.add(resolver);
+        }
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public TenantTableWhitelist tenantTableWhitelist(TenantProperties properties,
-                                                     ObjectProvider<MybatisProperties> mybatisProperties) {
+                                                     ObjectProvider<MybatisProperties> mybatisProperties,
+                                                     ObjectProvider<DefaultTenantLineHandler> tenantLineHandler) {
         return new TenantTableWhitelist(properties.getIgnoreTables(), properties.getIgnoreTablePrefixes(),
-                mybatisProperties.getIfAvailable());
+                mybatisProperties.getIfAvailable(), tenantLineHandler.getIfAvailable());
     }
 
     @Bean

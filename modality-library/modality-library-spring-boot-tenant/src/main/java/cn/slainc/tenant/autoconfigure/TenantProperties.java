@@ -13,7 +13,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "modality.tenant")
 public class TenantProperties {
 
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     private final Filter filter = new Filter();
 
@@ -145,7 +145,7 @@ public class TenantProperties {
 
         public static class Header {
 
-            private boolean enabled = true;
+            private boolean enabled = false;
 
             private String name = HttpHeaders.TENANT_ID;
 

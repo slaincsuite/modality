@@ -1,11 +1,9 @@
 package cn.slainc.tenant.context;
 
 import cn.slainc.core.context.TenantContext;
-import cn.slainc.core.result.Result;
 import cn.slainc.core.result.ResultCode;
 import cn.slainc.tenant.metrics.TenantMetricsRecorder;
 import cn.slainc.tenant.resolver.TenantResolver;
-import cn.slainc.utils.json.JsonUtils;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 public class TenantFilter implements Filter {
 
@@ -79,33 +76,10 @@ public class TenantFilter implements Filter {
             return true;
         }
         metrics.tenantRejected(tenantId, decision.errorCode() == null ? 0 : decision.errorCode().code());
-        reject(response, decision);
-        return false;
-    }
-
-    private void reject(ServletResponse response, TenantStatusCheckDecision decision) throws IOException {
-        if (!(response instanceof HttpServletResponse httpResponse)) {
-            log.warn("响应对象不是 HTTP 响应，无法返回统一报文：{}", decision.message());
-            return;
-        }
         int code = decision.errorCode() == null ? ResultCode.FORBIDDEN.code() : decision.errorCode().code();
         String message = decision.message() == null ? ResultCode.FORBIDDEN.message() : decision.message();
-        httpResponse.setStatus(decision.httpStatus());
-        httpResponse.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        httpResponse.setContentType("application/json;charset=UTF-8");
-        httpResponse.getWriter().write(body(code, message));
-        httpResponse.getWriter().flush();
-        log.warn("拒绝请求：{}", message);
-    }
-
-    private static String body(int code, String message) {
-        try {
-            return JsonUtils.toJson(Result.fail(code, message));
-        } catch (RuntimeException exception) {
-            // JSON 库缺失时退化为手写报文，仍返回统一 Result 结构
-            return "{\"code\":" + code + ",\"message\":\"" + message + "\",\"data\":null,\"timestamp\":"
-                    + System.currentTimeMillis() + "}";
-        }
+        TenantRejections.write(response, decision.httpStatus(), code, message);
+        return false;
     }
 
     private Long resolve(ServletRequest request) {

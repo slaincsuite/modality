@@ -11,6 +11,7 @@ public final class FilterOrder {
     public static final int REQUEST_BODY = -6800;
     public static final int TENANT = -6500;
     public static final int SA_TOKEN = -6000;
+    public static final int TENANT_GUARD = -5850;
     public static final int IDEMPOTENT = -5000;
     public static final int RATE_LIMIT = -4000;
     public static final int SIGN = -3000;

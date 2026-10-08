@@ -4,7 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public class ParamTenantResolver implements TenantResolver {
 
-    public static final int ORDER = 400;
+    public static final int ORDER = 950;
 
     public static final String DEFAULT_PARAM = "tenantId";
 

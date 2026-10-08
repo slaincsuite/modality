@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnClass(name = "cn.dev33.satoken.stp.StpUtil")
-@ConditionalOnProperty(prefix = "modality.tenant", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "modality.tenant", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(TenantProperties.class)
 public class TenantSaTokenAutoConfiguration {
 

@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public class HeaderTenantResolver implements TenantResolver {
 
-    public static final int ORDER = 100;
+    public static final int ORDER = 900;
 
     private final String headerName;
 

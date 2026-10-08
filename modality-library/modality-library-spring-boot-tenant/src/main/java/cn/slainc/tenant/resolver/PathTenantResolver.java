@@ -7,7 +7,7 @@ import java.util.List;
 
 public class PathTenantResolver implements TenantResolver {
 
-    public static final int ORDER = 300;
+    public static final int ORDER = 800;
 
     private final String prefix;
 

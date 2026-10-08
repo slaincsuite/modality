@@ -9,6 +9,8 @@ public final class TenantContext {
 
     public static final Long DEFAULT_TENANT_ID = 1L;
 
+    public static final String SESSION_ATTRIBUTE = "tenantId";
+
     private static final ThreadLocal<Long> HOLDER = new ThreadLocal<>();
 
     private TenantContext() {
