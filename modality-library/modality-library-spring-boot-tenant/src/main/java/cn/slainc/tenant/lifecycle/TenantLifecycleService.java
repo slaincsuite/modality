@@ -52,11 +52,32 @@ public class TenantLifecycleService {
             tenant.setExpireAt(LocalDateTime.now().plusDays(options.defaultExpireDays()));
         }
         Tenant saved = tenantService.create(tenant);
-        applyIsolation(saved);
-        initializeData(saved);
+        try {
+            applyIsolation(saved);
+            initializeData(saved);
+        } catch (RuntimeException exception) {
+            compensate(saved, exception);
+            throw exception;
+        }
         log.info("租户 [{}] 创建完成，隔离策略 [{}]", saved.getId(),
                 saved.getIsolationStrategy() == null ? null : saved.getIsolationStrategy().getDisplayName());
         return saved;
+    }
+
+    private void compensate(Tenant tenant, RuntimeException cause) {
+        log.error("租户 [{}] 初始化失败，回滚已落库的租户记录：{}", tenant.getId(), cause.getMessage(), cause);
+        if (isolationDispatcher != null) {
+            try {
+                isolationDispatcher.remove(info(tenant));
+            } catch (RuntimeException exception) {
+                log.error("回滚租户 [{}] 隔离资源失败：{}", tenant.getId(), exception.getMessage(), exception);
+            }
+        }
+        try {
+            tenantService.delete(tenant.getId());
+        } catch (RuntimeException exception) {
+            log.error("回滚租户 [{}] 记录失败，可能残留孤儿租户：{}", tenant.getId(), exception.getMessage(), exception);
+        }
     }
 
     public Tenant trial(Tenant tenant) {

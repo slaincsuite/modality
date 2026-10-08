@@ -1,6 +1,8 @@
 package cn.slainc.tenant.support;
 
 import cn.slainc.mybatis.properties.MybatisProperties;
+import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
+import cn.slainc.mybatis.tenant.TenantIgnoreTables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -19,22 +21,36 @@ public class TenantTableWhitelist implements InitializingBean {
 
     private final MybatisProperties mybatisProperties;
 
+    private final DefaultTenantLineHandler tenantLineHandler;
+
     public TenantTableWhitelist(List<String> tables, List<String> prefixes,
                                 MybatisProperties mybatisProperties) {
+        this(tables, prefixes, mybatisProperties, null);
+    }
+
+    public TenantTableWhitelist(List<String> tables, List<String> prefixes,
+                                MybatisProperties mybatisProperties, DefaultTenantLineHandler tenantLineHandler) {
         merge(this.tables, tables);
         merge(this.prefixes, prefixes);
         this.mybatisProperties = mybatisProperties;
+        this.tenantLineHandler = tenantLineHandler;
     }
 
     @Override
     public void afterPropertiesSet() {
+        TenantIgnoreTables.merge(tables, mybatisProperties, tenantLineHandler);
+        if (mybatisProperties != null) {
+            MybatisProperties.Tenant tenant = mybatisProperties.getTenant();
+            merge(tenant.getIgnoreTablePrefixes(), prefixes);
+        }
+        if (tenantLineHandler != null) {
+            tenantLineHandler.refresh();
+        }
         if (mybatisProperties == null) {
             log.debug("未启用 MyBatis 租户条件，租户表白名单仅在模块内生效");
             return;
         }
         MybatisProperties.Tenant tenant = mybatisProperties.getTenant();
-        merge(tenant.getIgnoreTables(), tables);
-        merge(tenant.getIgnoreTablePrefixes(), prefixes);
         log.info("租户表白名单已合并到 MyBatis 配置，当前共 {} 张表、{} 个前缀",
                 tenant.getIgnoreTables().size(), tenant.getIgnoreTablePrefixes().size());
     }
