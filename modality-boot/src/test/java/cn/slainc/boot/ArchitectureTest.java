@@ -3,6 +3,7 @@ package cn.slainc.boot;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -44,4 +45,9 @@ class ArchitectureTest {
     static final ArchRule librariesMustNotDependOnBusinessModulesOrBoot = noClasses()
             .that().resideInAnyPackage(LAYERED_PACKAGES)
             .should().dependOnClassesThat().resideInAnyPackage("..cn.slainc.modules..", "..cn.slainc.boot..");
+
+    @ArchTest
+    static final ArchRule businessModulesMustNotDependOnEachOther = SlicesRuleDefinition.slices()
+            .matching("..cn.slainc.modules.(*)..")
+            .should().notDependOnEachOther();
 }

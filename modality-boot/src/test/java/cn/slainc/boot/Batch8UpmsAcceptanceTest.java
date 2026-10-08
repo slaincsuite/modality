@@ -7,11 +7,11 @@ import cn.slainc.modules.upms.excel.UserExportRow;
 import cn.slainc.modules.upms.mapper.Batch8ScopeMapper;
 import cn.slainc.modules.upms.service.AccessControlService;
 import cn.slainc.modules.upms.service.PermissionService;
-import cn.slainc.modules.upms.service.PolicyBindingService;
 import cn.slainc.modules.upms.service.RoleService;
 import cn.slainc.modules.upms.service.SystemRegistryService;
 import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.admin.PolicyBindingService;
 import cn.slainc.policy.engine.PolicyEngine;
 import cn.slainc.policy.model.Effect;
 import cn.slainc.policy.model.PolicyDocument;
@@ -31,11 +31,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,10 +43,10 @@ class Batch8UpmsAcceptanceTest {
 
     private static final String PASSWORD = "Password#123";
 
-    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-
     @LocalServerPort
     private int port;
+
+    private AcceptanceHttpSupport http;
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -109,6 +105,7 @@ class Batch8UpmsAcceptanceTest {
 
     @BeforeEach
     void resetUpmsTables() {
+        http = new AcceptanceHttpSupport(port);
         TenantContext.set(1L);
         // H2 自增序列跨用例不复位，用户 ID 会复用，必须清掉权限缓存避免读到前一个用例的权限
         var staleCaches = redis.keys("modality:security:perm:*");
@@ -125,27 +122,6 @@ class Batch8UpmsAcceptanceTest {
                 // policy 表懒建，首个用例前可能不存在
             }
         }
-    }
-
-    private HttpResponse<String> send(String method, String path, String token, String body) throws Exception {
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
-                .timeout(Duration.ofSeconds(15))
-                .header("Content-Type", "application/json")
-                .header("X-Login-Type", "TENANT_USER");
-        if (token != null) {
-            builder.header("satoken", token);
-        }
-        builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody()
-                : HttpRequest.BodyPublishers.ofString(body));
-        return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-    }
-
-    private String login(String username) throws Exception {
-        HttpResponse<String> response = send("POST", "/auth/login", null, """
-                {"username":"%s","password":"%s","deviceType":"PC","deviceId":"batch8-%s"}
-                """.formatted(username, PASSWORD, username));
-        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        return JsonPath.parse(response.body()).read("$.data.tokenValue");
     }
 
     @Test
@@ -231,11 +207,7 @@ class Batch8UpmsAcceptanceTest {
         userService.assignRoles(holder.getId(), List.of(role.getId()));
 
         String token = login("batch8-export-holder");
-        HttpResponse<byte[]> response = HTTP.send(HttpRequest.newBuilder(
-                        URI.create("http://127.0.0.1:" + port + "/upms/user/export"))
-                .timeout(Duration.ofSeconds(15))
-                .header("satoken", token)
-                .GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<byte[]> response = http.sendBytes("GET", "/upms/user/export", token);
         assertThat(response.statusCode()).isEqualTo(200);
         List<UserExportRow> rows = EasyExcel.read(new java.io.ByteArrayInputStream(response.body()))
                 .head(UserExportRow.class).sheet().doReadSync();
@@ -290,5 +262,13 @@ class Batch8UpmsAcceptanceTest {
         assertThat(jdbc.queryForObject(
                 "SELECT COUNT(*) FROM t_user_operation_log WHERE description = '演示操作'", Integer.class))
                 .isGreaterThanOrEqualTo(1);
+    }
+
+    private String login(String username) throws Exception {
+        return http.login(username, PASSWORD, null);
+    }
+
+    private HttpResponse<String> send(String method, String path, String token, String body) throws Exception {
+        return http.send(method, path, token, body);
     }
 }
