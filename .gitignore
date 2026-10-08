@@ -37,6 +37,10 @@ out/
 
 ### VS Code ###
 .vscode/
-
+*.log.gz
 *.log
 tmlog*.log
+
+### Gradle 依赖锁文件（不入库） ###
+gradle.lockfile
+settings-gradle.lockfile
