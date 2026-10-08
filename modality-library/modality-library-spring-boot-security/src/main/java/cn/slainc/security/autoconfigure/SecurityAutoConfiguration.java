@@ -124,6 +124,7 @@ public class SecurityAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(StpKitInitializer.class)
     public StpKitInitializer stpKitInitializer(List<SecurityStpLogic> logics) {
         return new StpKitInitializer(logics);
     }

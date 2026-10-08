@@ -98,6 +98,10 @@ public class SecurityConfigReader {
                 sessionTimeoutOf(type));
     }
 
+    public long sessionActiveTimeout() {
+        return getLong("modality.security.session.active-timeout", properties.getSession().getActiveTimeout());
+    }
+
     private long sessionTimeoutOf(LoginType type) {
         return switch (type) {
             case PLATFORM_ADMIN -> properties.getSession().getTimeoutPlatformAdmin();

@@ -99,8 +99,8 @@ public class SecurityLoginService {
             }
             PasswordAccount account = provider.findAccount(request.username(), type);
             if (account == null) {
-                lockService.recordFailure(type, request.username());
-                return fail(request, type, clientIp, "账号不存在或密码错误");
+                return fail(request, type, clientIp, credentialFailureMessage(lockService.recordFailure(type,
+                        request.username())));
             }
             Object loginId = account.userId() == null ? account.username() : account.userId();
             if (!account.enabled()) {
@@ -116,14 +116,14 @@ public class SecurityLoginService {
             }
             checkDeviceLimitBeforeLogin(type, loginId, deviceType);
             if (request.password() == null || !BCryptUtils.verifyQuietly(request.password(), account.passwordHash())) {
-                int remaining = lockService.recordFailure(type, loginId);
-                String reason = remaining <= 0 ? "用户名或密码错误，账号已锁定" : "用户名或密码错误，剩余尝试次数 " + remaining;
-                return fail(request, type, clientIp, reason);
+                return fail(request, type, clientIp,
+                        credentialFailureMessage(lockService.recordFailure(type, loginId)));
             }
             String deviceId = resolveDeviceId(request);
             SaLoginParameter parameter = buildParameter(type, request, account, clientIp, userAgent, deviceType,
                     deviceId);
             StpKit.of(type).login(loginId, parameter);
+            bindSessionTenant(type);
             checkDeviceOverflowAfterLogin(type, loginId, deviceType);
             checkTravelAlarm(type, loginId, clientIp);
             lockService.reset(type, loginId);
@@ -138,6 +138,22 @@ public class SecurityLoginService {
             publisher.publishEvent(LoginEvent.failure(request.username(), type, clientIp, e.getMessage()));
             metrics.login(type.value(), false);
             throw e;
+        }
+    }
+
+    private static String credentialFailureMessage(int remaining) {
+        return remaining <= 0 ? "用户名或密码错误，账号已锁定" : "用户名或密码错误，剩余尝试次数 " + remaining;
+    }
+
+    private void bindSessionTenant(LoginType type) {
+        Long tenantId = TenantContext.get();
+        if (tenantId == null) {
+            return;
+        }
+        try {
+            StpKit.of(type).getSession().set(TenantContext.SESSION_ATTRIBUTE, tenantId);
+        } catch (RuntimeException exception) {
+            log.warn("写入会话租户失败：{}", exception.getMessage());
         }
     }
 
@@ -164,6 +180,7 @@ public class SecurityLoginService {
         parameter.setTerminalExtra("deviceId", deviceId == null ? "" : deviceId);
         parameter.setTerminalExtra("username", account.username());
         parameter.setTimeout(config.sessionTimeout(type));
+        parameter.setActiveTimeout(config.sessionActiveTimeout());
         parameter.setIsConcurrent(!config.deviceSingleSessionPerType());
         parameter.setIsShare(false);
         parameter.setMaxLoginCount(-1);

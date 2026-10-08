@@ -8,5 +8,6 @@ public class SecurityCookieCustomizer {
     public SecurityCookieCustomizer(SaTokenConfig saTokenConfig, SecurityProperties properties) {
         saTokenConfig.getCookie().setSameSite(properties.getCookie().getSameSite());
         saTokenConfig.getCookie().setHttpOnly(true);
+        saTokenConfig.getCookie().setSecure(properties.getCookie().isSecure());
     }
 }

@@ -29,6 +29,7 @@ public class SecurityDaoAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(DaoStartupProbe.class)
     public DaoStartupProbe daoStartupProbe(DegradableSaTokenDao dao) {
         return new DaoStartupProbe(dao);
     }

@@ -120,9 +120,10 @@ public class SecurityProperties {
 
     public static class Filter {
 
-        private List<String> excludePatterns = List.of("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**",
-                "/swagger-ui.html", "/webjars/**", "/favicon.ico", "/error", "/captcha/**", "/auth/login",
-                "/auth/logout", "/oauth2/jwks");
+        private List<String> excludePatterns = List.of("/actuator/health", "/actuator/health/**", "/actuator/info",
+                "/favicon.ico", "/error", "/captcha/**", "/auth/login", "/auth/refresh", "/auth/logout",
+                "/auth/qrcode/**", "/auth/third/**", "/auth/token/refresh", "/oauth2/jwks", "/oauth2/token",
+                "/oauth2/userinfo", "/sso/**");
 
         private List<String> blacklistPatterns = new ArrayList<>();
 
@@ -178,19 +179,21 @@ public class SecurityProperties {
 
     public static class Session {
 
-        private long timeoutPlatformAdmin = 2592000;
+        private long timeoutPlatformAdmin = 7200;
 
-        private long timeoutPlatformUser = 2592000;
+        private long timeoutPlatformUser = 7200;
 
-        private long timeoutTenantAdmin = 2592000;
+        private long timeoutTenantAdmin = 7200;
 
-        private long timeoutTenantUser = 2592000;
+        private long timeoutTenantUser = 7200;
 
-        private long timeoutApp = 2592000;
+        private long timeoutApp = 7200;
 
-        private long timeoutService = 2592000;
+        private long timeoutService = 43200;
 
-        private long timeoutGuest = 2592000;
+        private long timeoutGuest = 7200;
+
+        private long activeTimeout = 1800;
 
         public long getTimeoutPlatformAdmin() {
             return timeoutPlatformAdmin;
@@ -247,6 +250,14 @@ public class SecurityProperties {
         public void setTimeoutGuest(long timeoutGuest) {
             this.timeoutGuest = timeoutGuest;
         }
+
+        public long getActiveTimeout() {
+            return activeTimeout;
+        }
+
+        public void setActiveTimeout(long activeTimeout) {
+            this.activeTimeout = activeTimeout;
+        }
     }
 
     public static class Device {
@@ -286,12 +297,22 @@ public class SecurityProperties {
 
         private String sameSite = "Lax";
 
+        private boolean secure = true;
+
         public String getSameSite() {
             return sameSite;
         }
 
         public void setSameSite(String sameSite) {
             this.sameSite = sameSite;
+        }
+
+        public boolean isSecure() {
+            return secure;
+        }
+
+        public void setSecure(boolean secure) {
+            this.secure = secure;
         }
     }
 
