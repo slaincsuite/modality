@@ -23,6 +23,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -120,6 +121,14 @@ public class GlobalExceptionHandler {
         return build(ResultCode.PARAM_MISSING.code(), ResultCode.PARAM_MISSING.httpStatus(), message);
     }
 
+    @ExceptionHandler(ServletRequestBindingException.class)
+    public ResponseEntity<Result<Void>> handleRequestBinding(ServletRequestBindingException exception,
+                                                             HttpServletRequest request) {
+        String message = exception.getMessage() == null ? ResultCode.PARAM_MISSING.message() : exception.getMessage();
+        log.warn("参数异常 [{} {}] {}", request.getMethod(), request.getRequestURI(), message);
+        return build(ResultCode.PARAM_MISSING.code(), ResultCode.PARAM_MISSING.httpStatus(), message);
+    }
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Result<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException exception,
                                                            HttpServletRequest request) {
@@ -172,7 +181,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleResponseStatus(ResponseStatusException exception,
                                                              HttpServletRequest request) {
         int status = exception.getStatusCode().value();
-        String message = exception.getReason() == null ? HttpStatus.valueOf(status).getReasonPhrase()
+        HttpStatus resolved = HttpStatus.resolve(status);
+        String message = exception.getReason() == null
+                ? (resolved == null ? ResultCode.INTERNAL_SERVER_ERROR.message() : resolved.getReasonPhrase())
                 : exception.getReason();
         log.warn("请求被拒绝 [{} {}] status={} reason={}", request.getMethod(), request.getRequestURI(), status, message);
         return build(status * 1000, status, message);

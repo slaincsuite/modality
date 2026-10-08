@@ -3,7 +3,6 @@ package cn.slainc.web.log;
 import cn.slainc.core.constant.HttpHeaders;
 import cn.slainc.core.context.RequestContext;
 import cn.slainc.utils.net.IpUtils;
-import cn.slainc.utils.string.RegexUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +13,10 @@ import org.springframework.core.Ordered;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 
 public class RequestLogFilter extends OncePerRequestFilter implements Ordered {
 
@@ -22,10 +24,35 @@ public class RequestLogFilter extends OncePerRequestFilter implements Ordered {
 
     private final RequestLogProperties properties;
     private final int order;
+    private final List<Pattern> excludePatterns;
 
     public RequestLogFilter(RequestLogProperties properties, int order) {
         this.properties = properties;
         this.order = order;
+        this.excludePatterns = compile(properties.getExcludePaths());
+    }
+
+    private static List<Pattern> compile(List<String> patterns) {
+        List<Pattern> compiled = new ArrayList<>();
+        if (patterns == null) {
+            return compiled;
+        }
+        for (String pattern : patterns) {
+            if (pattern == null || pattern.isBlank()) {
+                continue;
+            }
+            try {
+                compiled.add(Pattern.compile(toRegex(pattern)));
+            } catch (RuntimeException exception) {
+                log.warn("请求日志排除规则不是合法正则，已忽略：[{}]", pattern);
+            }
+        }
+        return compiled;
+    }
+
+    private static String toRegex(String pattern) {
+        // 先用占位符收走双星：String.replace 对 ** 按字面量逐段替换，直接换 .* 会得到 .[^/]*
+        return pattern.replace("**", "\u0000").replace("*", "[^/]*").replace("\u0000", ".*");
     }
 
     @Override
@@ -61,11 +88,8 @@ public class RequestLogFilter extends OncePerRequestFilter implements Ordered {
     }
 
     private boolean matchesExclude(String path) {
-        for (String pattern : properties.getExcludePaths()) {
-            if (pattern == null || pattern.isBlank()) {
-                continue;
-            }
-            if (RegexUtils.matches(pattern.replace("**", ".*").replace("*", "[^/]*"), path)) {
+        for (Pattern pattern : excludePatterns) {
+            if (pattern.matcher(path).matches()) {
                 return true;
             }
         }

@@ -10,7 +10,7 @@ public class CorsProperties {
 
     private boolean enabled = true;
 
-    private List<String> allowedOriginPatterns = new ArrayList<>(List.of("*"));
+    private List<String> allowedOriginPatterns = new ArrayList<>();
 
     private List<String> allowedMethods = new ArrayList<>(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
 
@@ -18,7 +18,7 @@ public class CorsProperties {
 
     private List<String> exposedHeaders = new ArrayList<>(List.of("X-Trace-Id", "Content-Disposition"));
 
-    private boolean allowCredentials = true;
+    private boolean allowCredentials = false;
 
     private long maxAge = 1800L;
 

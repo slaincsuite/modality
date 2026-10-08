@@ -9,7 +9,7 @@ public class WebExceptionProperties {
 
     private boolean logStackTrace = true;
 
-    private boolean exposeMessage = true;
+    private boolean exposeMessage = false;
 
     private boolean exposeStackTrace = false;
 

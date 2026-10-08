@@ -1,5 +1,6 @@
 package cn.slainc.web.header;
 
+import cn.slainc.core.constant.HttpHeaders;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,7 +61,7 @@ public class SecurityHeadersFilter extends OncePerRequestFilter implements Order
         if (request.isSecure()) {
             return true;
         }
-        String forwardedProto = request.getHeader("X-Forwarded-Proto");
+        String forwardedProto = request.getHeader(HttpHeaders.FORWARDED_PROTO);
         return forwardedProto != null && forwardedProto.equalsIgnoreCase("https");
     }
 }

@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class AsyncConfig implements WebMvcConfigurer {
+public class AsyncConfig implements WebMvcConfigurer, AutoCloseable {
 
     private final AsyncProperties properties;
     private final ExecutorService executor;
@@ -57,5 +57,18 @@ public class AsyncConfig implements WebMvcConfigurer {
 
     public ExecutorService executor() {
         return executor;
+    }
+
+    @Override
+    public void close() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException exception) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }

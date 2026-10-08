@@ -67,17 +67,6 @@ public final class SensitiveMasker {
         return builder.toString();
     }
 
-    public static String maskJson(String json) {
-        if (json == null || json.isBlank()) {
-            return json;
-        }
-        String masked = json;
-        for (String key : SENSITIVE_KEYS) {
-            masked = masked.replaceAll("(?i)(\"" + key + "\"\\s*:\\s*)\"[^\"]*\"", "$1\"" + MASK + "\"");
-        }
-        return masked;
-    }
-
     public static String truncate(String text, int maxLength) {
         if (text == null || maxLength <= 0 || text.length() <= maxLength) {
             return text;

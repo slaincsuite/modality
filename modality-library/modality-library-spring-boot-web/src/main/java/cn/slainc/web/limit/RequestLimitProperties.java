@@ -8,7 +8,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "modality.web.request-limit")
 public class RequestLimitProperties {
 
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     private int maxConcurrentPerIp = 64;
 
