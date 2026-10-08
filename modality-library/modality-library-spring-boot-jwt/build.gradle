@@ -6,9 +6,9 @@ description = 'JWT'
 
 dependencies {
     api project(':modality-library:modality-library-spring-boot-core')
-    api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-crypto')
     api project(':modality-library:modality-library-spring-boot-security')
     api libs.sa.token.jwt
     api project(':modality-library:modality-library-spring-boot-redis')
+    testImplementation project(':modality-library:modality-library-spring-boot-web')
 }

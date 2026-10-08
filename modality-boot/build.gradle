@@ -9,7 +9,11 @@ springBoot {
 }
 
 tasks.named('bootRun') {
-    systemProperty 'spring.profiles.active', System.getProperty('spring.profiles.active', 'dev')
+    systemProperty 'spring.profiles.active', providers.systemProperty('spring.profiles.active').orElse('dev')
+}
+
+tasks.named('test') {
+    systemProperty 'spring.profiles.active', 'dev'
 }
 
 dependencies {

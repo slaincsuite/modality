@@ -14,6 +14,7 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-monitor')
     api project(':modality-library:modality-library-spring-boot-excel')
     api project(':modality-library:modality-library-spring-boot-captcha')
+    implementation libs.caffeine
     compileOnly project(':modality-library:modality-library-spring-boot-mybatis')
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
     testImplementation project(':modality-library:modality-library-spring-boot-mybatis')

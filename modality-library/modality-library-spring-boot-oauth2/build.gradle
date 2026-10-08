@@ -11,7 +11,6 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-jwt')
     api project(':modality-library:modality-library-spring-boot-redis')
     api libs.sa.token.oauth2
-    implementation libs.ipaddress
     compileOnly libs.spring.boot.starter.jdbc
     testImplementation libs.spring.boot.starter.jdbc
     testRuntimeOnly libs.h2
