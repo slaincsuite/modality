@@ -35,7 +35,6 @@ def publicModules = rootProject.allprojects
 def thirdPartyAliases = [
         'sa-token-core',
         'sa-token-spring-boot4-starter',
-        'sa-token-redis-template',
         'sa-token-apikey',
         'sa-token-jwt',
         'sa-token-oauth2',
@@ -67,7 +66,11 @@ def thirdPartyAliases = [
         'ipaddress',
         'owasp-html-sanitizer',
         'justauth',
+        'fastjson',
         'zxing-core',
+        'jackson-databind',
+        'jakarta-validation-api',
+        'jakarta-transaction-api',
 ]
 
 dependencies {

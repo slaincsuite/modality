@@ -10,7 +10,7 @@ easy-captcha = "1.6.2"
 minio = "8.6.0"
 oshi = "6.9.0"
 resilience4j = "2.4.0"
-bouncycastle = "1.81"
+bouncycastle = "1.85"
 ipaddress = "5.6.2"
 owasp-sanitizer = "20260102.1"
 commons-io = "2.22.0"
@@ -21,6 +21,7 @@ poi = "5.4.1"
 awssdk = "2.55.14"
 s3mock = "5.2.3"
 justauth = "1.16.7"
+fastjson = "2.0.57"
 zxing = "3.5.3"
 archunit = "1.4.1"
 
@@ -67,6 +68,7 @@ aws-sdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awssdk" }
 s3mock = { module = "com.adobe.testing:s3mock", version.ref = "s3mock" }
 s3mock-junit5 = { module = "com.adobe.testing:s3mock-junit5", version.ref = "s3mock" }
 justauth = { module = "me.zhyd.oauth:JustAuth", version.ref = "justauth" }
+fastjson = { module = "com.alibaba:fastjson", version.ref = "fastjson" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 oshi-core = { module = "com.github.oshi:oshi-core", version.ref = "oshi" }
