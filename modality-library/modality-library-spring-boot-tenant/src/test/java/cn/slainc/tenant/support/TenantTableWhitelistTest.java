@@ -1,6 +1,7 @@
 package cn.slainc.tenant.support;
 
 import cn.slainc.mybatis.properties.MybatisProperties;
+import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +47,32 @@ class TenantTableWhitelistTest {
         assertFalse(whitelist.isIgnored(null));
         assertFalse(whitelist.isIgnored("   "));
         assertEquals("t_user", TenantTableWhitelist.normalize(" app.t_user "));
+    }
+
+    @Test
+    @DisplayName("合并后刷新租户行处理器，模块自表立即进入忽略集")
+    void refreshesTenantLineHandler() {
+        MybatisProperties mybatisProperties = new MybatisProperties();
+        DefaultTenantLineHandler handler = new DefaultTenantLineHandler(mybatisProperties);
+        mybatisProperties.getTenant().getIgnoreTables().add("t_tenant_self");
+        assertFalse(handler.ignoreTable("t_tenant_self"));
+
+        new TenantTableWhitelist(List.of(), List.of(), mybatisProperties, handler).afterPropertiesSet();
+
+        assertTrue(handler.ignoreTable("t_tenant_self"));
+    }
+
+    @Test
+    @DisplayName("缺少 MyBatis 属性时依然无条件刷新租户行处理器")
+    void refreshesTenantLineHandlerWithoutMybatisProperties() {
+        MybatisProperties mybatisProperties = new MybatisProperties();
+        DefaultTenantLineHandler handler = new DefaultTenantLineHandler(mybatisProperties);
+        mybatisProperties.getTenant().getIgnoreTables().add("t_tenant_orphan");
+        assertFalse(handler.ignoreTable("t_tenant_orphan"));
+
+        new TenantTableWhitelist(List.of(), List.of(), null, handler).afterPropertiesSet();
+
+        assertTrue(handler.ignoreTable("t_tenant_orphan"));
     }
 
     @Test

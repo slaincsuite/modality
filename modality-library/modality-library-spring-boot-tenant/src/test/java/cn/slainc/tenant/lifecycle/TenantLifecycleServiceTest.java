@@ -93,6 +93,32 @@ class TenantLifecycleServiceTest {
     }
 
     @Test
+    @DisplayName("初始化失败时回滚已落库的租户记录，避免孤儿租户")
+    void rollsBackTenantOnInitializationFailure() {
+        doThrow(new IllegalStateException("连接超时")).when(dispatcher).apply(any(TenantInfo.class));
+
+        assertThrows(BizException.class, () -> lifecycleService.create(newTenant()));
+
+        verify(dispatcher).remove(any(TenantInfo.class));
+        verify(tenantService).delete(100L);
+        assertTrue(initialized.isEmpty());
+    }
+
+    @Test
+    @DisplayName("默认数据初始化失败时同样回滚")
+    void rollsBackTenantOnInitializerFailure() {
+        TenantInitializer failing = tenant -> {
+            throw new IllegalStateException("初始化脚本失败");
+        };
+        TenantLifecycleService service = new TenantLifecycleService(tenantService, dispatcher, List.of(failing),
+                TenantLifecycleOptions.defaults());
+
+        assertThrows(IllegalStateException.class, () -> service.create(newTenant()));
+
+        verify(tenantService).delete(100L);
+    }
+
+    @Test
     @DisplayName("试用租户带默认试用期")
     void trialSetsStatusAndExpireAt() {
         Tenant created = lifecycleService.trial(newTenant());

@@ -35,9 +35,20 @@ class TenantAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(TenantAutoConfiguration.class));
 
     @Test
-    @DisplayName("modality.tenant.enabled 缺省为 false，不注册任何租户 Bean")
-    void disabledByDefault() {
-        runner.run(context -> {
+    @DisplayName("modality.tenant.enabled 缺省为 true，默认即注册租户过滤能力")
+    void enabledByDefault() {
+        webRunner.run(context -> {
+            assertThat(context).hasSingleBean(TenantFilter.class);
+            assertThat(context).hasSingleBean(TenantResolverComposite.class);
+            assertThat(context).hasSingleBean(TenantQuotaService.class);
+            assertThat(context).hasSingleBean(TenantTableWhitelist.class);
+        });
+    }
+
+    @Test
+    @DisplayName("显式设置 modality.tenant.enabled=false 时不注册任何租户 Bean")
+    void disabledExplicitly() {
+        runner.withPropertyValues("modality.tenant.enabled=false").run(context -> {
             assertThat(context).doesNotHaveBean(TenantFilter.class);
             assertThat(context).doesNotHaveBean(TenantResolverComposite.class);
             assertThat(context).doesNotHaveBean(TenantQuotaService.class);
@@ -46,9 +57,44 @@ class TenantAutoConfigurationTest {
     }
 
     @Test
+    @DisplayName("X-Tenant-Id 头解析器默认关闭，会话租户优先于客户端自报来源")
+    void headerResolverDisabledByDefault() {
+        webRunner.run(context -> {
+            assertThat(context).doesNotHaveBean(HeaderTenantResolver.class);
+            TenantResolverComposite composite = context.getBean(TenantResolverComposite.class);
+            assertThat(composite.resolvers()).extracting(resolver -> resolver.getClass().getSimpleName())
+                    .containsExactly("DomainTenantResolver", "PathTenantResolver", "ParamTenantResolver");
+        });
+    }
+
+    @Test
+    @DisplayName("会话租户解析优先级高于域名、路径、头与参数")
+    void sessionResolverHasHighestPriority() {
+        assertThat(cn.slainc.tenant.resolver.SessionTenantResolver.ORDER)
+                .isLessThan(cn.slainc.tenant.resolver.DomainTenantResolver.ORDER)
+                .isLessThan(cn.slainc.tenant.resolver.PathTenantResolver.ORDER)
+                .isLessThan(HeaderTenantResolver.ORDER)
+                .isLessThan(ParamTenantResolver.ORDER);
+    }
+
+    @Test
+    @DisplayName("登记租户一致性过滤器，顺序在鉴权之后")
+    void registersConsistencyFilter() {
+        webRunner.run(context -> {
+            assertThat(context).hasSingleBean(cn.slainc.tenant.context.TenantConsistencyFilter.class);
+            FilterRegistrationBean<?> registration = context.getBean("tenantConsistencyFilterRegistration",
+                    FilterRegistrationBean.class);
+            assertThat(registration.getOrder()).isEqualTo(FilterOrder.TENANT_GUARD);
+            assertThat(registration.getOrder()).isGreaterThan(FilterOrder.SA_TOKEN);
+            assertThat(registration.getUrlPatterns()).containsExactly("/*");
+        });
+    }
+
+    @Test
     @DisplayName("启用后在 Web 环境注册租户过滤器与全部解析器")
     void registersCapabilitiesWhenEnabled() {
-        webRunner.withPropertyValues("modality.tenant.enabled=true").run(context -> {
+        webRunner.withPropertyValues("modality.tenant.enabled=true",
+                "modality.tenant.resolver.header.enabled=true").run(context -> {
             assertThat(context).hasSingleBean(TenantFilter.class);
             assertThat(context).hasSingleBean(TenantResolverComposite.class);
             assertThat(context).hasSingleBean(HeaderTenantResolver.class);
@@ -73,7 +119,7 @@ class TenantAutoConfigurationTest {
             TenantResolverComposite composite = context.getBean(TenantResolverComposite.class);
             assertThat(composite.resolvers()).hasSize(4)
                     .extracting(resolver -> resolver.getClass().getSimpleName())
-                    .containsExactly("HeaderTenantResolver", "DomainTenantResolver", "PathTenantResolver",
+                    .containsExactly("DomainTenantResolver", "PathTenantResolver", "HeaderTenantResolver",
                             "ParamTenantResolver");
         });
     }
@@ -163,6 +209,7 @@ class TenantAutoConfigurationTest {
     @DisplayName("解析器配置项正确绑定到属性对象")
     void bindsResolverOptions() {
         runner.withPropertyValues("modality.tenant.enabled=true",
+                "modality.tenant.resolver.header.enabled=true",
                 "modality.tenant.resolver.header.name=X-Custom-Tenant",
                 "modality.tenant.resolver.domain.root-domain=example.com",
                 "modality.tenant.resolver.path.prefix=/openapi",
