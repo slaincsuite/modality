@@ -126,7 +126,7 @@ class WebEndpointIntegrationTest {
         HttpResponse<String> response = get("/demo/boom");
         assertEquals(500, response.statusCode());
         assertEquals(500000, body(response).get("code"));
-        assertEquals("数据库连接失败", body(response).get("message"));
+        assertEquals("服务器内部错误", body(response).get("message"));
     }
 
     @Test

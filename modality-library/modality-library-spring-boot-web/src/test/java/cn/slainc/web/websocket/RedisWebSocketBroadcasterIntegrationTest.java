@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
                 "modality.web.websocket.channel=modality:test:websocket:broadcast",
                 "spring.data.redis.host=127.0.0.1",
                 "spring.data.redis.port=6379",
-                "spring.data.redis.password=omni-redis-pass"})
+                "spring.data.redis.password=${MODALITY_REDIS_PASSWORD:}"})
 class RedisWebSocketBroadcasterIntegrationTest {
 
     private static final String CHANNEL = "modality:test:websocket:broadcast";
@@ -44,7 +44,7 @@ class RedisWebSocketBroadcasterIntegrationTest {
 
     private static final int REDIS_PORT = 6379;
 
-    private static final String REDIS_PASSWORD = "omni-redis-pass";
+    private static final String REDIS_PASSWORD = System.getenv().getOrDefault("MODALITY_REDIS_PASSWORD", "");
 
     @SpringBootConfiguration
     @EnableAutoConfiguration

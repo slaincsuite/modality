@@ -15,8 +15,17 @@ class ConcurrencyLimitInterceptorTest {
     private final MockHttpServletResponse response = new MockHttpServletResponse();
 
     @Test
-    void disabledByDefault() {
+    void enabledByDefault() {
         ConcurrencyLimitInterceptor interceptor = new ConcurrencyLimitInterceptor(new RequestLimitProperties());
+        assertTrue(interceptor.preHandle(request, response, new Object()));
+        assertEquals(1, interceptor.currentGlobal());
+    }
+
+    @Test
+    void disabledExplicitly() {
+        RequestLimitProperties properties = new RequestLimitProperties();
+        properties.setEnabled(false);
+        ConcurrencyLimitInterceptor interceptor = new ConcurrencyLimitInterceptor(properties);
         for (int i = 0; i < 100; i++) {
             assertTrue(interceptor.preHandle(request, response, new Object()));
         }
