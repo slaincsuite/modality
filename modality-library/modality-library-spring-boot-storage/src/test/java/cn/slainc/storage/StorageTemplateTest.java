@@ -2,6 +2,7 @@ package cn.slainc.storage;
 
 import cn.slainc.storage.dedup.DedupWrapper;
 import cn.slainc.storage.local.LocalFileStorage;
+import cn.slainc.storage.metadata.MetadataStore;
 import cn.slainc.storage.metrics.StorageMetricsRecorder;
 import cn.slainc.storage.model.StorageMetadata;
 import cn.slainc.storage.model.UploadRequest;
@@ -9,6 +10,7 @@ import cn.slainc.storage.model.UploadResult;
 import cn.slainc.storage.quota.StorageQuotaService;
 import cn.slainc.storage.routing.RoutingFileStorage;
 import cn.slainc.storage.routing.StorageBackendRegistry;
+import cn.slainc.storage.support.DelegatingFileStorage;
 import cn.slainc.storage.support.MutableDynamicConfigService;
 import cn.slainc.storage.url.RefererValidator;
 import cn.slainc.storage.url.SignedUrlService;
@@ -199,6 +201,60 @@ class StorageTemplateTest {
         }
         assertThat(template.delete("dual/d.txt")).isTrue();
         assertThat(secondary.exists("dual/d.txt")).isFalse();
+    }
+
+    @Test
+    @DisplayName("图片元数据只读受限头部：超过阈值直接跳过，不整图下载")
+    void imageMetadataIsBoundedByHeadLimit() throws IOException {
+        CountingStorage counting = new CountingStorage(new LocalFileStorage("counting", root.resolve("counting"),
+                null));
+        StorageBackendRegistry countingRegistry = new StorageBackendRegistry();
+        countingRegistry.register(counting);
+        RoutingFileStorage countingRouting = new RoutingFileStorage(countingRegistry, null, "counting", List.of());
+        StorageTemplate bounded = new StorageTemplate(countingRouting, countingRegistry, null,
+                StorageMetricsRecorder.NOOP, null, signedUrlService(), MetadataStore.NOOP, 16);
+
+        byte[] oversized = new byte[4096];
+        bounded.upload(new ByteArrayInputStream(oversized),
+                UploadRequest.of("huge.png", "image/png").size(oversized.length).key("img/huge.png"));
+        StorageMetadata skipped = bounded.metadata("img/huge.png");
+        assertThat(skipped.image()).isNull();
+        assertThat(counting.downloadCalls()).isZero();
+
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(4, 3,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.io.ByteArrayOutputStream png = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(image, "png", png);
+        byte[] small = png.toByteArray();
+        bounded.upload(new ByteArrayInputStream(small),
+                UploadRequest.of("small.png", "image/png").size(small.length).key("img/small.png"));
+
+        StorageTemplate generous = new StorageTemplate(countingRouting, countingRegistry, null,
+                StorageMetricsRecorder.NOOP, null, signedUrlService(), MetadataStore.NOOP, 1024);
+        StorageMetadata parsed = generous.metadata("img/small.png");
+        assertThat(parsed.image()).isNotNull();
+        assertThat(parsed.image().width()).isEqualTo(4);
+        assertThat(parsed.image().height()).isEqualTo(3);
+        assertThat(counting.downloadCalls()).isEqualTo(1);
+    }
+
+    private static final class CountingStorage extends DelegatingFileStorage {
+
+        private final java.util.concurrent.atomic.AtomicInteger downloads = new java.util.concurrent.atomic.AtomicInteger();
+
+        private CountingStorage(cn.slainc.storage.ExtendedFileStorage delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public InputStream download(String key) {
+            downloads.incrementAndGet();
+            return delegate().download(key);
+        }
+
+        private int downloadCalls() {
+            return downloads.get();
+        }
     }
 
     @Test

@@ -64,6 +64,24 @@ class ZipStreamPackerTest {
     }
 
     @Test
+    @DisplayName("不同目录的同名文件自动去重，打包不再整批失败")
+    void duplicateEntryNamesAreRenamed() throws IOException {
+        LocalFileStorage storage = new LocalFileStorage("local", root, null);
+        byte[] first = "目录A内容".getBytes(StandardCharsets.UTF_8);
+        byte[] second = "目录B内容".getBytes(StandardCharsets.UTF_8);
+        storage.upload("dir-a/report.txt", new ByteArrayInputStream(first), first.length, "text/plain");
+        storage.upload("dir-b/report.txt", new ByteArrayInputStream(second), second.length, "text/plain");
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ZipStreamPacker.pack(storage, List.of("dir-a/report.txt", "dir-b/report.txt"), output);
+
+        Map<String, byte[]> actual = unzip(output.toByteArray());
+        assertThat(actual).hasSize(2);
+        assertThat(actual.get("report.txt")).isEqualTo(first);
+        assertThat(actual.get("report(1).txt")).isEqualTo(second);
+    }
+
+    @Test
     @DisplayName("打包条目名剥离目录，避免 ZIP 内路径穿越")
     void entryNameIsSanitized() {
         assertThat(ZipStreamPacker.entryName("../../etc/passwd")).isEqualTo("passwd");

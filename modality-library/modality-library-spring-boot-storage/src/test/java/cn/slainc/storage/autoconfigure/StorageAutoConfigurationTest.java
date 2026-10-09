@@ -65,6 +65,12 @@ class StorageAutoConfigurationTest {
     }
 
     @Test
+    @DisplayName("签名 URL 防盗链默认拒绝空 Referer")
+    void refererAllowEmptyIsDisabledByDefault() {
+        assertThat(new StorageProperties().getSignedUrl().isRefererAllowEmpty()).isFalse();
+    }
+
+    @Test
     @DisplayName("使用方自定义 FileStorage 时覆盖默认本地实现")
     void customBackendOverridesDefault() {
         runner().withBean("customFileStorage", LocalFileStorage.class,
