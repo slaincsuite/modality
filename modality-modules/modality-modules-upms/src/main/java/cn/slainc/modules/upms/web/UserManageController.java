@@ -15,6 +15,7 @@ import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.excel.UserExcelService;
 import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.security.web.SecurityForbiddenException;
 import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -159,6 +160,10 @@ public class UserManageController {
     @PutMapping("/{id}/avatar")
     @cn.slainc.security.annotation.RequireLogin
     public void setAvatar(@PathVariable Long id, @RequestBody AvatarRequest request) {
+        boolean self = id.equals(UserContext.userId());
+        if (!self && !UserContext.isSuperAdmin() && !UserContext.hasPermission(UpmsKeys.PERMISSION_UPMS_USER_UPDATE)) {
+            throw new SecurityForbiddenException("只能修改本人的头像");
+        }
         userService.setAvatar(id, request.avatarUrl());
     }
 

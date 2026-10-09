@@ -1,6 +1,7 @@
 package cn.slainc.modules.upms.service;
 
 import cn.slainc.core.context.TenantContext;
+import cn.slainc.core.context.UserContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.event.UserCreatedEvent;
 import cn.slainc.core.event.UserUpdatedEvent;
@@ -22,8 +23,13 @@ import cn.slainc.modules.upms.entity.PolicyBindingRecord;
 import cn.slainc.modules.upms.entity.AccessControlRecord;
 import cn.slainc.modules.upms.entity.UserGroupMemberRecord;
 import cn.slainc.modules.upms.entity.UserLoginRecordRecord;
+import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.security.kick.KickService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +39,12 @@ import java.util.List;
 import java.util.Set;
 
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
+    private static final String DELETED_USERNAME_MARK = "#deleted#";
+
+    private static final int USERNAME_COLUMN_LENGTH = 64;
 
     private final UserMapper userMapper;
 
@@ -52,10 +64,23 @@ public class UserService {
 
     private final ApplicationEventPublisher publisher;
 
+    private final KickService kickService;
+
+    private final ObjectProvider<PolicyBindingService> policyBindingService;
+
     public UserService(UserMapper userMapper, UserRoleMapper userRoleMapper, UserGroupMemberMapper groupMemberMapper,
                        AccessControlMapper accessControlMapper, PolicyBindingMapper policyBindingMapper,
                        UserLoginRecordMapper loginRecordMapper, UpmsProperties properties,
                        UpmsPermissionCacheInvalidator cacheInvalidator, ApplicationEventPublisher publisher) {
+        this(userMapper, userRoleMapper, groupMemberMapper, accessControlMapper, policyBindingMapper, loginRecordMapper,
+                properties, cacheInvalidator, publisher, null, null);
+    }
+
+    public UserService(UserMapper userMapper, UserRoleMapper userRoleMapper, UserGroupMemberMapper groupMemberMapper,
+                       AccessControlMapper accessControlMapper, PolicyBindingMapper policyBindingMapper,
+                       UserLoginRecordMapper loginRecordMapper, UpmsProperties properties,
+                       UpmsPermissionCacheInvalidator cacheInvalidator, ApplicationEventPublisher publisher,
+                       KickService kickService, ObjectProvider<PolicyBindingService> policyBindingService) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.groupMemberMapper = groupMemberMapper;
@@ -65,6 +90,8 @@ public class UserService {
         this.properties = properties;
         this.cacheInvalidator = cacheInvalidator;
         this.publisher = publisher;
+        this.kickService = kickService;
+        this.policyBindingService = policyBindingService;
     }
 
     public UserRecord create(String username, String nickname, String password, String email, String phone,
@@ -162,14 +189,22 @@ public class UserService {
         user.setStatus(status);
         user.setUpdateTime(System.currentTimeMillis());
         userMapper.updateById(user);
-        cacheInvalidator.invalidateUser(id, LoginType.of(user.getLoginType()));
+        LoginType type = LoginType.of(user.getLoginType());
+        if (type != null) {
+            cacheInvalidator.invalidateUser(id, type);
+        }
+        if (!UpmsKeys.STATUS_ENABLED.equals(status)) {
+            kickout(user, type, UpmsKeys.STATUS_LOCKED.equals(status) ? "账号已被锁定" : "账号已被禁用");
+        }
     }
 
+    @Transactional
     public void delete(Long id) {
         UserRecord user = requireActive(id);
         softDelete(user);
     }
 
+    @Transactional
     public int batchDelete(List<Long> ids) {
         int count = 0;
         for (Long id : ids) {
@@ -191,7 +226,11 @@ public class UserService {
                 user.setStatus(UpmsKeys.STATUS_DISABLED);
                 user.setUpdateTime(System.currentTimeMillis());
                 userMapper.updateById(user);
-                cacheInvalidator.invalidateUser(id, LoginType.of(user.getLoginType()));
+                LoginType type = LoginType.of(user.getLoginType());
+                if (type != null) {
+                    cacheInvalidator.invalidateUser(id, type);
+                }
+                kickout(user, type, "账号已被禁用");
                 count++;
             }
         }
@@ -246,20 +285,18 @@ public class UserService {
                 accessControlMapper.updateById(grant);
             }
         }
-        for (PolicyBindingRecord binding : policyBindingMapper.selectList(
-                new LambdaQueryWrapper<PolicyBindingRecord>()
-                        .eq(PolicyBindingRecord::getSubjectType, PolicyBindingRecord.SUBJECT_USER)
-                        .eq(PolicyBindingRecord::getSubjectId, String.valueOf(sourceId)))) {
-            policyBindingMapper.deleteById(binding.getId());
-        }
+        migratePolicyBindings(sourceId, targetId, LoginType.of(source.getLoginType()));
         LoginType type = LoginType.of(source.getLoginType());
         softDelete(source);
         source.setMergedTo(targetId);
         userMapper.updateById(source);
-        cacheInvalidator.invalidateUser(sourceId, type);
+        if (type != null) {
+            cacheInvalidator.invalidateUser(sourceId, type);
+        }
         cacheInvalidator.invalidateUser(targetId, LoginType.of(target.getLoginType()));
     }
 
+    @Transactional
     public void assignRoles(Long userId, List<Long> roleIds) {
         UserRecord user = requireActive(userId);
         List<Long> target = roleIds == null ? List.of() : roleIds;
@@ -307,22 +344,11 @@ public class UserService {
                 .le(createdTo != null, UserRecord::getCreateTime, createdTo)
                 .orderByDesc(UserRecord::getId);
         if (roleId != null) {
-            List<Long> userIds = userRoleMapper.selectList(
-                            new LambdaQueryWrapper<UserRoleRecord>().eq(UserRoleRecord::getRoleId, roleId))
-                    .stream().map(UserRoleRecord::getUserId).toList();
-            if (userIds.isEmpty()) {
-                return PageResult.empty(current, size);
-            }
-            wrapper.in(UserRecord::getId, userIds);
+            wrapper.exists("SELECT 1 FROM t_user_role ur WHERE ur.user_id = t_user.id AND ur.role_id = {0}", roleId);
         }
         if (groupId != null) {
-            List<Long> userIds = groupMemberMapper.selectList(
-                            new LambdaQueryWrapper<UserGroupMemberRecord>().eq(UserGroupMemberRecord::getGroupId, groupId))
-                    .stream().map(UserGroupMemberRecord::getUserId).toList();
-            if (userIds.isEmpty()) {
-                return PageResult.empty(current, size);
-            }
-            wrapper.in(UserRecord::getId, userIds);
+            wrapper.exists("SELECT 1 FROM t_user_group_member gm WHERE gm.user_id = t_user.id AND gm.group_id = {0}",
+                    groupId);
         }
         Page<UserRecord> page = userMapper.selectPage(Page.of(current, size), wrapper);
         return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
@@ -364,6 +390,7 @@ public class UserService {
     private void softDelete(UserRecord user) {
         user.setDeleted(true);
         user.setStatus(UpmsKeys.STATUS_DISABLED);
+        user.setUsername(releasedUsername(user.getUsername(), user.getId()));
         user.setUpdateTime(System.currentTimeMillis());
         userMapper.updateById(user);
         List<UserRoleRecord> bindings = userRoleMapper.selectList(
@@ -375,6 +402,62 @@ public class UserService {
         LoginType type = LoginType.of(user.getLoginType());
         if (type != null) {
             cacheInvalidator.invalidateUser(user.getId(), type);
+        }
+        kickout(user, type, "账号已注销");
+    }
+
+    // 注销行仍留在表内，用户名必须让位给后续重建的同名账号，否则 UNIQUE(login_type, username) 被永久占用
+    private static String releasedUsername(String username, Long id) {
+        String suffix = DELETED_USERNAME_MARK + id;
+        String base = username == null ? "" : username;
+        int keep = Math.max(0, USERNAME_COLUMN_LENGTH - suffix.length());
+        return (base.length() > keep ? base.substring(0, keep) : base) + suffix;
+    }
+
+    // 策略求值按策略本体的 subjectId 命中，仅改绑定行的归属无效，必须解绑后按目标账号重新派生
+    private void migratePolicyBindings(Long sourceId, Long targetId, LoginType type) {
+        List<PolicyBindingRecord> bindings = policyBindingMapper.selectList(
+                new LambdaQueryWrapper<PolicyBindingRecord>()
+                        .eq(PolicyBindingRecord::getSubjectType, PolicyBindingRecord.SUBJECT_USER)
+                        .eq(PolicyBindingRecord::getSubjectId, String.valueOf(sourceId)));
+        if (bindings.isEmpty()) {
+            return;
+        }
+        Set<String> targetPolicyIds = new LinkedHashSet<>();
+        policyBindingMapper.selectList(new LambdaQueryWrapper<PolicyBindingRecord>()
+                        .eq(PolicyBindingRecord::getSubjectType, PolicyBindingRecord.SUBJECT_USER)
+                        .eq(PolicyBindingRecord::getSubjectId, String.valueOf(targetId)))
+                .forEach(binding -> targetPolicyIds.add(binding.getPolicyId()));
+        PolicyBindingService bindingService = policyBindingService == null ? null : policyBindingService.getIfAvailable();
+        for (PolicyBindingRecord binding : bindings) {
+            if (targetPolicyIds.contains(binding.getPolicyId())) {
+                policyBindingMapper.deleteById(binding.getId());
+                continue;
+            }
+            if (bindingService == null) {
+                binding.setSubjectId(String.valueOf(targetId));
+                policyBindingMapper.updateById(binding);
+                continue;
+            }
+            try {
+                bindingService.bindToUser(binding.getPolicyId(), targetId, type, UserContext.username());
+                bindingService.unbind(binding.getId());
+            } catch (RuntimeException e) {
+                log.warn("迁移账号 {} 的策略绑定 {} 失败，仅改写绑定归属：{}", sourceId, binding.getId(), e.getMessage());
+                binding.setSubjectId(String.valueOf(targetId));
+                policyBindingMapper.updateById(binding);
+            }
+        }
+    }
+
+    private void kickout(UserRecord user, LoginType type, String reason) {
+        if (kickService == null || type == null || user.getId() == null) {
+            return;
+        }
+        try {
+            kickService.kickout(type, user.getId(), reason);
+        } catch (RuntimeException e) {
+            log.warn("账号 {} 的在线会话下线失败，权限缓存已失效：{}", user.getId(), e.getMessage());
         }
     }
 

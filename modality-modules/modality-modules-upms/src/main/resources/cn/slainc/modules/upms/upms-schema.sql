@@ -106,7 +106,8 @@ CREATE TABLE IF NOT EXISTS t_user_role (
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
     create_time BIGINT NOT NULL,
-    CONSTRAINT uk_user_role UNIQUE (user_id, role_id)
+    CONSTRAINT uk_user_role UNIQUE (user_id, role_id),
+    KEY idx_user_role_role (role_id)
 );
 
 CREATE TABLE IF NOT EXISTS t_role_permission (
@@ -161,7 +162,8 @@ CREATE TABLE IF NOT EXISTS t_policy_binding (
     subject_id VARCHAR(64) NOT NULL,
     operator VARCHAR(64),
     create_time BIGINT NOT NULL,
-    CONSTRAINT uk_policy_binding UNIQUE (policy_id, subject_type, subject_id)
+    CONSTRAINT uk_policy_binding UNIQUE (policy_id, subject_type, subject_id),
+    KEY idx_policy_binding_subject (subject_type, subject_id)
 );
 
 CREATE TABLE IF NOT EXISTS t_user_operation_log (
@@ -180,7 +182,9 @@ CREATE TABLE IF NOT EXISTS t_user_operation_log (
     http_method VARCHAR(16),
     cost_millis BIGINT NOT NULL DEFAULT 0,
     detail TEXT,
-    create_time BIGINT NOT NULL
+    create_time BIGINT NOT NULL,
+    KEY idx_user_op_log_tenant_time (tenant_id, create_time),
+    KEY idx_user_op_log_user (user_id, create_time)
 );
 
 CREATE TABLE IF NOT EXISTS t_user_login_record (
@@ -194,5 +198,7 @@ CREATE TABLE IF NOT EXISTS t_user_login_record (
     device VARCHAR(32),
     succeeded TINYINT NOT NULL DEFAULT 1,
     failure_reason VARCHAR(256),
-    create_time BIGINT NOT NULL
+    create_time BIGINT NOT NULL,
+    KEY idx_user_login_tenant_time (tenant_id, create_time),
+    KEY idx_user_login_user (user_id, create_time)
 );

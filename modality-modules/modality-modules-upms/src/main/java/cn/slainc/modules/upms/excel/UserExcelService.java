@@ -1,12 +1,12 @@
 package cn.slainc.modules.upms.excel;
 
 import cn.slainc.core.enums.LoginType;
+import cn.slainc.core.exception.BizException;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.utils.date.DateUtils;
 import cn.slainc.utils.string.StringUtils;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public class UserExcelService {
+
+    private static final int MAX_IMPORT_ROWS = 5000;
 
     private final UserService userService;
 
@@ -39,10 +41,12 @@ public class UserExcelService {
         ExcelUtils.write(outputStream, UserImportRow.class, List.of(), "用户导入");
     }
 
-    // 逐行独立落库：单行失败不影响其它行，行级错误回传给管理后台展示
-    @Transactional
+    // 刻意不套事务：单行失败不影响其它行，整批回滚会让已成功的行凭空消失
     public Map<String, Object> importUsers(InputStream inputStream, Long tenantId, String operator) {
         List<UserImportRow> rows = ExcelUtils.read(inputStream, UserImportRow.class);
+        if (rows.size() > MAX_IMPORT_ROWS) {
+            throw new BizException("导入行数 " + rows.size() + " 超过上限 " + MAX_IMPORT_ROWS + "，请拆分文件");
+        }
         List<Map<String, Object>> failures = new ArrayList<>();
         int success = 0;
         int rowNumber = 1;

@@ -71,9 +71,7 @@ public class PermissionService {
             permission.setType(type);
         }
         if (parentId != null) {
-            if (parentId.equals(id)) {
-                throw new BizException("权限的上级不能是自身");
-            }
+            SubtreeUtils.requireValidParent(collectSubtreeIds(id), id, parentId, "权限");
             requireParentAlive(parentId);
             permission.setParentId(parentId);
         }
@@ -148,12 +146,16 @@ public class PermissionService {
             return;
         }
         Set<Long> userIds = new LinkedHashSet<>();
-        for (Long roleId : roleIds) {
-            userRoleMapper.selectList(new LambdaQueryWrapper<UserRoleRecord>()
-                            .eq(UserRoleRecord::getRoleId, roleId))
-                    .forEach(binding -> userIds.add(binding.getUserId()));
-        }
+        userRoleMapper.selectList(new LambdaQueryWrapper<UserRoleRecord>()
+                        .in(UserRoleRecord::getRoleId, roleIds))
+                .forEach(binding -> userIds.add(binding.getUserId()));
         cacheInvalidator.invalidateUsers(new ArrayList<>(userIds));
+    }
+
+    public Set<Long> collectSubtreeIds(Long permissionId) {
+        return SubtreeUtils.collectSubtree(permissionId, id -> permissionMapper.selectList(
+                        new LambdaQueryWrapper<PermissionRecord>().eq(PermissionRecord::getParentId, id))
+                .stream().map(PermissionRecord::getId).toList());
     }
 
     private List<PermissionRecord> childrenOf(List<PermissionRecord> all, Long parentId) {

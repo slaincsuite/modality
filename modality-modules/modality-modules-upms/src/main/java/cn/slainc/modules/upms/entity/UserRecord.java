@@ -1,9 +1,12 @@
 package cn.slainc.modules.upms.entity;
 
 import cn.slainc.modules.upms.UpmsKeys;
+import cn.slainc.sensitive.annotation.Sensitive;
+import cn.slainc.sensitive.annotation.SensitiveType;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @TableName(UserRecord.TABLE_NAME)
 public class UserRecord {
@@ -19,10 +22,14 @@ public class UserRecord {
 
     private String nickname;
 
+    // 口令哈希永不进 JSON；登录校验等内部路径仍走 getPasswordHash()
+    @JsonIgnore
     private String passwordHash;
 
+    @Sensitive(type = SensitiveType.EMAIL)
     private String email;
 
+    @Sensitive(type = SensitiveType.PHONE)
     private String phone;
 
     private String avatarUrl;
@@ -37,6 +44,7 @@ public class UserRecord {
 
     private Long passwordChangedAt;
 
+    @Sensitive(type = SensitiveType.CUSTOM)
     private String allowedIps;
 
     private String allowedTimeRange;

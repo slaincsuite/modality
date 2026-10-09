@@ -20,6 +20,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -92,9 +93,7 @@ public class RoleService {
             role.setName(name.trim());
         }
         if (parentId != null) {
-            if (parentId.equals(id)) {
-                throw new BizException("角色的上级不能是自身");
-            }
+            SubtreeUtils.requireValidParent(collectSubtreeIds(id), id, parentId, "角色");
             requireParentAlive(parentId);
             role.setParentId(parentId);
         }
@@ -122,6 +121,7 @@ public class RoleService {
         return role;
     }
 
+    @Transactional
     public void delete(Long id) {
         require(id);
         List<Long> users = userIdsOf(id);
@@ -139,6 +139,7 @@ public class RoleService {
         cacheInvalidator.invalidateUsers(users);
     }
 
+    @Transactional
     public RoleRecord copy(Long id, String newCode, String newName) {
         RoleRecord source = require(id);
         String code = newCode == null || newCode.isBlank() ? source.getCode() + "-copy" : newCode.trim();
@@ -174,6 +175,7 @@ public class RoleService {
         return childrenOf(list(), 0L);
     }
 
+    @Transactional
     public void assignPermissions(Long roleId, List<Long> permissionIds) {
         RoleRecord role = require(roleId);
         List<Long> target = permissionIds == null ? List.of() : permissionIds;
@@ -205,6 +207,7 @@ public class RoleService {
                 .stream().map(RolePermissionRecord::getPermissionId).toList();
     }
 
+    @Transactional
     public void assignUsers(Long roleId, List<Long> userIds) {
         require(roleId);
         List<Long> target = userIds == null ? List.of() : userIds;
@@ -235,6 +238,7 @@ public class RoleService {
                 .stream().map(UserRoleRecord::getUserId).toList();
     }
 
+    @Transactional
     public void setDataScope(Long roleId, String dataScope, List<Long> deptIds) {
         RoleRecord role = require(roleId);
         DataScopeType type = DataScopeType.of(dataScope == null ? role.getDataScope() : dataScope);
@@ -264,11 +268,25 @@ public class RoleService {
     // 用户有效角色 = 直绑角色 + 沿 parent 链继承的祖先角色（防环、限深）
     public List<RoleRecord> resolveUserRoles(Long userId) {
         List<RoleRecord> direct = directRolesOf(userId);
+        if (direct.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, RoleRecord> all = new LinkedHashMap<>();
+        for (RoleRecord role : roleMapper.selectList(null)) {
+            all.put(role.getId(), role);
+        }
         Map<Long, RoleRecord> merged = new LinkedHashMap<>();
         for (RoleRecord role : direct) {
-            collectWithAncestors(role, merged);
+            collectWithAncestors(role, all, merged);
         }
         return merged.values().stream().filter(RoleRecord::enabled).toList();
+    }
+
+    // 含自身的整棵子树，update 前的成环判定与 delete 前的下级清点共用
+    public Set<Long> collectSubtreeIds(Long roleId) {
+        return SubtreeUtils.collectSubtree(roleId, id -> roleMapper.selectList(
+                        new LambdaQueryWrapper<RoleRecord>().eq(RoleRecord::getParentId, id))
+                .stream().map(RoleRecord::getId).toList());
     }
 
     public List<String> resolveRoleCodes(Long userId) {
@@ -315,7 +333,7 @@ public class RoleService {
         return roleMapper.selectList(new LambdaQueryWrapper<RoleRecord>().in(RoleRecord::getId, roleIds));
     }
 
-    private void collectWithAncestors(RoleRecord role, Map<Long, RoleRecord> merged) {
+    private void collectWithAncestors(RoleRecord role, Map<Long, RoleRecord> all, Map<Long, RoleRecord> merged) {
         RoleRecord current = role;
         int depth = 0;
         while (current != null && depth < MAX_INHERIT_DEPTH) {
@@ -324,7 +342,7 @@ public class RoleService {
             }
             merged.put(current.getId(), current);
             current = current.getParentId() == null || current.getParentId() == 0 ? null
-                    : roleMapper.selectById(current.getParentId());
+                    : all.get(current.getParentId());
             depth++;
         }
         if (depth >= MAX_INHERIT_DEPTH) {

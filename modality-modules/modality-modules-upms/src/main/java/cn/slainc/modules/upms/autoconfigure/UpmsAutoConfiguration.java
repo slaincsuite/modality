@@ -54,9 +54,10 @@ import cn.slainc.modules.upms.web.UserGroupManageController;
 import cn.slainc.modules.upms.web.UserManageController;
 import cn.slainc.modules.upms.web.UserStatsController;
 import cn.slainc.mybatis.datascope.DataScopeProvider;
-import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.admin.PolicyBindingService;
 import cn.slainc.policy.storage.PolicyBindingStore;
 import cn.slainc.security.cache.SecurityPermissionCache;
+import cn.slainc.security.kick.KickService;
 import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.security.password.PasswordPolicyService;
 import cn.slainc.security.spi.AccountAdminPort;
@@ -75,6 +76,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 // 必须先于 security、mybatis 与 policy 库装配：SPI、数据权限 provider 与策略绑定存储在此抢先注册，宿主自定义 Bean 仍可整体覆盖
 @AutoConfiguration(beforeName = {"cn.slainc.security.autoconfigure.SecurityAutoConfiguration",
@@ -139,8 +141,9 @@ public class UpmsAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public UpmsPermissionCacheInvalidator upmsPermissionCacheInvalidator(
-            ObjectProvider<SecurityPermissionCache> cache, ObjectProvider<UserMapper> userMapper) {
-        return new UpmsPermissionCacheInvalidator(cache, userMapper);
+            ObjectProvider<SecurityPermissionCache> cache, ObjectProvider<UserMapper> userMapper,
+            ObjectProvider<StringRedisTemplate> redis) {
+        return new UpmsPermissionCacheInvalidator(cache, userMapper, redis);
     }
 
     @Bean
@@ -205,9 +208,12 @@ public class UpmsAutoConfiguration {
                                    PolicyBindingMapper policyBindingMapper,
                                    UserLoginRecordMapper loginRecordMapper, UpmsProperties properties,
                                    UpmsPermissionCacheInvalidator cacheInvalidator,
-                                   ApplicationEventPublisher publisher) {
+                                   ApplicationEventPublisher publisher,
+                                   ObjectProvider<KickService> kickService,
+                                   ObjectProvider<PolicyBindingService> policyBindingService) {
         return new UserService(userMapper, userRoleMapper, groupMemberMapper, accessControlMapper,
-                policyBindingMapper, loginRecordMapper, properties, cacheInvalidator, publisher);
+                policyBindingMapper, loginRecordMapper, properties, cacheInvalidator, publisher,
+                kickService.getIfAvailable(), policyBindingService);
     }
 
     @Bean

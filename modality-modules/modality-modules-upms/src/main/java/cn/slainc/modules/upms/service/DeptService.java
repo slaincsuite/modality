@@ -13,7 +13,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -53,12 +52,7 @@ public class DeptService {
             dept.setName(name.trim());
         }
         if (parentId != null) {
-            if (parentId.equals(id)) {
-                throw new BizException("部门的上级不能是自身");
-            }
-            if (!collectSubtreeIds(id).isEmpty() && collectSubtreeIds(id).contains(parentId)) {
-                throw new BizException("部门的上级不能是自身的下级部门");
-            }
+            SubtreeUtils.requireValidParent(collectSubtreeIds(id), id, parentId, "部门");
             requireParentAlive(parentId);
             dept.setParentId(parentId);
         }
@@ -116,9 +110,9 @@ public class DeptService {
 
     // 含自身的整棵子树
     public Set<Long> collectSubtreeIds(Long deptId) {
-        Set<Long> ids = new LinkedHashSet<>();
-        collect(deptId, ids);
-        return ids;
+        return SubtreeUtils.collectSubtree(deptId, id -> deptMapper.selectList(
+                        new LambdaQueryWrapper<DeptRecord>().eq(DeptRecord::getParentId, id))
+                .stream().map(DeptRecord::getId).toList());
     }
 
     public DeptRecord require(Long id) {
@@ -127,17 +121,6 @@ public class DeptService {
             throw new BizException("部门不存在: " + id);
         }
         return dept;
-    }
-
-    private void collect(Long deptId, Set<Long> ids) {
-        if (deptId == null || ids.contains(deptId)) {
-            return;
-        }
-        ids.add(deptId);
-        for (DeptRecord child : deptMapper.selectList(
-                new LambdaQueryWrapper<DeptRecord>().eq(DeptRecord::getParentId, deptId))) {
-            collect(child.getId(), ids);
-        }
     }
 
     private List<DeptRecord> childrenOf(List<DeptRecord> all, Long parentId) {

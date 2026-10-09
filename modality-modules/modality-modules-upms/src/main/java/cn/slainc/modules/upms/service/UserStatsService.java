@@ -12,6 +12,7 @@ import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -68,25 +69,22 @@ public class UserStatsService {
     }
 
     public List<Map<String, Object>> roleDistribution() {
-        List<RoleRecord> roles = roleMapper.selectList(null);
         Map<Long, String> roleNames = new LinkedHashMap<>();
-        for (RoleRecord role : roles) {
+        for (RoleRecord role : roleMapper.selectList(null)) {
             roleNames.put(role.getId(), role.getName());
         }
         Map<String, Integer> counter = new LinkedHashMap<>();
-        int unassigned = 0;
-        for (UserRecord user : userMapper.selectList(activeWrapper())) {
-            List<Long> roleIds = userRoleMapper.selectList(new LambdaQueryWrapper<UserRoleRecord>()
-                            .eq(UserRoleRecord::getUserId, user.getId()))
-                    .stream().map(UserRoleRecord::getRoleId).toList();
-            if (roleIds.isEmpty()) {
-                unassigned++;
+        for (Map<String, Object> row : userRoleMapper.selectMaps(new QueryWrapper<UserRoleRecord>()
+                .select("role_id", "COUNT(*) AS binding_count")
+                .groupBy("role_id"))) {
+            Object roleId = column(row, "role_id");
+            Object bindingCount = column(row, "binding_count");
+            if (roleId == null || bindingCount == null) {
                 continue;
             }
-            for (Long roleId : roleIds) {
-                String name = roleNames.getOrDefault(roleId, "角色#" + roleId);
-                counter.merge(name, 1, Integer::sum);
-            }
+            long id = ((Number) roleId).longValue();
+            String name = roleNames.getOrDefault(id, "角色#" + id);
+            counter.merge(name, (int) ((Number) bindingCount).longValue(), Integer::sum);
         }
         List<Map<String, Object>> distribution = new ArrayList<>();
         for (var entry : counter.entrySet()) {
@@ -95,10 +93,13 @@ public class UserStatsService {
             row.put("count", entry.getValue());
             distribution.add(row);
         }
+        long total = userMapper.selectCount(activeWrapper());
+        long assigned = countUsersWithRole();
+        long unassigned = Math.max(0L, total - assigned);
         if (unassigned > 0) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("role", "未分配角色");
-            row.put("count", unassigned);
+            row.put("count", (int) unassigned);
             distribution.add(row);
         }
         return distribution;
@@ -110,13 +111,28 @@ public class UserStatsService {
     }
 
     private long distinctActiveUsers(long fromMillis) {
-        List<UserLoginRecordRecord> records = loginRecordMapper.selectList(
-                new LambdaQueryWrapper<UserLoginRecordRecord>()
-                        .eq(UserLoginRecordRecord::getSucceeded, true)
-                        .ge(UserLoginRecordRecord::getCreateTime, fromMillis)
-                        .eq(!UserContext.isSuperAdmin(), UserLoginRecordRecord::getTenantId,
-                                TenantContext.getOrDefault()));
-        return records.stream().map(UserLoginRecordRecord::getUserId).filter(id -> id != null).distinct().count();
+        List<Object> counts = loginRecordMapper.selectObjs(new QueryWrapper<UserLoginRecordRecord>()
+                .select("COUNT(DISTINCT user_id)")
+                .eq("succeeded", true)
+                .ge("create_time", fromMillis)
+                .eq(!UserContext.isSuperAdmin(), "tenant_id", TenantContext.getOrDefault()));
+        return counts.isEmpty() || counts.get(0) == null ? 0L : ((Number) counts.get(0)).longValue();
+    }
+
+    private long countUsersWithRole() {
+        List<Object> counts = userRoleMapper.selectObjs(new QueryWrapper<UserRoleRecord>()
+                .select("COUNT(DISTINCT user_id)"));
+        return counts.isEmpty() || counts.get(0) == null ? 0L : ((Number) counts.get(0)).longValue();
+    }
+
+    // H2 与 MySQL 对未加引号别名的返回大小写不一致，按列名忽略大小写取值
+    private static Object column(Map<String, Object> row, String name) {
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(name)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     private long startOfDay(int dayOffset) {

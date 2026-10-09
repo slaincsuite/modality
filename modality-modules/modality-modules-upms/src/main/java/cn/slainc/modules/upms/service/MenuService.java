@@ -53,9 +53,7 @@ public class MenuService {
             menu.setName(name.trim());
         }
         if (parentId != null) {
-            if (parentId.equals(id)) {
-                throw new BizException("菜单的上级不能是自身");
-            }
+            SubtreeUtils.requireValidParent(collectSubtreeIds(id), id, parentId, "菜单");
             requireParentAlive(parentId);
             menu.setParentId(parentId);
         }
@@ -137,6 +135,12 @@ public class MenuService {
                 .filter(menu -> visibleIds.contains(menu.getId()))
                 .toList();
         return childrenOf(visible, 0L);
+    }
+
+    public Set<Long> collectSubtreeIds(Long menuId) {
+        return SubtreeUtils.collectSubtree(menuId, id -> menuMapper.selectList(
+                        new LambdaQueryWrapper<MenuRecord>().eq(MenuRecord::getParentId, id))
+                .stream().map(MenuRecord::getId).toList());
     }
 
     public MenuRecord require(Long id) {
