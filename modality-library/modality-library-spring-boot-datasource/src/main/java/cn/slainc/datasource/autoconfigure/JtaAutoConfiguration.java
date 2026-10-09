@@ -1,6 +1,7 @@
 package cn.slainc.datasource.autoconfigure;
 
 import cn.slainc.datasource.exception.DataSourceException;
+import cn.slainc.datasource.properties.DataSourceProperties;
 import cn.slainc.datasource.xa.XaDataSourceCreator;
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.icatch.jta.UserTransactionManager;
@@ -31,7 +32,7 @@ public class JtaAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public UserTransaction atomikosUserTransaction(cn.slainc.datasource.properties.DataSourceProperties properties) {
+    public UserTransaction atomikosUserTransaction(DataSourceProperties properties) {
         UserTransactionImp userTransaction = new UserTransactionImp();
         try {
             userTransaction.setTransactionTimeout(properties.getJta().getTransactionTimeout());
@@ -55,7 +56,7 @@ public class JtaAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public XaDataSourceCreator xaDataSourceCreator(cn.slainc.datasource.properties.DataSourceProperties properties) {
+    public XaDataSourceCreator xaDataSourceCreator(DataSourceProperties properties) {
         return new XaDataSourceCreator(properties);
     }
 }

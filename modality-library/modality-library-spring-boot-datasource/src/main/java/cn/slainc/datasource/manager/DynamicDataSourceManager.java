@@ -1,6 +1,7 @@
 package cn.slainc.datasource.manager;
 
 import cn.slainc.datasource.crypto.DataSourcePasswordEncryptor;
+import cn.slainc.datasource.config.PoolDefaults;
 import cn.slainc.datasource.definition.DataSourceDefinition;
 import cn.slainc.datasource.definition.DataSourceDefinitionRepository;
 import cn.slainc.datasource.enums.DataSourceStatus;
@@ -12,11 +13,11 @@ import cn.slainc.datasource.properties.DataSourceProperties;
 import cn.slainc.datasource.routing.RoutingDataSource;
 import cn.slainc.datasource.strategy.WeightedDynamicDataSourceStrategy;
 import com.baomidou.dynamic.datasource.creator.DataSourceProperty;
-import com.baomidou.dynamic.datasource.creator.druid.DruidConfig;
 import com.baomidou.dynamic.datasource.creator.DefaultDataSourceCreator;
 import com.baomidou.dynamic.datasource.creator.hikaricp.HikariCpConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
@@ -40,6 +41,8 @@ public class DynamicDataSourceManager {
 
     private final DataSourcePasswordEncryptor encryptor;
 
+    private final DataSourceHealthChecker healthChecker;
+
     private final DataSourceProperties properties;
 
     private final Set<String> registered = ConcurrentHashMap.newKeySet();
@@ -50,11 +53,13 @@ public class DynamicDataSourceManager {
                                     DefaultDataSourceCreator dataSourceCreator,
                                     DataSourceDefinitionRepository repository,
                                     DataSourcePasswordEncryptor encryptor,
+                                    DataSourceHealthChecker healthChecker,
                                     DataSourceProperties properties) {
         this.routingDataSource = routingDataSource;
         this.dataSourceCreator = dataSourceCreator;
         this.repository = repository;
         this.encryptor = encryptor;
+        this.healthChecker = healthChecker;
         this.properties = properties;
     }
 
@@ -86,20 +91,8 @@ public class DynamicDataSourceManager {
         return repository.findAll();
     }
 
-    public List<DataSourceDefinition> registeredDefinitions() {
-        return repository.findAll().stream().filter(item -> registered.contains(item.getName())).toList();
-    }
-
     public Map<String, DataSourceHealth> healthStates() {
         return Map.copyOf(healthStates);
-    }
-
-    public DataSourceHealth health(String name) {
-        DataSource dataSource = routingDataSource.getDataSources().get(name);
-        if (dataSource == null) {
-            return DataSourceHealth.unknown(name);
-        }
-        return healthStates.getOrDefault(name, DataSourceHealth.unknown(name));
     }
 
     public synchronized DataSourceDefinition register(DataSourceDefinition definition) {
@@ -108,7 +101,12 @@ public class DynamicDataSourceManager {
             throw new DataSourceException("数据源已存在: " + definition.getName());
         }
         definition.setPassword(encryptor.encrypt(definition.getPassword()));
-        DataSourceDefinition saved = repository.save(definition);
+        DataSourceDefinition saved;
+        try {
+            saved = repository.save(definition);
+        } catch (DataIntegrityViolationException exception) {
+            throw new DataSourceException("数据源已存在: " + definition.getName(), exception);
+        }
         try {
             apply(saved);
             requireReachable(saved);
@@ -173,7 +171,7 @@ public class DynamicDataSourceManager {
         DataSource dataSource = null;
         try {
             dataSource = dataSourceCreator.createDataSource(property);
-            return new DataSourceHealthChecker(properties).check(definition.getName(), dataSource);
+            return healthChecker.check(definition.getName(), dataSource);
         } catch (Exception exception) {
             String message = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
             return new DataSourceHealth(definition.getName(), DataSourceStatus.DEGRADED, false, 0L, message,
@@ -222,12 +220,7 @@ public class DynamicDataSourceManager {
     private void applyPoolType(DataSourceProperty property, DataSourceDefinition definition, DatabaseType databaseType) {
         PoolType poolType = definition.getPoolType() == null
                 ? properties.getPoolType() : definition.getPoolType();
-        // 无条件预置：property.type 为空时 creator 仍可能选中 Druid，一旦选中而 maxWait 为默认 -1 就会永久阻塞
-        DruidConfig druid = property.getDruid() == null ? new DruidConfig() : property.getDruid();
-        if (druid.getMaxWait() == null) {
-            druid.setMaxWait(properties.getPool().getMaxWaitMillis());
-        }
-        property.setDruid(druid);
+        PoolDefaults.applyDruidMaxWait(property, properties);
         if (poolType == null || poolType == PoolType.HIKARI) {
             return;
         }
@@ -243,7 +236,7 @@ public class DynamicDataSourceManager {
         property.setType(resolvePoolClass(poolType));
     }
 
-    private static Class<? extends DataSource> resolvePoolClass(PoolType poolType) {
+    public static Class<? extends DataSource> resolvePoolClass(PoolType poolType) {
         try {
             return Class.forName(poolType.getClassName()).asSubclass(DataSource.class);
         } catch (ClassNotFoundException exception) {
@@ -258,7 +251,7 @@ public class DynamicDataSourceManager {
 
     private void requireReachable(DataSourceDefinition definition) {
         DataSource dataSource = routingDataSource.getDataSource(definition.getName());
-        DataSourceHealth health = new DataSourceHealthChecker(properties).check(definition.getName(), dataSource);
+        DataSourceHealth health = healthChecker.check(definition.getName(), dataSource);
         recordHealth(health);
         if (!health.healthy()) {
             throw new DataSourceException("数据源连通性校验失败: " + health.message());
@@ -270,6 +263,7 @@ public class DynamicDataSourceManager {
         routingDataSource.addDataSource(definition.getName(), dataSource);
         registered.add(definition.getName());
         WeightedDynamicDataSourceStrategy.setWeight(definition.getName(), weightOf(definition));
+        routingDataSource.enableWeightedStrategy();
         log.info("动态数据源 [{}] 已装载，当前共 {} 个数据源", definition.getName(), dataSourceNames().size());
     }
 

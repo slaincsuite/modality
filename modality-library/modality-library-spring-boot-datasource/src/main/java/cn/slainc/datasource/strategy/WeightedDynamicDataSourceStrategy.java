@@ -2,8 +2,11 @@ package cn.slainc.datasource.strategy;
 
 import com.baomidou.dynamic.datasource.strategy.DynamicDataSourceStrategy;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,12 +32,18 @@ public class WeightedDynamicDataSourceStrategy implements DynamicDataSourceStrat
 
     public static void removeWeight(String dataSourceName) {
         WEIGHTS.remove(dataSourceName);
-        CURSORS.remove(dataSourceName);
+        CURSORS.keySet().removeIf(key -> names(key).contains(dataSourceName));
         weighted = !WEIGHTS.isEmpty();
     }
 
     public static int weightOf(String dataSourceName) {
         return WEIGHTS.getOrDefault(dataSourceName, DEFAULT_WEIGHT);
+    }
+
+    public static void clear() {
+        WEIGHTS.clear();
+        CURSORS.clear();
+        weighted = false;
     }
 
     @Override
@@ -64,8 +73,23 @@ public class WeightedDynamicDataSourceStrategy implements DynamicDataSourceStrat
         return dataSourceNames.get(0);
     }
 
+    static Set<String> cursorKeys() {
+        return Set.copyOf(CURSORS.keySet());
+    }
+
     private int smoothIndex(List<String> dataSourceNames) {
-        AtomicInteger cursor = CURSORS.computeIfAbsent(dataSourceNames.toString(), key -> new AtomicInteger());
+        AtomicInteger cursor = CURSORS.computeIfAbsent(cursorKey(dataSourceNames), key -> new AtomicInteger());
         return cursor.getAndIncrement();
+    }
+
+    // 游标按分组稳定命名，用 List.toString() 当键会随分组内容变化而堆积，移除数据源时也清不掉
+    private static String cursorKey(List<String> dataSourceNames) {
+        List<String> sorted = new ArrayList<>(dataSourceNames);
+        Collections.sort(sorted);
+        return String.join(",", sorted);
+    }
+
+    private static List<String> names(String cursorKey) {
+        return List.of(cursorKey.split(","));
     }
 }

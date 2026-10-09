@@ -1,7 +1,6 @@
 package cn.slainc.datasource.failover;
 
 import cn.slainc.datasource.definition.DataSourceDefinition;
-import cn.slainc.datasource.health.DataSourceHealthChecker;
 import cn.slainc.datasource.manager.DataSourceHealth;
 import cn.slainc.datasource.manager.DynamicDataSourceManager;
 import cn.slainc.datasource.properties.DataSourceProperties;
@@ -9,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 
-import javax.sql.DataSource;
-import java.util.Map;
 import java.util.Optional;
 
 public class DataSourceFailoverManager {
@@ -18,8 +15,6 @@ public class DataSourceFailoverManager {
     private static final Logger log = LoggerFactory.getLogger(DataSourceFailoverManager.class);
 
     private final DynamicDataSourceManager manager;
-
-    private final DataSourceHealthChecker healthChecker;
 
     private final DataSourceProperties properties;
 
@@ -29,19 +24,12 @@ public class DataSourceFailoverManager {
 
     private volatile String failoverTo;
 
-    public DataSourceFailoverManager(DynamicDataSourceManager manager, DataSourceHealthChecker healthChecker,
+    public DataSourceFailoverManager(DynamicDataSourceManager manager,
                                      DataSourceProperties properties,
                                      ApplicationEventPublisher eventPublisher) {
         this.manager = manager;
-        this.healthChecker = healthChecker;
         this.properties = properties;
         this.eventPublisher = eventPublisher;
-    }
-
-    public void checkAll() {
-        for (Map.Entry<String, DataSource> entry : manager.dataSources().entrySet()) {
-            observe(healthChecker.check(entry.getKey(), entry.getValue()));
-        }
     }
 
     public synchronized void observe(DataSourceHealth health) {
@@ -53,10 +41,6 @@ public class DataSourceFailoverManager {
         } else {
             failover(health.name());
         }
-    }
-
-    public Optional<String> failoverTarget() {
-        return Optional.ofNullable(failoverTo);
     }
 
     private void failover(String failedName) {

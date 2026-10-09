@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class InMemoryDataSourceDefinitionRepository implements DataSourceDefinitionRepository {
@@ -29,11 +28,6 @@ public class InMemoryDataSourceDefinitionRepository implements DataSourceDefinit
     @Override
     public Optional<DataSourceDefinition> findByName(String name) {
         return Optional.ofNullable(store.get(name));
-    }
-
-    @Override
-    public Optional<DataSourceDefinition> findById(Long id) {
-        return store.values().stream().filter(item -> id != null && id.equals(item.getId())).findFirst();
     }
 
     @Override

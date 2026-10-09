@@ -14,10 +14,17 @@ import org.springframework.core.annotation.Order;
 @Order(Ordered.HIGHEST_PRECEDENCE + 100)
 public class TransactionMasterAspect {
 
-    private final String primaryName;
+    private final RoutingDataSource routingDataSource;
+
+    private final String fallbackPrimary;
 
     public TransactionMasterAspect(String primaryName) {
-        this.primaryName = primaryName;
+        this(null, primaryName);
+    }
+
+    public TransactionMasterAspect(RoutingDataSource routingDataSource, String fallbackPrimary) {
+        this.routingDataSource = routingDataSource;
+        this.fallbackPrimary = fallbackPrimary;
     }
 
     @Around("@annotation(org.springframework.transaction.annotation.Transactional)"
@@ -26,13 +33,18 @@ public class TransactionMasterAspect {
         if (hasExplicitDataSource(point)) {
             return point.proceed();
         }
-        DynamicDataSourceContextHolder.push(primaryName);
+        DynamicDataSourceContextHolder.push(currentPrimary());
         try {
             return point.proceed();
         } finally {
             DynamicDataSourceContextHolder.poll();
-            MasterForceHolder.clear();
         }
+    }
+
+    // 主库在运行期会被故障切换改写，固化启动时的名字会把事务压回已经故障的旧主库
+    private String currentPrimary() {
+        String name = routingDataSource == null ? null : routingDataSource.primaryName();
+        return name == null || name.isBlank() ? fallbackPrimary : name;
     }
 
     private boolean hasExplicitDataSource(ProceedingJoinPoint point) {

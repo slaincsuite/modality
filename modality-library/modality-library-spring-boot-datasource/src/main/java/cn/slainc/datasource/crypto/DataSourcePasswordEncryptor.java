@@ -69,7 +69,7 @@ public class DataSourcePasswordEncryptor {
 
     private static SecretKey resolveKey(String secretKey) {
         if (secretKey == null || secretKey.isBlank()) {
-            throw new DataSourceException("启用数据源密码加密时必须配置密钥");
+            throw new DataSourceException("启用数据源密码加密时必须配置 modality.datasource.encrypt.key");
         }
         String value = secretKey.trim();
         if (value.startsWith(SecretKeyUtils.HEX_PREFIX) || value.startsWith(SecretKeyUtils.BASE64_PREFIX)) {

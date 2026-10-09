@@ -14,7 +14,6 @@ import cn.slainc.datasource.migration.DataSourceMigrationTool;
 import cn.slainc.datasource.properties.DataSourceProperties;
 import cn.slainc.datasource.routing.RoutingDataSource;
 import cn.slainc.datasource.routing.TransactionMasterAspect;
-import cn.slainc.datasource.transaction.CrossDataSourceTransactionTemplate;
 import cn.slainc.datasource.transaction.TransactionHelper;
 import cn.slainc.datasource.transaction.TransactionLogAspect;
 import com.baomidou.dynamic.datasource.DynamicRoutingDataSource;
@@ -92,14 +91,17 @@ public class RoutingDataSourceAutoConfiguration {
                                                              DefaultDataSourceCreator dataSourceCreator,
                                                              DataSourceDefinitionRepository repository,
                                                              DataSourcePasswordEncryptor encryptor,
+                                                             DataSourceHealthChecker healthChecker,
                                                              DataSourceProperties properties) {
-        return new DynamicDataSourceManager(routingDataSource, dataSourceCreator, repository, encryptor, properties);
+        return new DynamicDataSourceManager(routingDataSource, dataSourceCreator, repository, encryptor,
+                healthChecker, properties);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public DataSourceRegistrar dataSourceRegistrar(DynamicDataSourceManager manager) {
-        return new DataSourceRegistrar(manager);
+    public DataSourceRegistrar dataSourceRegistrar(DynamicDataSourceManager manager,
+                                                   DataSourcePasswordEncryptor encryptor) {
+        return new DataSourceRegistrar(manager, encryptor);
     }
 
     @Bean
@@ -111,10 +113,9 @@ public class RoutingDataSourceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public DataSourceFailoverManager dataSourceFailoverManager(DynamicDataSourceManager manager,
-                                                               DataSourceHealthChecker healthChecker,
                                                                DataSourceProperties properties,
                                                                ApplicationEventPublisher eventPublisher) {
-        return new DataSourceFailoverManager(manager, healthChecker, properties, eventPublisher);
+        return new DataSourceFailoverManager(manager, properties, eventPublisher);
     }
 
     @Bean
@@ -140,13 +141,6 @@ public class RoutingDataSourceAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public CrossDataSourceTransactionTemplate crossDataSourceTransactionTemplate(
-            DynamicDataSourceManager manager, PlatformTransactionManager transactionManager) {
-        return new CrossDataSourceTransactionTemplate(manager, transactionManager);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "modality.datasource", name = "transaction-log-enabled", havingValue = "true")
     public TransactionLogAspect transactionLogAspect() {
         return new TransactionLogAspect();
@@ -155,7 +149,10 @@ public class RoutingDataSourceAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "spring.datasource.dynamic.aop", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public TransactionMasterAspect transactionMasterAspect(DynamicDataSourceProperties properties) {
-        return new TransactionMasterAspect(properties.getPrimary());
+    public TransactionMasterAspect transactionMasterAspect(ObjectProvider<RoutingDataSource> dataSourceProvider,
+                                                           DynamicDataSourceProperties properties) {
+        RoutingDataSource routingDataSource = dataSourceProvider.getIfAvailable();
+        return routingDataSource == null ? new TransactionMasterAspect(properties.getPrimary())
+                : new TransactionMasterAspect(routingDataSource, properties.getPrimary());
     }
 }

@@ -2,17 +2,17 @@ package cn.slainc.datasource.enums;
 
 public enum DatabaseType {
 
-    POSTGRE_SQL("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql:", false, "org.postgresql.xa.PGXADataSource"),
-    MYSQL("MySQL", "com.mysql.cj.jdbc.Driver", "jdbc:mysql:", false, "com.mysql.cj.jdbc.MysqlXADataSource"),
-    ORACLE("Oracle", "oracle.jdbc.OracleDriver", "jdbc:oracle:", false, "oracle.jdbc.xa.client.OracleXADataSource"),
-    SQL_SERVER("SQL Server", "com.microsoft.sqlserver.jdbc.SQLServerDriver", "jdbc:sqlserver:", false,
+    POSTGRE_SQL("PostgreSQL", "org.postgresql.Driver", "jdbc:postgresql:", "org.postgresql.xa.PGXADataSource"),
+    MYSQL("MySQL", "com.mysql.cj.jdbc.Driver", "jdbc:mysql:", "com.mysql.cj.jdbc.MysqlXADataSource"),
+    ORACLE("Oracle", "oracle.jdbc.OracleDriver", "jdbc:oracle:", "oracle.jdbc.xa.client.OracleXADataSource"),
+    SQL_SERVER("SQL Server", "com.microsoft.sqlserver.jdbc.SQLServerDriver", "jdbc:sqlserver:",
             "com.microsoft.sqlserver.jdbc.SQLServerXADataSource"),
-    DM("达梦", "dm.jdbc.driver.DmDriver", "jdbc:dm:", false, null),
-    KINGBASE("人大金仓", "com.kingbase8.Driver", "jdbc:kingbase8:", false, null),
-    SHENTONG("神通", "com.oscar.Driver", "jdbc:oscar:", false, null),
-    OCEAN_BASE("OceanBase", "com.oceanbase.jdbc.Driver", "jdbc:oceanbase:", true, null),
-    TIDB("TiDB", "com.mysql.cj.jdbc.Driver", "jdbc:mysql:", true, "com.mysql.cj.jdbc.MysqlXADataSource"),
-    H2("H2", "org.h2.Driver", "jdbc:h2:", false, "org.h2.jdbcx.JdbcDataSource");
+    DM("达梦", "dm.jdbc.driver.DmDriver", "jdbc:dm:", null),
+    KINGBASE("人大金仓", "com.kingbase8.Driver", "jdbc:kingbase8:", null),
+    SHENTONG("神通", "com.oscar.Driver", "jdbc:oscar:", null),
+    OCEAN_BASE("OceanBase", "com.oceanbase.jdbc.Driver", "jdbc:oceanbase:", null),
+    TIDB("TiDB", "com.mysql.cj.jdbc.Driver", "jdbc:mysql:", "com.mysql.cj.jdbc.MysqlXADataSource"),
+    H2("H2", "org.h2.Driver", "jdbc:h2:", "org.h2.jdbcx.JdbcDataSource");
 
     private final String displayName;
 
@@ -20,16 +20,12 @@ public enum DatabaseType {
 
     private final String urlPrefix;
 
-    private final boolean distributed;
-
     private final String xaDataSourceClassName;
 
-    DatabaseType(String displayName, String driverClassName, String urlPrefix, boolean distributed,
-                 String xaDataSourceClassName) {
+    DatabaseType(String displayName, String driverClassName, String urlPrefix, String xaDataSourceClassName) {
         this.displayName = displayName;
         this.driverClassName = driverClassName;
         this.urlPrefix = urlPrefix;
-        this.distributed = distributed;
         this.xaDataSourceClassName = xaDataSourceClassName;
     }
 
@@ -43,10 +39,6 @@ public enum DatabaseType {
 
     public String getUrlPrefix() {
         return urlPrefix;
-    }
-
-    public boolean isDistributed() {
-        return distributed;
     }
 
     public String getXaDataSourceClassName() {

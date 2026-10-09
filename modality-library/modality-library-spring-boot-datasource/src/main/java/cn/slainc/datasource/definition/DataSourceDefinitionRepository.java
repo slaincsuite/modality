@@ -11,8 +11,6 @@ public interface DataSourceDefinitionRepository {
 
     Optional<DataSourceDefinition> findByName(String name);
 
-    Optional<DataSourceDefinition> findById(Long id);
-
     DataSourceDefinition save(DataSourceDefinition definition);
 
     DataSourceDefinition update(DataSourceDefinition definition);

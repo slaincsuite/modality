@@ -6,7 +6,6 @@ import cn.slainc.datasource.enums.PoolType;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 public class DataSourceDefinition implements Serializable {
 
@@ -310,21 +309,5 @@ public class DataSourceDefinition implements Serializable {
 
     public void setTenantId(Long tenantId) {
         this.tenantId = tenantId;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-        return name != null && Objects.equals(name, ((DataSourceDefinition) other).name);
-    }
-
-    @Override
-    public int hashCode() {
-        return name == null ? System.identityHashCode(this) : Objects.hash(name);
     }
 }
