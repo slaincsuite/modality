@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "modality.security.filter.exclude-patterns=/actuator/**,/v3/api-docs/**,/swagger-ui/**,/swagger-ui.html,"
                 + "/webjars/**,/favicon.ico,/error,/captcha/**,/auth/login,/auth/logout,/oauth2/jwks,"
                 + "/oauth2/**,/sso/**,/batch5/**",
+        "modality.sso.server.secret-key=boot-sso-server-secret",
         "modality.sso.client.enabled=true",
         "modality.sso.client.client=boot-client",
         "modality.sso.client.secret-key=boot-sso-secret",

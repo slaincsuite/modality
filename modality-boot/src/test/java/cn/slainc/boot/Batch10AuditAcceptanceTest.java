@@ -140,8 +140,9 @@ class Batch10AuditAcceptanceTest {
                         + " AND username = ? AND success = 1", Integer.class, auditor);
         assertThat(loginLogs).isGreaterThanOrEqualTo(1);
 
+        Long auditorId = userService.findByUsername(auditor, LoginType.TENANT_USER).getId();
         HttpResponse<String> page = send("GET",
-                "/audit/online/page?type=TENANT_USER&keyword=" + "9", token, null);
+                "/audit/online/page?type=TENANT_USER&keyword=" + auditorId, token, null);
         assertThat(page.statusCode()).as(page.body()).isEqualTo(200);
         assertThat((int) JsonPath.read(page.body(), "$.data.page.records.length()")).isGreaterThanOrEqualTo(1);
         assertThat(page.body()).contains(auditor);

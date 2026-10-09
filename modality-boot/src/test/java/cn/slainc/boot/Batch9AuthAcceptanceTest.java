@@ -324,15 +324,31 @@ class Batch9AuthAcceptanceTest {
         assertThat(accessToken).isNotBlank();
         assertThat(rotated).isNotEqualTo(refreshToken.tokenValue());
 
-        HttpResponse<String> introspect = post("/auth/token/introspect", "{\"token\":\"" + accessToken + "\"}",
-                null, null);
+        createUser("batch9token", PASSWORD);
+        String session = tokenOf(login("batch9token", PASSWORD));
+
+        HttpResponse<String> anonymous = post("/auth/token/introspect", introspectBody(accessToken), null, null);
+        assertThat(anonymous.statusCode()).as(anonymous.body()).isEqualTo(401);
+
+        HttpResponse<String> withoutClientAuth = post("/auth/token/introspect", "{\"token\":\"" + accessToken + "\"}",
+                session, null);
+        assertThat(withoutClientAuth.statusCode()).as(withoutClientAuth.body()).isEqualTo(401);
+
+        HttpResponse<String> introspect = post("/auth/token/introspect", introspectBody(accessToken), session, null);
+        assertThat(introspect.statusCode()).as(introspect.body()).isEqualTo(200);
         assertThat((Boolean) JsonPath.<Boolean>read(introspect.body(), "$.data.active")).isTrue();
 
         assertThat(post("/auth/token/revoke", "{\"token\":\"" + accessToken + "\"}", null, null).statusCode())
+                .isEqualTo(401);
+        assertThat(post("/auth/token/revoke", "{\"token\":\"" + accessToken + "\"}", session, null).statusCode())
                 .isEqualTo(200);
-        HttpResponse<String> afterRevoke = post("/auth/token/introspect", "{\"token\":\"" + accessToken + "\"}",
-                null, null);
+        HttpResponse<String> afterRevoke = post("/auth/token/introspect", introspectBody(accessToken), session, null);
         assertThat((Boolean) JsonPath.<Boolean>read(afterRevoke.body(), "$.data.active")).isFalse();
+    }
+
+    private static String introspectBody(String token) {
+        return "{\"token\":\"" + token + "\",\"clientId\":\"" + CLIENT_ID + "\",\"clientSecret\":\""
+                + CLIENT_SECRET + "\"}";
     }
 
     @Test

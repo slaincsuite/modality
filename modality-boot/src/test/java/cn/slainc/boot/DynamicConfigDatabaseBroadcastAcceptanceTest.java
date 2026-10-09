@@ -50,7 +50,7 @@ class DynamicConfigDatabaseBroadcastAcceptanceTest {
 
     private static final int REDIS_PORT = 6379;
 
-    private static final String REDIS_PASSWORD = "omni-redis-pass";
+    private static final String REDIS_PASSWORD = System.getenv().getOrDefault("MODALITY_REDIS_PASSWORD", "");
 
     // 与其它模块以及 boot 自身的应用上下文（database 0）隔离，避免并行构建时共享版本号键
     private static final int REDIS_DATABASE = 7;
