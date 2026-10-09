@@ -60,8 +60,8 @@ public final class JwtCodec {
         if (parts.length != 3) {
             throw new CryptoException("JWT 格式非法，必须由三段组成");
         }
-        Map<String, Object> header = asObject(Json.parse(Base64Utils.decodeUrl(parts[0]).length == 0 ? "{}" : new String(Base64Utils.decodeUrl(parts[0]), StandardCharsets.UTF_8)), "JWT 头部");
-        Map<String, Object> claims = asObject(Json.parse(Base64Utils.decodeUrl(parts[1]).length == 0 ? "{}" : new String(Base64Utils.decodeUrl(parts[1]), StandardCharsets.UTF_8)), "JWT 载荷");
+        Map<String, Object> header = segment(parts[0], "JWT 头部");
+        Map<String, Object> claims = segment(parts[1], "JWT 载荷");
         byte[] signature = parts[2].isEmpty() ? new byte[0] : Base64Utils.decodeUrl(parts[2]);
         return new Jwt(token, header, claims, signature, parts[0] + "." + parts[1]);
     }
@@ -149,6 +149,11 @@ public final class JwtCodec {
 
     private static String base64Url(String text) {
         return base64Url(text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static Map<String, Object> segment(String value, String name) {
+        byte[] bytes = Base64Utils.decodeUrl(value);
+        return asObject(Json.parse(bytes.length == 0 ? "{}" : new String(bytes, StandardCharsets.UTF_8)), name);
     }
 
     private static Map<String, Object> asObject(Object value, String name) {

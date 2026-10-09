@@ -10,8 +10,6 @@ public final class Sm3Utils {
 
     public static final int DIGEST_LENGTH = 32;
 
-    public static final int BLOCK_LENGTH = 64;
-
     private Sm3Utils() {
     }
 

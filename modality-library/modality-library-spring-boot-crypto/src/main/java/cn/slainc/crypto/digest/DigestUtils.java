@@ -62,8 +62,4 @@ public final class DigestUtils {
     public static String sha256Hex(String text) {
         return digestHex(DigestAlgorithm.SHA256, text);
     }
-
-    public static String sha512Hex(String text) {
-        return digestHex(DigestAlgorithm.SHA512, text);
-    }
 }

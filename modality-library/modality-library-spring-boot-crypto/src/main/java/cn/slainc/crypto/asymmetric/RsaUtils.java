@@ -59,9 +59,6 @@ public final class RsaUtils {
         } catch (GeneralSecurityException exception) {
             throw new CryptoException("RSA 数据处理失败，转换方式：" + transformation, exception);
         } catch (RuntimeException exception) {
-            if (exception instanceof CryptoException cryptoException) {
-                throw cryptoException;
-            }
             throw new CryptoException("RSA 数据处理失败，转换方式：" + transformation, exception);
         }
     }

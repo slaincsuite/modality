@@ -72,18 +72,13 @@ public final class Pbkdf2Utils {
         }
         Pbkdf2Algorithm algorithm = Pbkdf2Algorithm.fromLabel(parts[0]);
         int iterations = Integer.parseInt(parts[1]);
-        byte[] salt = Base64Utils.decode(pad(parts[2]));
-        byte[] expected = Base64Utils.decode(pad(parts[3]));
+        byte[] salt = Base64Utils.decode(Base64Utils.pad(parts[2]));
+        byte[] expected = Base64Utils.decode(Base64Utils.pad(parts[3]));
         byte[] actual = derive(algorithm, password, salt, iterations, expected.length);
         return ConstantTimeUtils.equals(actual, expected);
     }
 
     public static boolean verify(String password, String encoded) {
         return password != null && verify(password.toCharArray(), encoded);
-    }
-
-    private static String pad(String text) {
-        int remainder = text.length() & 3;
-        return remainder == 0 ? text : text + "=".repeat(4 - remainder);
     }
 }

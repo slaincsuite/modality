@@ -9,7 +9,6 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,13 +27,9 @@ import org.bouncycastle.util.io.pem.PemWriter;
 
 public final class PemUtils {
 
-    public static final String CERTIFICATE_TYPE = "CERTIFICATE";
-
     public static final String PRIVATE_KEY_TYPE = "PRIVATE KEY";
 
     public static final String PUBLIC_KEY_TYPE = "PUBLIC KEY";
-
-    public static final String CERTIFICATE_REQUEST_TYPE = "CERTIFICATE REQUEST";
 
     private PemUtils() {
     }
@@ -138,68 +133,6 @@ public final class PemUtils {
             return request;
         }
         throw new CryptoException("PEM 文本中不包含证书请求：" + object.getClass().getName());
-    }
-
-    public static PrivateKey privateKey(byte[] pkcs8) {
-        try {
-            return converter().getPrivateKey(PrivateKeyInfo.getInstance(pkcs8));
-        } catch (IOException | RuntimeException exception) {
-            throw new CryptoException("无法读取 PKCS#8 私钥", exception);
-        }
-    }
-
-    public static PublicKey publicKey(byte[] x509) {
-        try {
-            return converter().getPublicKey(SubjectPublicKeyInfo.getInstance(x509));
-        } catch (IOException | RuntimeException exception) {
-            throw new CryptoException("无法读取 X.509 公钥", exception);
-        }
-    }
-
-    public static X509Certificate certificate(byte[] der) {
-        try {
-            CertificateFactory factory = CertificateFactory.getInstance("X.509", CryptoProviders.bouncyCastle());
-            return (X509Certificate) factory.generateCertificate(new java.io.ByteArrayInputStream(der));
-        } catch (CertificateException exception) {
-            throw new CryptoException("无法读取 X.509 证书", exception);
-        }
-    }
-
-    public static byte[] encodeDer(Object object) {
-        if (object instanceof PrivateKey privateKey) {
-            return privateKey.getEncoded();
-        }
-        if (object instanceof PublicKey publicKey) {
-            return publicKey.getEncoded();
-        }
-        if (object instanceof X509Certificate certificate) {
-            try {
-                return certificate.getEncoded();
-            } catch (CertificateException exception) {
-                throw new CryptoException("无法编码证书", exception);
-            }
-        }
-        if (object instanceof PKCS10CertificationRequest request) {
-            try {
-                return request.getEncoded();
-            } catch (IOException exception) {
-                throw new CryptoException("无法编码证书请求", exception);
-            }
-        }
-        throw new CryptoException("不支持的 DER 对象：" + object.getClass().getName());
-    }
-
-    public static String body(String pem) {
-        if (pem == null) {
-            return null;
-        }
-        StringBuilder builder = new StringBuilder();
-        for (String line : pem.split("\\R")) {
-            if (!line.startsWith("-----")) {
-                builder.append(line.trim());
-            }
-        }
-        return builder.toString();
     }
 
     private static Object convert(Object object) {

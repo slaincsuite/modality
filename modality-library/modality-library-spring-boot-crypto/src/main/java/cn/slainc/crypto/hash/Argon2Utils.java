@@ -109,14 +109,9 @@ public final class Argon2Utils {
         if (memoryKb <= 0 || iterations <= 0 || parallelism <= 0) {
             throw new CryptoException("非法的 Argon2 参数");
         }
-        byte[] salt = Base64Utils.decode(pad(parts[4]));
-        byte[] hash = Base64Utils.decode(pad(parts[5]));
+        byte[] salt = Base64Utils.decode(Base64Utils.pad(parts[4]));
+        byte[] hash = Base64Utils.decode(Base64Utils.pad(parts[5]));
         return new Parsed(variant, Argon2Params.of(memoryKb, iterations, parallelism, hash.length), salt, hash);
-    }
-
-    private static String pad(String text) {
-        int remainder = text.length() & 3;
-        return remainder == 0 ? text : text + "=".repeat(4 - remainder);
     }
 
     private static byte[] toBytes(char[] password) {

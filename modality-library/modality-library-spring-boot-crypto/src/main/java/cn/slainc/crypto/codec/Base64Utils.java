@@ -51,7 +51,7 @@ public final class Base64Utils {
         return URL_DECODER.decode(pad(value));
     }
 
-    private static String pad(String text) {
+    public static String pad(String text) {
         int remainder = text.length() & 3;
         if (remainder == 0) {
             return text;

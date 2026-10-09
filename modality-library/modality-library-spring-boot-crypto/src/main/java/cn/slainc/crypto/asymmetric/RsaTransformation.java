@@ -3,7 +3,6 @@ package cn.slainc.crypto.asymmetric;
 public enum RsaTransformation {
 
     PKCS1("RSA/ECB/PKCS1Padding", null),
-    OAEP_SHA1("RSA/ECB/OAEPPadding", "SHA-1"),
     OAEP_SHA256("RSA/ECB/OAEPPadding", "SHA-256"),
     OAEP_SHA384("RSA/ECB/OAEPPadding", "SHA-384"),
     OAEP_SHA512("RSA/ECB/OAEPPadding", "SHA-512");

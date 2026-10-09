@@ -4,6 +4,7 @@ import cn.slainc.crypto.CryptoException;
 import cn.slainc.crypto.CryptoProviders;
 import cn.slainc.crypto.random.SecureRandomUtils;
 import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -42,7 +43,7 @@ public final class EcdsaUtils {
         return JcaSignatures.verify(algorithm.jcaName(), null, 0, publicKey, data, signature);
     }
 
-    public static EcdsaSignatureAlgorithm defaultAlgorithm(java.security.Key key) {
+    public static EcdsaSignatureAlgorithm defaultAlgorithm(Key key) {
         if (!(key instanceof ECKey ecKey)) {
             throw new CryptoException("不是 EC 密钥：" + key.getAlgorithm());
         }

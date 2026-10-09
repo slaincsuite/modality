@@ -60,8 +60,8 @@ public final class ScryptUtils {
         int cost = Integer.parseInt(parts[1]);
         int blockSize = Integer.parseInt(parts[2]);
         int parallelization = Integer.parseInt(parts[3]);
-        byte[] salt = Base64Utils.decode(pad(parts[4]));
-        byte[] expected = Base64Utils.decode(pad(parts[5]));
+        byte[] salt = Base64Utils.decode(Base64Utils.pad(parts[4]));
+        byte[] expected = Base64Utils.decode(Base64Utils.pad(parts[5]));
         byte[] actual = derive(password, salt, ScryptParams.of(cost, blockSize, parallelization, expected.length));
         return ConstantTimeUtils.equals(actual, expected);
     }
@@ -75,10 +75,5 @@ public final class ScryptUtils {
             throw new CryptoException("值不能为空");
         }
         return text.getBytes(StandardCharsets.UTF_8);
-    }
-
-    private static String pad(String text) {
-        int remainder = text.length() & 3;
-        return remainder == 0 ? text : text + "=".repeat(4 - remainder);
     }
 }

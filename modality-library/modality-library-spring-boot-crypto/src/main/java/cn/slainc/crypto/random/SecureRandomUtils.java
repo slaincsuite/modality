@@ -2,7 +2,6 @@ package cn.slainc.crypto.random;
 
 import java.security.SecureRandom;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 public final class SecureRandomUtils {
 
@@ -92,9 +91,5 @@ public final class SecureRandomUtils {
 
     public static String nextUuid() {
         return new UUID(Holder.RANDOM.nextLong(), Holder.RANDOM.nextLong()).toString();
-    }
-
-    public static int nextIntInsecure(int bound) {
-        return ThreadLocalRandom.current().nextInt(bound);
     }
 }

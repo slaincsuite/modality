@@ -2,6 +2,7 @@ package cn.slainc.crypto.jwt;
 
 import cn.slainc.crypto.CryptoException;
 import cn.slainc.crypto.CryptoProviders;
+import cn.slainc.crypto.asymmetric.EcCurve;
 import cn.slainc.crypto.codec.Base64Utils;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -10,9 +11,9 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.EdECKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -83,7 +84,7 @@ public final class Jwk {
         }
         if (publicKey instanceof ECPublicKey ecPublicKey) {
             int fieldSize = ecPublicKey.getParams().getCurve().getField().getFieldSize();
-            return new Jwk(mapOf(KEY_TYPE_EC, "crv", curveLabel(fieldSize),
+            return new Jwk(mapOf(KEY_TYPE_EC, "crv", EcCurve.fromFieldSize(fieldSize).jwkLabel(),
                     "x", fixed(ecPublicKey.getW().getAffineX(), (fieldSize + 7) / 8),
                     "y", fixed(ecPublicKey.getW().getAffineY(), (fieldSize + 7) / 8)));
         }
@@ -111,17 +112,13 @@ public final class Jwk {
         }
         if (privateKey instanceof ECPrivateKey ecPrivateKey) {
             int fieldSize = ecPrivateKey.getParams().getCurve().getField().getFieldSize();
-            return new Jwk(mapOf(KEY_TYPE_EC, "crv", curveLabel(fieldSize), "d", fixed(ecPrivateKey.getS(), (fieldSize + 7) / 8)));
+            return new Jwk(mapOf(KEY_TYPE_EC, "crv", EcCurve.fromFieldSize(fieldSize).jwkLabel(), "d", fixed(ecPrivateKey.getS(), (fieldSize + 7) / 8)));
         }
         if (isEdwards(privateKey)) {
             String curve = edwardsCurve(privateKey);
             return new Jwk(mapOf(KEY_TYPE_OKP, "crv", curve, "d", rawPrivate(privateKey, edwardsLength(curve))));
         }
         throw new CryptoException("不支持的私钥类型：" + privateKey.getAlgorithm());
-    }
-
-    public static Jwk fromSecretKey(SecretKey secretKey) {
-        return fromSecretKey(secretKey, null);
     }
 
     public static Jwk fromSecretKey(SecretKey secretKey, String algorithm) {
@@ -328,7 +325,7 @@ public final class Jwk {
     }
 
     private static String edwardsCurve(java.security.Key key) {
-        if (key instanceof java.security.interfaces.EdECKey edKey) {
+        if (key instanceof EdECKey edKey) {
             return edKey.getParams().getName();
         }
         return "Ed448".equals(key.getAlgorithm()) ? "Ed448" : "Ed25519";
@@ -350,28 +347,10 @@ public final class Jwk {
         return "Ed448".equals(curve) ? ED448_PUBLIC_PREFIX : ED25519_PUBLIC_PREFIX;
     }
 
-    private static String curveLabel(int fieldSize) {
-        return switch (fieldSize) {
-            case 256 -> "P-256";
-            case 384 -> "P-384";
-            case 521 -> "P-521";
-            default -> throw new CryptoException("不支持的椭圆曲线位数：" + fieldSize);
-        };
-    }
-
-    private static String curveName(String curve) {
-        return switch (curve) {
-            case "P-256" -> "secp256r1";
-            case "P-384" -> "secp384r1";
-            case "P-521" -> "secp521r1";
-            default -> throw new CryptoException("不支持的椭圆曲线：" + curve);
-        };
-    }
-
     private static ECParameterSpec parameters(String curve) {
         try {
             AlgorithmParameters parameters = AlgorithmParameters.getInstance("EC", CryptoProviders.bouncyCastle());
-            parameters.init(new ECGenParameterSpec(curveName(curve)));
+            parameters.init(new ECGenParameterSpec(EcCurve.fromJwkLabel(curve).curveName()));
             return parameters.getParameterSpec(ECParameterSpec.class);
         } catch (GeneralSecurityException exception) {
             throw new CryptoException("无法解析椭圆曲线参数：" + curve, exception);

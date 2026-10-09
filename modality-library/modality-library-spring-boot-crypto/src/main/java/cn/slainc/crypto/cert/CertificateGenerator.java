@@ -50,11 +50,7 @@ public final class CertificateGenerator {
     }
 
     public static X509Certificate issue(KeyPair issuerKeyPair, X509Certificate issuerCertificate, PublicKey subjectPublicKey, CertificateSpec spec) {
-        if (issuerCertificate == null) {
-            throw new CryptoException("签发者证书不能为空");
-        }
-        X500Name issuer = X500Name.getInstance(issuerCertificate.getSubjectX500Principal().getEncoded());
-        return build(issuerKeyPair.getPrivate(), subjectPublicKey, issuer, subject(spec.subject()), spec, issuerCertificate);
+        return issue(issuerKeyPair.getPrivate(), issuerCertificate, subjectPublicKey, spec);
     }
 
     public static X509Certificate issue(PrivateKey issuerPrivateKey, X509Certificate issuerCertificate, PublicKey subjectPublicKey, CertificateSpec spec) {

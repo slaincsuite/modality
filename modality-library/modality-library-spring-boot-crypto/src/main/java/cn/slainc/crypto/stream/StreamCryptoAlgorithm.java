@@ -7,24 +7,17 @@ import org.bouncycastle.crypto.engines.SM4Engine;
 
 public enum StreamCryptoAlgorithm {
 
-    AES_GCM(1, "AES"),
-    SM4_GCM(2, "SM4");
+    AES_GCM(1),
+    SM4_GCM(2);
 
     private final int id;
 
-    private final String keyAlgorithm;
-
-    StreamCryptoAlgorithm(int id, String keyAlgorithm) {
+    StreamCryptoAlgorithm(int id) {
         this.id = id;
-        this.keyAlgorithm = keyAlgorithm;
     }
 
     public int id() {
         return id;
-    }
-
-    public String keyAlgorithm() {
-        return keyAlgorithm;
     }
 
     public void validateKeyLength(int length) {

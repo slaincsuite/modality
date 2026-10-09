@@ -50,14 +50,6 @@ public final class Sm4Utils {
         return decrypt(mode, padding, key.getEncoded(), iv, data);
     }
 
-    public static byte[] encryptEcb(byte[] key, byte[] data) {
-        return encrypt(CipherMode.ECB, Padding.PKCS7, key, null, data);
-    }
-
-    public static byte[] decryptEcb(byte[] key, byte[] data) {
-        return decrypt(CipherMode.ECB, Padding.PKCS7, key, null, data);
-    }
-
     public static byte[] encryptCbc(byte[] key, byte[] iv, byte[] data) {
         return encrypt(CipherMode.CBC, Padding.PKCS7, key, iv, data);
     }

@@ -14,8 +14,6 @@ public final class MapCryptoKeyProvider implements CryptoKeyProvider {
 
     public static final String DEFAULT_ALGORITHM = "SM4";
 
-    public static final String CURRENT_SUFFIX = ".current";
-
     private final Map<String, SecretKey> keys;
 
     private final String currentKeyId;

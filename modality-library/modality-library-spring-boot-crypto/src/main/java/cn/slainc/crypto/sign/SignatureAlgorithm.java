@@ -2,8 +2,6 @@ package cn.slainc.crypto.sign;
 
 public enum SignatureAlgorithm {
 
-    MD5_WITH_RSA("MD5withRSA", null, 0),
-    SHA1_WITH_RSA("SHA1withRSA", null, 0),
     SHA256_WITH_RSA("SHA256withRSA", null, 0),
     SHA384_WITH_RSA("SHA384withRSA", null, 0),
     SHA512_WITH_RSA("SHA512withRSA", null, 0),
@@ -39,10 +37,6 @@ public enum SignatureAlgorithm {
 
     public int pssSaltLength() {
         return pssSaltLength;
-    }
-
-    public boolean isPss() {
-        return pssDigest != null;
     }
 
     public boolean isSm2() {

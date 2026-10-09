@@ -95,7 +95,7 @@ public final class Sm2Utils {
 
     public static byte[] sign(PrivateKey privateKey, byte[] data, byte[] id, SecureRandom random) {
         SM2Signer signer = new SM2Signer(PlainDSAEncoding.INSTANCE);
-        signer.init(true, withId(new ParametersWithRandom(privateKeyParameter(privateKey), random), id, true));
+        signer.init(true, withId(new ParametersWithRandom(privateKeyParameter(privateKey), random), id));
         signer.update(data, 0, data.length);
         try {
             return signer.generateSignature();
@@ -122,7 +122,7 @@ public final class Sm2Utils {
 
     public static byte[] signDer(PrivateKey privateKey, byte[] data, byte[] id, SecureRandom random) {
         SM2Signer signer = new SM2Signer(StandardDSAEncoding.INSTANCE);
-        signer.init(true, withId(new ParametersWithRandom(privateKeyParameter(privateKey), random), id, true));
+        signer.init(true, withId(new ParametersWithRandom(privateKeyParameter(privateKey), random), id));
         signer.update(data, 0, data.length);
         try {
             return signer.generateSignature();
@@ -157,12 +157,12 @@ public final class Sm2Utils {
 
     private static boolean verify(PublicKey publicKey, byte[] data, byte[] signature, byte[] id, org.bouncycastle.crypto.signers.DSAEncoding encoding) {
         SM2Signer signer = new SM2Signer(encoding);
-        signer.init(false, withId(publicKeyParameter(publicKey), id, false));
+        signer.init(false, withId(publicKeyParameter(publicKey), id));
         signer.update(data, 0, data.length);
         return signer.verifySignature(signature);
     }
 
-    private static org.bouncycastle.crypto.CipherParameters withId(org.bouncycastle.crypto.CipherParameters parameters, byte[] id, boolean signing) {
+    private static org.bouncycastle.crypto.CipherParameters withId(org.bouncycastle.crypto.CipherParameters parameters, byte[] id) {
         byte[] value = id == null ? DEFAULT_ID : id;
         return new ParametersWithID(parameters, value);
     }

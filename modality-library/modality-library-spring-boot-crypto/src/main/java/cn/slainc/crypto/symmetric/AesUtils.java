@@ -11,8 +11,6 @@ import org.bouncycastle.crypto.engines.AESEngine;
 
 public final class AesUtils {
 
-    public static final int BLOCK_LENGTH = 16;
-
     private AesUtils() {
     }
 
