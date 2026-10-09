@@ -1,5 +1,6 @@
 package cn.slainc.mybatis.page;
 
+import cn.slainc.core.page.PageParam;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import java.io.Serializable;
@@ -7,10 +8,6 @@ import java.io.Serializable;
 public class PageQuery implements Serializable {
 
     public static final long DEFAULT_PAGE_NUM = 1L;
-
-    public static final long DEFAULT_PAGE_SIZE = 10L;
-
-    public static final long MAX_PAGE_SIZE = 500L;
 
     private Long pageNum;
 
@@ -36,9 +33,9 @@ public class PageQuery implements Serializable {
 
     public long normalizedPageSize() {
         if (pageSize == null || pageSize < 1) {
-            return DEFAULT_PAGE_SIZE;
+            return PageParam.DEFAULT_SIZE;
         }
-        return Math.min(pageSize, MAX_PAGE_SIZE);
+        return Math.min(pageSize, PageParam.MAX_SIZE);
     }
 
     public <T> Page<T> toPage() {

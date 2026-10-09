@@ -1,6 +1,7 @@
 package cn.slainc.mybatis.join;
 
 import cn.slainc.mybatis.exception.MybatisException;
+import cn.slainc.mybatis.support.LikeUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,15 +14,13 @@ public final class JoinQuery {
 
     private final List<String> selects = new ArrayList<>();
 
-    private final List<String> joins = new ArrayList<>();
+    private final List<Fragment> joins = new ArrayList<>();
 
-    private final List<String> conditions = new ArrayList<>();
+    private final List<Fragment> conditions = new ArrayList<>();
 
-    private final List<Object> parameters = new ArrayList<>();
+    private final List<Fragment> having = new ArrayList<>();
 
     private final List<String> groupBy = new ArrayList<>();
-
-    private final List<String> having = new ArrayList<>();
 
     private final List<String> orderBy = new ArrayList<>();
 
@@ -50,35 +49,32 @@ public final class JoinQuery {
     }
 
     public JoinQuery innerJoin(String table, String on) {
-        joins.add(" INNER JOIN " + table + " ON " + on);
+        joins.add(new Fragment(" INNER JOIN " + table + " ON " + on, List.of()));
         return this;
     }
 
     public JoinQuery leftJoin(String table, String on) {
-        joins.add(" LEFT JOIN " + table + " ON " + on);
+        joins.add(new Fragment(" LEFT JOIN " + table + " ON " + on, List.of()));
         return this;
     }
 
     public JoinQuery rightJoin(String table, String on) {
-        joins.add(" RIGHT JOIN " + table + " ON " + on);
+        joins.add(new Fragment(" RIGHT JOIN " + table + " ON " + on, List.of()));
         return this;
     }
 
     public JoinQuery subQueryJoin(String alias, JoinQuery subQuery, String on) {
-        joins.add(" JOIN (" + subQuery.sql() + ") " + alias + " ON " + on);
-        parameters.addAll(subQuery.parameters());
+        joins.add(new Fragment(" JOIN (" + subQuery.sql() + ") " + alias + " ON " + on, subQuery.parameters()));
         return this;
     }
 
     public JoinQuery subQueryIn(String column, JoinQuery subQuery) {
-        conditions.add(column + " IN (" + subQuery.sql() + ")");
-        parameters.addAll(subQuery.parameters());
+        conditions.add(new Fragment(column + " IN (" + subQuery.sql() + ")", subQuery.parameters()));
         return this;
     }
 
     public JoinQuery where(String condition, Object... params) {
-        conditions.add(condition);
-        addParameters(params);
+        conditions.add(new Fragment(condition, values(params)));
         return this;
     }
 
@@ -88,16 +84,29 @@ public final class JoinQuery {
 
     public JoinQuery in(String column, Collection<?> values) {
         if (values == null || values.isEmpty()) {
-            conditions.add("1 = 0");
+            conditions.add(new Fragment("1 = 0", List.of()));
             return this;
         }
         StringJoiner joiner = new StringJoiner(", ", column + " IN (", ")");
+        List<Object> params = new ArrayList<>();
         for (Object value : values) {
             joiner.add("?");
-            parameters.add(value);
+            params.add(value);
         }
-        conditions.add(joiner.toString());
+        conditions.add(new Fragment(joiner.toString(), params));
         return this;
+    }
+
+    public JoinQuery contains(String column, String value) {
+        return like(column, LikeUtils.contains(value));
+    }
+
+    public JoinQuery startsWith(String column, String value) {
+        return like(column, LikeUtils.startsWith(value));
+    }
+
+    public JoinQuery endsWith(String column, String value) {
+        return like(column, LikeUtils.endsWith(value));
     }
 
     public JoinQuery groupBy(String... columns) {
@@ -108,8 +117,7 @@ public final class JoinQuery {
     }
 
     public JoinQuery having(String condition, Object... params) {
-        having.add(condition);
-        addParameters(params);
+        having.add(new Fragment(condition, values(params)));
         return this;
     }
 
@@ -136,7 +144,11 @@ public final class JoinQuery {
     }
 
     public List<Object> parameters() {
-        return List.copyOf(parameters);
+        List<Object> all = new ArrayList<>();
+        collect(all, joins);
+        collect(all, conditions);
+        collect(all, having);
+        return List.copyOf(all);
     }
 
     public String sql() {
@@ -151,15 +163,15 @@ public final class JoinQuery {
         StringBuilder builder = new StringBuilder("SELECT ");
         builder.append(selects.isEmpty() ? "*" : String.join(", ", selects));
         builder.append(" FROM ").append(from);
-        joins.forEach(builder::append);
+        joins.forEach(fragment -> builder.append(fragment.sql()));
         if (!conditions.isEmpty()) {
-            builder.append(" WHERE ").append(String.join(" AND ", conditions));
+            builder.append(" WHERE ").append(joinSql(conditions));
         }
         if (!groupBy.isEmpty()) {
             builder.append(" GROUP BY ").append(String.join(", ", groupBy));
         }
         if (!having.isEmpty()) {
-            builder.append(" HAVING ").append(String.join(" AND ", having));
+            builder.append(" HAVING ").append(joinSql(having));
         }
         if (withOrderAndLimit && !orderBy.isEmpty()) {
             builder.append(" ORDER BY ").append(String.join(", ", orderBy));
@@ -170,13 +182,36 @@ public final class JoinQuery {
         return builder.toString();
     }
 
-    private void addParameters(Object[] params) {
-        if (params == null) {
-            return;
+    private JoinQuery like(String column, String pattern) {
+        if (pattern == null) {
+            throw new MybatisException("LIKE 匹配值不能为空");
         }
-        for (Object param : params) {
-            parameters.add(param);
+        conditions.add(new Fragment(column + " LIKE ?" + LikeUtils.escapeClause(), List.of(pattern)));
+        return this;
+    }
+
+    private static void collect(List<Object> target, List<Fragment> fragments) {
+        for (Fragment fragment : fragments) {
+            target.addAll(fragment.parameters());
         }
+    }
+
+    private static String joinSql(List<Fragment> fragments) {
+        StringJoiner joiner = new StringJoiner(" AND ");
+        for (Fragment fragment : fragments) {
+            joiner.add(fragment.sql());
+        }
+        return joiner.toString();
+    }
+
+    private static List<Object> values(Object[] params) {
+        List<Object> values = new ArrayList<>();
+        if (params != null) {
+            for (Object param : params) {
+                values.add(param);
+            }
+        }
+        return values;
     }
 
     public Integer getLimit() {
@@ -185,5 +220,9 @@ public final class JoinQuery {
 
     public Integer getOffset() {
         return offset;
+    }
+
+    // 参数随片段一起记录，渲染顺序（joins → where → having）与绑定顺序才不会错位
+    private record Fragment(String sql, List<Object> parameters) {
     }
 }

@@ -18,9 +18,7 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.AnnotationUtils;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -93,25 +91,6 @@ public class DataScopeInnerInterceptor implements InnerInterceptor {
     }
 
     private DataScope resolveAnnotation(MappedStatement statement) {
-        String id = statement.getId();
-        int index = id.lastIndexOf('.');
-        if (index <= 0) {
-            return null;
-        }
-        try {
-            Class<?> mapperType = Class.forName(id.substring(0, index));
-            String methodName = id.substring(index + 1);
-            for (Method method : mapperType.getMethods()) {
-                if (method.getName().equals(methodName)) {
-                    DataScope annotation = AnnotationUtils.findAnnotation(method, DataScope.class);
-                    if (annotation != null) {
-                        return annotation;
-                    }
-                }
-            }
-            return AnnotationUtils.findAnnotation(mapperType, DataScope.class);
-        } catch (ClassNotFoundException exception) {
-            return null;
-        }
+        return MapperAnnotations.findMapperAnnotation(statement, DataScope.class);
     }
 }

@@ -2,7 +2,6 @@ package cn.slainc.mybatis.fill;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.context.UserContext;
-import cn.slainc.core.entity.BaseEntity;
 import cn.slainc.core.constant.SystemConstants;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
@@ -49,9 +48,5 @@ public class DefaultMetaObjectHandler implements MetaObjectHandler {
         }
         Long userId = UserContext.userId();
         return userId == null ? SystemConstants.SYSTEM_USER : String.valueOf(userId);
-    }
-
-    public static boolean supports(Class<?> type) {
-        return BaseEntity.class.isAssignableFrom(type);
     }
 }

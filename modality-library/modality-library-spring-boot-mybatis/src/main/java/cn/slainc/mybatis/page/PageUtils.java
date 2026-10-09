@@ -1,5 +1,6 @@
 package cn.slainc.mybatis.page;
 
+import cn.slainc.core.page.PageParam;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.utils.reflect.ReflectUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -20,7 +21,7 @@ public final class PageUtils {
     }
 
     public static <T> Page<T> toPage(PageQuery query) {
-        return query == null ? new Page<>(PageQuery.DEFAULT_PAGE_NUM, PageQuery.DEFAULT_PAGE_SIZE) : query.toPage();
+        return query == null ? new Page<>(PageQuery.DEFAULT_PAGE_NUM, PageParam.DEFAULT_SIZE) : query.toPage();
     }
 
     public static <T> List<T> selectPage(BaseMapper<T> mapper, PageQuery query,

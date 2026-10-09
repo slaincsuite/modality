@@ -46,10 +46,9 @@ public class FieldSecurityInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        MappedStatement statement = (MappedStatement) invocation.getArgs()[0];
         boolean update = invocation.getArgs().length == 2;
         List<Runnable> restores = new ArrayList<>();
-        if (update && encryptor.isEnabled()) {
+        if (encryptor.isEnabled()) {
             encrypt(invocation.getArgs()[1], new IdentityHashMap<>(), restores);
         }
         Object result;

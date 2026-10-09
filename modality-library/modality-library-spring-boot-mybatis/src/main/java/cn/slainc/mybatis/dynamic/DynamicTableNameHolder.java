@@ -2,6 +2,7 @@ package cn.slainc.mybatis.dynamic;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public final class DynamicTableNameHolder {
 
@@ -10,30 +11,51 @@ public final class DynamicTableNameHolder {
     private DynamicTableNameHolder() {
     }
 
+    public static String get(String logicTable) {
+        Map<String, String> map = HOLDER.get();
+        return map == null ? null : map.get(logicTable);
+    }
+
     public static void set(String logicTable, String actualTable) {
+        if (logicTable == null || logicTable.isBlank()) {
+            return;
+        }
         Map<String, String> map = HOLDER.get();
         if (map == null) {
             map = new HashMap<>();
             HOLDER.set(map);
         }
-        map.put(logicTable, actualTable);
-    }
-
-    public static String get(String logicTable) {
-        Map<String, String> map = HOLDER.get();
-        return map == null ? null : map.get(logicTable);
+        if (actualTable == null || actualTable.isBlank()) {
+            map.remove(logicTable);
+        } else {
+            map.put(logicTable, actualTable);
+        }
     }
 
     public static void clear() {
         HOLDER.remove();
     }
 
-    public static <T> T callWith(String logicTable, String actualTable, java.util.function.Supplier<T> supplier) {
+    public static void run(String logicTable, String actualTable, Runnable action) {
+        call(logicTable, actualTable, () -> {
+            action.run();
+            return null;
+        });
+    }
+
+    // 嵌套调用在外层映射的副本上叠加，直接改原表会让内层映射在本次调用结束后仍然生效
+    public static <T> T call(String logicTable, String actualTable, Supplier<T> action) {
+        Map<String, String> previous = HOLDER.get();
+        HOLDER.set(previous == null ? new HashMap<>() : new HashMap<>(previous));
         set(logicTable, actualTable);
         try {
-            return supplier.get();
+            return action.get();
         } finally {
-            clear();
+            if (previous == null) {
+                HOLDER.remove();
+            } else {
+                HOLDER.set(previous);
+            }
         }
     }
 }

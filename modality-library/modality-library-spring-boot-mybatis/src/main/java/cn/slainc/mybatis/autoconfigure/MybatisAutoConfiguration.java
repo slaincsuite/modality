@@ -67,7 +67,7 @@ public class MybatisAutoConfiguration {
         }
         if (properties.getDynamicTable().isEnabled()) {
             DynamicTableNameInnerInterceptor dynamicTableName = new DynamicTableNameInnerInterceptor();
-            dynamicTableName.setTableNameHandler(new DefaultTableNameHandler(properties));
+            dynamicTableName.setTableNameHandler(new DefaultTableNameHandler());
             inner.add(dynamicTableName);
         }
         if (properties.getPagination().isEnabled()) {

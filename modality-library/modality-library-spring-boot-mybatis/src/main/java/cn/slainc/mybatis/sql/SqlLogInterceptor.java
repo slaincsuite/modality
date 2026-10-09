@@ -1,5 +1,6 @@
 package cn.slainc.mybatis.sql;
 
+import cn.slainc.core.constant.SystemConstants;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import cn.slainc.utils.thread.ThreadPoolUtils;
 import org.apache.ibatis.cache.CacheKey;
@@ -84,13 +85,14 @@ public class SqlLogInterceptor implements Interceptor {
 
     private void publish(MappedStatement statement, BoundSql boundSql, Object result,
                          long elapsedMillis, Throwable throwable) {
+        String traceId = MDC.get(SystemConstants.TRACE_ID_MDC_KEY);
         String commandType = statement.getSqlCommandType().name();
         boolean slow = elapsedMillis >= properties.getSqlLog().getSlowThreshold();
         SlowSqlRecord slowRecord = slow ? new SlowSqlRecord(statement.getId(),
                 boundSql == null ? null : singleLine(boundSql.getSql()), elapsedMillis, LocalDateTime.now()) : null;
         statistics.record(commandType, elapsedMillis, slowRecord);
         if (throwable != null) {
-            dispatch(() -> logFailure(statement, boundSql, elapsedMillis, throwable));
+            dispatch(() -> logFailure(statement, boundSql, elapsedMillis, throwable, traceId));
             return;
         }
         boolean audited = properties.getSqlLog().isAudit() && !"SELECT".equals(commandType);
@@ -98,11 +100,11 @@ public class SqlLogInterceptor implements Interceptor {
         if (!slow && !audited && !sampled) {
             return;
         }
-        dispatch(() -> logExecution(statement, boundSql, result, elapsedMillis, slow, audited, commandType));
+        dispatch(() -> logExecution(statement, boundSql, result, elapsedMillis, slow, audited, commandType, traceId));
     }
 
     private void logExecution(MappedStatement statement, BoundSql boundSql, Object result, long elapsedMillis,
-                              boolean slow, boolean audited, String commandType) {
+                              boolean slow, boolean audited, String commandType, String traceId) {
         String sql = boundSql == null ? null : SqlParameterFormatter.format(statement.getConfiguration(), boundSql);
         String rendered = properties.getSqlLog().isPrintResult() && result != null
                 ? sql + " | 结果: " + SqlResultFormatter.format(result, properties.getSqlLog().getMaxResultRows()) : sql;
@@ -114,17 +116,18 @@ public class SqlLogInterceptor implements Interceptor {
         if (audited) {
             auditLog.info("[{}] {} 耗时 {} 毫秒: {}", commandType, statement.getId(), elapsedMillis, rendered);
             eventPublisher.publishEvent(new SqlAuditEvent(statement.getId(), commandType, sql, null,
-                    elapsedMillis, affectedRows(result), true, null, MDC.get("traceId"), LocalDateTime.now()));
+                    elapsedMillis, affectedRows(result), true, null, traceId, LocalDateTime.now()));
         }
     }
 
-    private void logFailure(MappedStatement statement, BoundSql boundSql, long elapsedMillis, Throwable throwable) {
+    private void logFailure(MappedStatement statement, BoundSql boundSql, long elapsedMillis, Throwable throwable,
+                            String traceId) {
         String sql = boundSql == null ? null : SqlParameterFormatter.format(statement.getConfiguration(), boundSql);
         log.error("SQL 执行失败，耗时 {} 毫秒 {}: {}", elapsedMillis, statement.getId(), sql, throwable);
         if (properties.getSqlLog().isAudit()) {
             eventPublisher.publishEvent(new SqlAuditEvent(statement.getId(),
                     statement.getSqlCommandType().name(), sql, null, elapsedMillis, 0, false,
-                    throwable.getMessage(), MDC.get("traceId"), LocalDateTime.now()));
+                    throwable.getMessage(), traceId, LocalDateTime.now()));
         }
     }
 
