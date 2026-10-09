@@ -20,4 +20,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     @Select("SELECT secret FROM t_user WHERE id = #{id}")
     String selectRawSecret(Long id);
+
+    @Select("SELECT * FROM t_user WHERE secret = #{secret}")
+    List<User> selectBySecret(User probe);
 }

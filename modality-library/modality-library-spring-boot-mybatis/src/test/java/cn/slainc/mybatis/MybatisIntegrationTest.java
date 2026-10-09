@@ -315,6 +315,25 @@ class MybatisIntegrationTest {
     }
 
     @Test
+    @DisplayName("按加密列等值查询能命中已写入的行")
+    void queryByEncryptedColumnMatchesInsertedRow() {
+        User user = new User();
+        user.setId(7004L);
+        user.setName("by-secret");
+        user.setSecret("lookup-value");
+        userMapper.insert(user);
+
+        User probe = new User();
+        probe.setSecret("lookup-value");
+        List<User> found = userMapper.selectBySecret(probe);
+
+        assertEquals(1, found.size());
+        assertEquals(7004L, found.get(0).getId());
+        assertEquals("lookup-value", found.get(0).getSecret());
+        assertEquals("lookup-value", probe.getSecret());
+    }
+
+    @Test
     @DisplayName("脱敏字段在读取结果中被掩码")
     void sensitiveFieldIsMasked() {
         User user = new User();
