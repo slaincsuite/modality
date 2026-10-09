@@ -23,8 +23,6 @@ public class MultipartUploadTemplate {
 
     private final int partSize;
 
-    private final ExecutorService executor;
-
     public MultipartUploadTemplate(MultipartFileStorage storage) {
         this(storage, MIN_PART_SIZE);
     }
@@ -32,7 +30,6 @@ public class MultipartUploadTemplate {
     public MultipartUploadTemplate(MultipartFileStorage storage, int partSize) {
         this.storage = storage;
         this.partSize = Math.max(partSize, 1);
-        this.executor = Executors.newFixedThreadPool(4, ThreadPoolUtils.namedThreadFactory("storage-multipart"));
     }
 
     public MultipartSession init(String key, long totalSize, String contentType) {
@@ -130,10 +127,6 @@ public class MultipartUploadTemplate {
 
     public boolean supportsMultipart() {
         return storage.supportsMultipart();
-    }
-
-    public void close() {
-        executor.shutdown();
     }
 
     private UploadProgress progress(MultipartSession session, int partNumber) {

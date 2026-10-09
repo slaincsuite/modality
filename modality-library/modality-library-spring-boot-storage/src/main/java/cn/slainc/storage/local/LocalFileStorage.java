@@ -141,11 +141,12 @@ public class LocalFileStorage implements ExtendedFileStorage {
         }
         try {
             FileTime created = (FileTime) Files.getAttribute(target, "creationTime");
+            String md5 = FileUtils.md5(target);
             return StorageMetadata.builder(key)
                     .size(Files.size(target))
                     .contentType(ContentTypes.detect(key))
-                    .md5(FileUtils.md5(target))
-                    .etag(FileUtils.md5(target))
+                    .md5(md5)
+                    .etag(md5)
                     .createdAt(created.toInstant())
                     .lastModified(Files.getLastModifiedTime(target).toInstant())
                     .build();

@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -25,8 +27,9 @@ public final class ZipStreamPacker {
         ZipOutputStream zip = new ZipOutputStream(counting);
         zip.setLevel(Deflater.DEFAULT_COMPRESSION);
         try {
+            Set<String> used = new HashSet<>();
             for (ZipEntrySource source : sources) {
-                addEntry(zip, source);
+                addEntry(zip, source, used);
             }
             zip.finish();
             zip.flush();
@@ -64,8 +67,8 @@ public final class ZipStreamPacker {
         return name;
     }
 
-    private static void addEntry(ZipOutputStream zip, ZipEntrySource source) throws IOException {
-        ZipEntry entry = new ZipEntry(entryName(source.name()));
+    private static void addEntry(ZipOutputStream zip, ZipEntrySource source, Set<String> used) throws IOException {
+        ZipEntry entry = new ZipEntry(uniqueName(entryName(source.name()), used));
         zip.putNextEntry(entry);
         try (InputStream input = source.open()) {
             byte[] buffer = new byte[BUFFER];
@@ -75,6 +78,22 @@ public final class ZipStreamPacker {
             }
         }
         zip.closeEntry();
+    }
+
+    // 不同目录的同名文件会撞条目名并抛 ZipException，这里按出现顺序追加序号
+    private static String uniqueName(String name, Set<String> used) {
+        if (used.add(name)) {
+            return name;
+        }
+        int dot = name.lastIndexOf('.');
+        String base = dot <= 0 ? name : name.substring(0, dot);
+        String suffix = dot <= 0 ? "" : name.substring(dot);
+        for (int index = 1; ; index++) {
+            String candidate = base + "(" + index + ")" + suffix;
+            if (used.add(candidate)) {
+                return candidate;
+            }
+        }
     }
 
     private static final class CountingOutputStream extends FilterOutputStream {

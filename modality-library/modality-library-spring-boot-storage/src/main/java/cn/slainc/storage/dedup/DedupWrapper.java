@@ -12,9 +12,20 @@ public class DedupWrapper implements StorageWrapper {
 
     private final InstantUploadStats stats = new InstantUploadStats();
 
+    private final DedupRegistry registry;
+
+    public DedupWrapper() {
+        this(new MemoryDedupRegistry());
+    }
+
+    public DedupWrapper(DedupRegistry registry) {
+        this.registry = registry == null ? new MemoryDedupRegistry() : registry;
+    }
+
     @Override
     public ExtendedFileStorage wrap(ExtendedFileStorage delegate) {
-        return services.computeIfAbsent(delegate.backend(), name -> new InstantUploadService(delegate, stats));
+        return services.computeIfAbsent(delegate.backend(),
+                name -> new InstantUploadService(delegate, stats, registry));
     }
 
     public InstantUploadService of(String backend) {

@@ -10,6 +10,7 @@ import cn.slainc.storage.support.ContentTypes;
 import cn.slainc.utils.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
@@ -51,7 +52,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class S3FileStorage implements ExtendedFileStorage {
+public class S3FileStorage implements ExtendedFileStorage, AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(S3FileStorage.class);
 
@@ -72,6 +73,14 @@ public class S3FileStorage implements ExtendedFileStorage {
 
     public S3Client client() {
         return client;
+    }
+
+    @Override
+    public void close() {
+        if (presigner != null) {
+            presigner.close();
+        }
+        client.close();
     }
 
     public String bucket() {
@@ -137,6 +146,10 @@ public class S3FileStorage implements ExtendedFileStorage {
 
     @Override
     public boolean delete(String key) {
+        // 三后端统一契约：对象不存在返回 false，删除由调用方决定是否记账
+        if (!exists(key)) {
+            return false;
+        }
         try {
             client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
             return true;
@@ -276,6 +289,9 @@ public class S3FileStorage implements ExtendedFileStorage {
 
     @Override
     public void completeMultipart(String key, String uploadId, List<PartInfo> parts) {
+        if (parts == null || parts.isEmpty()) {
+            throw new StorageException("没有可合并的分片：" + key);
+        }
         List<CompletedPart> completed = new ArrayList<>();
         for (PartInfo part : parts) {
             completed.add(CompletedPart.builder().partNumber(part.partNumber()).eTag(part.etag()).build());
@@ -349,10 +365,12 @@ public class S3FileStorage implements ExtendedFileStorage {
     @Override
     public void createBucket(String name) {
         try {
-            if (!bucketExists(name)) {
-                client.createBucket(CreateBucketRequest.builder().bucket(name).build());
-            }
+            client.createBucket(CreateBucketRequest.builder().bucket(name).build());
         } catch (S3Exception ex) {
+            if (ex.statusCode() == 409 || "BucketAlreadyOwnedByYou".equals(errorCode(ex))
+                    || "BucketAlreadyExists".equals(errorCode(ex))) {
+                return;
+            }
             throw new StorageException("创建 S3 桶失败：" + name + "，" + describe(ex), ex);
         }
     }
@@ -394,7 +412,12 @@ public class S3FileStorage implements ExtendedFileStorage {
                 : etag;
     }
 
+    private static String errorCode(S3Exception ex) {
+        AwsErrorDetails details = ex.awsErrorDetails();
+        return details == null ? null : details.errorCode();
+    }
+
     private static String describe(S3Exception ex) {
-        return "S3 错误码 " + ex.statusCode() + " / " + ex.awsErrorDetails().errorCode();
+        return "S3 错误码 " + ex.statusCode() + " / " + (errorCode(ex) == null ? "未知" : errorCode(ex));
     }
 }

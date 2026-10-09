@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -41,7 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-public class MinioFileStorage implements ExtendedFileStorage {
+public class MinioFileStorage implements ExtendedFileStorage, AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(MinioFileStorage.class);
 
@@ -63,6 +64,15 @@ public class MinioFileStorage implements ExtendedFileStorage {
 
     public MinioClient client() {
         return client;
+    }
+
+    @Override
+    public void close() {
+        try {
+            client.close();
+        } catch (Exception ex) {
+            log.warn("关闭 MinIO 客户端失败，原因：{}", describe(ex));
+        }
     }
 
     public String bucket() {
@@ -116,6 +126,17 @@ public class MinioFileStorage implements ExtendedFileStorage {
 
     @Override
     public boolean delete(String key) {
+        // 三后端统一契约：对象不存在返回 false，删除由调用方决定是否记账
+        try {
+            client.statObject(StatObjectArgs.builder().bucket(bucket).object(key).build());
+        } catch (ErrorResponseException ex) {
+            if (isMissing(ex)) {
+                return false;
+            }
+            throw new StorageException("删除 MinIO 对象失败：" + key + "，" + describe(ex), ex);
+        } catch (Exception ex) {
+            throw new StorageException("删除 MinIO 对象失败：" + key + "，" + describe(ex), ex);
+        }
         try {
             client.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(key).build());
             return true;
@@ -214,21 +235,34 @@ public class MinioFileStorage implements ExtendedFileStorage {
         if (partNumber < 1) {
             throw new StorageException("分片序号必须从 1 开始，当前为：" + partNumber);
         }
+        PutObjectArgs.Builder builder = PutObjectArgs.builder()
+                .bucket(bucket)
+                .object(partKey(uploadId, partNumber));
+        Path temp = null;
         try {
-            PutObjectArgs.Builder builder = PutObjectArgs.builder()
-                    .bucket(bucket)
-                    .object(partKey(uploadId, partNumber));
             if (size >= 0) {
                 client.putObject(builder.stream(data, size, -1).build());
-            } else {
-                size = data.transferTo(OutputStream.nullOutputStream());
-                client.putObject(builder.stream(data, -1, UNKNOWN_SIZE_PART_SIZE).build());
+                return new PartInfo(partNumber, size);
             }
-            return new PartInfo(partNumber, size);
+            // 长度未知必须先落盘计数：先计数会把流读空，再把空流交给 putObject 会写入空分片
+            temp = Files.createTempFile("storage-minio-part-", ".tmp");
+            long actual = Files.copy(data, temp, StandardCopyOption.REPLACE_EXISTING);
+            try (InputStream input = Files.newInputStream(temp)) {
+                client.putObject(builder.stream(input, actual, -1).build());
+            }
+            return new PartInfo(partNumber, actual);
         } catch (IOException ex) {
             throw new StorageException("上传 MinIO 分片失败：" + key + " 第 " + partNumber + " 片", ex);
         } catch (Exception ex) {
             throw new StorageException("上传 MinIO 分片失败：" + key + " 第 " + partNumber + " 片，" + describe(ex), ex);
+        } finally {
+            if (temp != null) {
+                try {
+                    Files.deleteIfExists(temp);
+                } catch (IOException ex) {
+                    log.warn("清理 MinIO 分片临时文件失败：{}", temp, ex);
+                }
+            }
         }
     }
 
@@ -271,14 +305,14 @@ public class MinioFileStorage implements ExtendedFileStorage {
         } catch (Exception ex) {
             log.warn("MinIO 服务端 compose 合并失败，降级为客户端串流合并：{}，原因：{}", key, describe(ex));
             mergeOnClient(key, uploadId, ordered);
-        } finally {
-            cleanupParts(uploadId, ordered.size());
         }
+        // 合并失败时保留分片，调用方可用同一 uploadId 断点重试
+        cleanupParts(uploadId);
     }
 
     @Override
     public void abortMultipart(String key, String uploadId) {
-        cleanupParts(uploadId, Integer.MAX_VALUE);
+        cleanupParts(uploadId);
     }
 
     @Override
@@ -313,9 +347,13 @@ public class MinioFileStorage implements ExtendedFileStorage {
     @Override
     public void createBucket(String name) {
         try {
-            if (!client.bucketExists(BucketExistsArgs.builder().bucket(name).build())) {
-                client.makeBucket(MakeBucketArgs.builder().bucket(name).build());
+            client.makeBucket(MakeBucketArgs.builder().bucket(name).build());
+        } catch (ErrorResponseException ex) {
+            String code = ex.errorResponse() == null ? null : ex.errorResponse().code();
+            if ("BucketAlreadyOwnedByYou".equals(code) || "BucketAlreadyExists".equals(code)) {
+                return;
             }
+            throw new StorageException("创建 MinIO 桶失败：" + name + "，" + describe(ex), ex);
         } catch (Exception ex) {
             throw new StorageException("创建 MinIO 桶失败：" + name + "，" + describe(ex), ex);
         }
@@ -393,7 +431,7 @@ public class MinioFileStorage implements ExtendedFileStorage {
         }
     }
 
-    private void cleanupParts(String uploadId, int count) {
+    private void cleanupParts(String uploadId) {
         try {
             for (Result<Item> result : client.listObjects(ListObjectsArgs.builder()
                     .bucket(bucket)

@@ -57,11 +57,16 @@ public class AntivirusService implements AutoCloseable {
             }
             try {
                 handle(key, result);
-                if (callback != null) {
-                    callback.accept(result);
-                }
             } catch (StorageException ex) {
                 log.warn("异步病毒扫描发现风险：{}，原因：{}", key, ex.getMessage());
+            }
+            if (callback != null) {
+                // 回调承担临时文件清理与感染对象移除，异常分支也必须执行
+                try {
+                    callback.accept(result);
+                } catch (RuntimeException ex) {
+                    log.warn("异步病毒扫描回调处理失败：{}，原因：{}", key, ex.getMessage());
+                }
             }
         }, executor).exceptionally(ex -> {
             log.warn("异步病毒扫描执行异常：{}，原因：{}", key, ex.getMessage());

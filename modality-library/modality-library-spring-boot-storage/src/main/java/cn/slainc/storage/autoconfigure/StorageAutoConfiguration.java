@@ -11,7 +11,9 @@ import cn.slainc.storage.antivirus.ClamAvClient;
 import cn.slainc.storage.antivirus.QuarantineStore;
 import cn.slainc.storage.command.ExternalCommandRunner;
 import cn.slainc.storage.crypto.StorageKeyManager;
+import cn.slainc.storage.dedup.DedupRegistry;
 import cn.slainc.storage.dedup.DedupWrapper;
+import cn.slainc.storage.dedup.SidecarDedupRegistry;
 import cn.slainc.storage.lifecycle.LifecycleRule;
 import cn.slainc.storage.lifecycle.StorageLifecycleService;
 import cn.slainc.storage.local.LocalFileStorage;
@@ -114,11 +116,23 @@ public class StorageAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "modality.storage.dedup", name = "enabled", havingValue = "true",
+            matchIfMissing = true)
+    public DedupRegistry storageDedupRegistry(StorageProperties properties) {
+        String directory = properties.getDedup().getRegistryDirectory();
+        Path root = directory == null || directory.isBlank()
+                ? Path.of(System.getProperty("java.io.tmpdir"), "modality-storage", "dedup")
+                : Path.of(directory);
+        return new SidecarDedupRegistry(root);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     @Order(30)
     @ConditionalOnProperty(prefix = "modality.storage.dedup", name = "enabled", havingValue = "true",
             matchIfMissing = true)
-    public DedupWrapper storageDedupWrapper() {
-        return new DedupWrapper();
+    public DedupWrapper storageDedupWrapper(DedupRegistry dedupRegistry) {
+        return new DedupWrapper(dedupRegistry);
     }
 
     @Bean

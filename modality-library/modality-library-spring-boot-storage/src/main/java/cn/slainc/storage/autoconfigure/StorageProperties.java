@@ -304,7 +304,7 @@ public class StorageProperties {
 
         private List<String> refererAllowedHosts = new ArrayList<>();
 
-        private boolean refererAllowEmpty = true;
+        private boolean refererAllowEmpty;
 
         public String getSecret() {
             return secret;
@@ -647,12 +647,22 @@ public class StorageProperties {
 
         private boolean enabled = true;
 
+        private String registryDirectory;
+
         public boolean isEnabled() {
             return enabled;
         }
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+
+        public String getRegistryDirectory() {
+            return registryDirectory;
+        }
+
+        public void setRegistryDirectory(String registryDirectory) {
+            this.registryDirectory = registryDirectory;
         }
     }
 }

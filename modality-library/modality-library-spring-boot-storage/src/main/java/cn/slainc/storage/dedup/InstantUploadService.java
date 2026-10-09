@@ -19,17 +19,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class InstantUploadService extends DelegatingFileStorage {
 
     private static final Logger log = LoggerFactory.getLogger(InstantUploadService.class);
 
-    private final Map<String, String> logicalKeys = new ConcurrentHashMap<>();
-
-    private final Map<String, Entry> entries = new ConcurrentHashMap<>();
+    private final DedupRegistry registry;
 
     private final InstantUploadStats stats;
 
@@ -38,8 +33,13 @@ public class InstantUploadService extends DelegatingFileStorage {
     }
 
     public InstantUploadService(ExtendedFileStorage delegate, InstantUploadStats stats) {
+        this(delegate, stats, new MemoryDedupRegistry());
+    }
+
+    public InstantUploadService(ExtendedFileStorage delegate, InstantUploadStats stats, DedupRegistry registry) {
         super(delegate);
         this.stats = stats;
+        this.registry = registry == null ? new MemoryDedupRegistry() : registry;
     }
 
     public InstantUploadStats stats() {
@@ -47,17 +47,17 @@ public class InstantUploadService extends DelegatingFileStorage {
     }
 
     public int referenceCount(String md5) {
-        Entry entry = entries.get(md5);
-        return entry == null ? 0 : entry.references.get();
+        DedupRegistry.Entry entry = registry.find(digestId(md5));
+        return entry == null ? 0 : entry.references();
     }
 
     public String physicalKey(String key) {
-        String md5 = logicalKeys.get(key);
-        if (md5 == null) {
+        String id = registry.lookup(logicalId(key));
+        if (id == null) {
             return key;
         }
-        Entry entry = entries.get(md5);
-        return entry == null ? key : entry.key;
+        DedupRegistry.Entry entry = registry.find(id);
+        return entry == null ? key : entry.key();
     }
 
     public UploadResult upload(String key, InputStream data, long size, String contentType, String md5) {
@@ -99,25 +99,23 @@ public class InstantUploadService extends DelegatingFileStorage {
 
     @Override
     public boolean delete(String key) {
-        String md5 = logicalKeys.remove(key);
-        if (md5 == null) {
+        String id = registry.unbind(logicalId(key));
+        if (id == null) {
             return delegate().delete(key);
         }
-        Entry entry = entries.get(md5);
-        if (entry == null) {
+        DedupRegistry.Entry released = registry.release(id);
+        if (released == null) {
             return delegate().delete(key);
         }
-        int remaining = entry.references.decrementAndGet();
-        if (remaining > 0) {
+        if (released.references() > 0) {
             return true;
         }
-        entries.remove(md5, entry);
-        return delegate().delete(entry.key);
+        return delegate().delete(released.key());
     }
 
     @Override
     public boolean exists(String key) {
-        return logicalKeys.containsKey(key) || delegate().exists(key);
+        return registry.lookup(logicalId(key)) != null || delegate().exists(key);
     }
 
     @Override
@@ -164,30 +162,42 @@ public class InstantUploadService extends DelegatingFileStorage {
     }
 
     private UploadResult doUpload(String key, InputStream data, long size, String contentType, String md5) {
-        Entry existing = entries.get(md5);
+        String id = digestId(md5);
+        DedupRegistry.Entry existing = registry.find(id);
+        if (existing != null && !delegate().exists(existing.key())) {
+            registry.remove(id);
+            existing = null;
+        }
         if (existing != null) {
-            logicalKeys.put(key, md5);
-            int references = existing.references.incrementAndGet();
-            stats.recordHit(size);
-            log.info("命中秒传，逻辑键 {} 复用物理对象 {}，当前引用计数 {}", key, existing.key, references);
-            return new UploadResult(existing.key, delegate().backend(), size, md5, contentType, true, references,
-                    Instant.now());
+            return reuse(key, size, contentType, md5, existing);
         }
         delegate().upload(key, data, size, contentType);
-        Entry entry = new Entry(key, new AtomicInteger(1));
-        Entry previous = entries.putIfAbsent(md5, entry);
-        if (previous != null) {
-            int references = previous.references.incrementAndGet();
-            logicalKeys.put(key, md5);
+        DedupRegistry.Entry registered = registry.register(id, key);
+        if (!key.equals(registered.key())) {
             delegate().delete(key);
-            stats.recordHit(size);
-            return new UploadResult(previous.key, delegate().backend(), size, md5, contentType, true, references,
-                    Instant.now());
+            return reuse(key, size, contentType, md5, registered);
         }
-        logicalKeys.put(key, md5);
+        registry.bind(logicalId(key), id);
         return new UploadResult(key, delegate().backend(), size, md5, contentType, false, 1, Instant.now());
     }
 
-    private record Entry(String key, AtomicInteger references) {
+    private UploadResult reuse(String key, long size, String contentType, String md5, DedupRegistry.Entry entry) {
+        String id = digestId(md5);
+        registry.bind(logicalId(key), id);
+        DedupRegistry.Entry retained = registry.retain(id);
+        int references = retained == null ? entry.references() : retained.references();
+        stats.recordHit(size);
+        log.info("命中秒传，逻辑键 {} 复用物理对象 {}，当前引用计数 {}", key, entry.key(), references);
+        return new UploadResult(entry.key(), delegate().backend(), size, md5, contentType, true, references,
+                Instant.now());
+    }
+
+    // 引用表按后端命名空间隔离，同一内容在不同后端不能互相复用物理对象
+    private String digestId(String md5) {
+        return delegate().backend() + ":" + md5;
+    }
+
+    private String logicalId(String key) {
+        return delegate().backend() + ":" + key;
     }
 }

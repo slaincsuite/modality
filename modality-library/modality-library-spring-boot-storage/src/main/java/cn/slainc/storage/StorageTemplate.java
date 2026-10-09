@@ -10,6 +10,7 @@ import cn.slainc.storage.metadata.ImageMetadataReader;
 import cn.slainc.storage.metadata.MetadataStore;
 import cn.slainc.storage.metadata.SidecarMetadataStore;
 import cn.slainc.storage.metrics.StorageMetricsRecorder;
+import cn.slainc.storage.model.ImageMetadata;
 import cn.slainc.storage.model.StorageMetadata;
 import cn.slainc.storage.model.StorageObject;
 import cn.slainc.storage.model.UploadRequest;
@@ -20,7 +21,6 @@ import cn.slainc.storage.routing.StorageBackendRegistry;
 import cn.slainc.storage.support.ContentTypes;
 import cn.slainc.storage.support.StorageKeyGenerator;
 import cn.slainc.storage.url.SignedUrlService;
-import cn.slainc.utils.io.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +35,8 @@ import java.util.Optional;
 public class StorageTemplate {
 
     private static final Logger log = LoggerFactory.getLogger(StorageTemplate.class);
+
+    private static final int DEFAULT_IMAGE_HEAD_MAX_BYTES = 1024 * 1024;
 
     private final RoutingFileStorage storage;
 
@@ -52,6 +54,8 @@ public class StorageTemplate {
 
     private final InstantUploadStats instantUploadStats = new InstantUploadStats();
 
+    private final int imageHeadMaxBytes;
+
     public StorageTemplate(RoutingFileStorage storage, StorageBackendRegistry registry,
                            StorageQuotaService quotaService, StorageMetricsRecorder metrics,
                            DedupWrapper dedupWrapper, SignedUrlService signedUrlService) {
@@ -63,6 +67,15 @@ public class StorageTemplate {
                            StorageQuotaService quotaService, StorageMetricsRecorder metrics,
                            DedupWrapper dedupWrapper, SignedUrlService signedUrlService,
                            MetadataStore metadataStore) {
+        this(storage, registry, quotaService, metrics, dedupWrapper, signedUrlService, metadataStore,
+                DEFAULT_IMAGE_HEAD_MAX_BYTES);
+    }
+
+    public StorageTemplate(RoutingFileStorage storage, StorageBackendRegistry registry,
+                           StorageQuotaService quotaService, StorageMetricsRecorder metrics,
+                           DedupWrapper dedupWrapper, SignedUrlService signedUrlService,
+                           MetadataStore metadataStore, int imageHeadMaxBytes) {
+        this.imageHeadMaxBytes = Math.max(imageHeadMaxBytes, 0);
         this.metadataStore = metadataStore == null ? MetadataStore.NOOP : metadataStore;
         this.storage = storage;
         this.registry = registry;
@@ -207,13 +220,26 @@ public class StorageTemplate {
                 .uploaderName(metadata.uploaderName() == null ? UserContext.username() : metadata.uploaderName())
                 .custom(metadata.custom());
         if (ContentTypes.isImage(metadata.contentType())) {
-            try (InputStream input = storage.download(key)) {
-                builder.image(ImageMetadataReader.read(IoUtils.readBytes(input)));
-            } catch (IOException | RuntimeException ex) {
-                log.debug("读取图片元数据失败，已跳过：{}，原因：{}", key, ex.getMessage());
+            ImageMetadata image = readImageMetadata(key, metadata.size());
+            if (image != null) {
+                builder.image(image);
             }
         }
         return builder.build();
+    }
+
+    // EXIF 只落在图片头部，超过阈值直接跳过，避免整张图下载进内存
+    private ImageMetadata readImageMetadata(String key, long size) {
+        if (size > imageHeadMaxBytes) {
+            log.debug("图片超过元数据读取上限，已跳过 EXIF 解析：{}，大小：{}", key, size);
+            return null;
+        }
+        try (InputStream input = storage.download(key)) {
+            return ImageMetadataReader.read(input.readNBytes(imageHeadMaxBytes));
+        } catch (IOException | RuntimeException ex) {
+            log.debug("读取图片元数据失败，已跳过：{}，原因：{}", key, ex.getMessage());
+            return null;
+        }
     }
 
     public Optional<StorageMetadata> metadataQuietly(String key) {

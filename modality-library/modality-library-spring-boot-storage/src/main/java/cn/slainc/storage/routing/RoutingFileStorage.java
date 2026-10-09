@@ -15,6 +15,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RoutingFileStorage implements ExtendedFileStorage {
 
@@ -29,6 +31,8 @@ public class RoutingFileStorage implements ExtendedFileStorage {
     private final List<StorageWrapper> wrappers;
 
     private final java.util.Set<String> history = java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<>());
+
+    private final Map<String, ExtendedFileStorage> decorated = new ConcurrentHashMap<>();
 
     private volatile String activeName;
 
@@ -68,7 +72,7 @@ public class RoutingFileStorage implements ExtendedFileStorage {
         if (current == null) {
             synchronized (this) {
                 if (active == null) {
-                    active = decorate(registry.require(activeName));
+                    active = decorated(activeName);
                 }
                 current = active;
             }
@@ -106,10 +110,19 @@ public class RoutingFileStorage implements ExtendedFileStorage {
             return;
         }
         String previous = activeName;
-        this.active = decorate(target);
+        this.active = decorated(target.backend());
         this.activeName = target.backend();
         this.history.add(activeName);
         log.info("对象存储后端已切换：{} -> {}", previous, activeName);
+    }
+
+    // 读写必须共用同一装饰实例，否则加密、秒传、杀毒、指标只在写侧生效
+    private ExtendedFileStorage decorated(String name) {
+        return decorated.computeIfAbsent(name, key -> decorate(registry.require(key)));
+    }
+
+    private ExtendedFileStorage candidate(String name) {
+        return registry.contains(name) ? decorated(name) : null;
     }
 
     private ExtendedFileStorage decorate(ExtendedFileStorage storage) {
@@ -141,7 +154,7 @@ public class RoutingFileStorage implements ExtendedFileStorage {
     public InputStream download(String key) {
         RuntimeException last = null;
         for (String name : readCandidateNames()) {
-            ExtendedFileStorage candidate = registry.find(name).orElse(null);
+            ExtendedFileStorage candidate = candidate(name);
             if (candidate == null) {
                 continue;
             }
@@ -167,7 +180,7 @@ public class RoutingFileStorage implements ExtendedFileStorage {
     public boolean delete(String key) {
         boolean deleted = false;
         for (String name : readCandidateNames()) {
-            ExtendedFileStorage candidate = registry.find(name).orElse(null);
+            ExtendedFileStorage candidate = candidate(name);
             if (candidate == null || !candidate.exists(key)) {
                 continue;
             }
@@ -179,7 +192,7 @@ public class RoutingFileStorage implements ExtendedFileStorage {
     @Override
     public boolean exists(String key) {
         for (String name : readCandidateNames()) {
-            ExtendedFileStorage candidate = registry.find(name).orElse(null);
+            ExtendedFileStorage candidate = candidate(name);
             if (candidate != null && candidate.exists(key)) {
                 return true;
             }
@@ -191,7 +204,7 @@ public class RoutingFileStorage implements ExtendedFileStorage {
     public StorageMetadata metadata(String key) {
         RuntimeException last = null;
         for (String name : readCandidateNames()) {
-            ExtendedFileStorage candidate = registry.find(name).orElse(null);
+            ExtendedFileStorage candidate = candidate(name);
             if (candidate == null) {
                 continue;
             }
