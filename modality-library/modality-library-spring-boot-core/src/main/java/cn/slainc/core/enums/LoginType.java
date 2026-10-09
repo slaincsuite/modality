@@ -36,14 +36,6 @@ public enum LoginType implements DictEnum {
     }
 
     public static LoginType of(String value) {
-        if (value == null) {
-            return null;
-        }
-        for (LoginType type : values()) {
-            if (type.value.equalsIgnoreCase(value)) {
-                return type;
-            }
-        }
-        return null;
+        return DictEnums.of(LoginType.class, value);
     }
 }

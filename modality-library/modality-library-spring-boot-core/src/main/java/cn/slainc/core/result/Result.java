@@ -32,8 +32,11 @@ public record Result<T>(int code, String message, T data, long timestamp) {
     }
 
     public int httpStatus() {
-        return isSuccess() ? ResultCode.SUCCESS.httpStatus()
-                : ResultCode.of(code) == null ? 500 : ResultCode.of(code).httpStatus();
+        if (isSuccess()) {
+            return ResultCode.SUCCESS.httpStatus();
+        }
+        ResultCode rc = ResultCode.of(code);
+        return rc == null ? 500 : rc.httpStatus();
     }
 
     public Result<T> withMessage(String newMessage) {

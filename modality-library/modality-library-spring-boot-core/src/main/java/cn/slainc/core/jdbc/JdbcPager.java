@@ -28,9 +28,18 @@ public final class JdbcPager {
         Long total = jdbcTemplate.queryForObject(countSql, Long.class, args.toArray());
         List<Object> queryArgs = new ArrayList<>(args);
         queryArgs.add(pageSize);
-        queryArgs.add((currentPage - 1) * pageSize);
+        queryArgs.add(offset(currentPage, pageSize));
         List<T> records = jdbcTemplate.query(selectSql + " LIMIT ? OFFSET ?", rowMapper, queryArgs.toArray());
         return PageResult.of(records, total == null ? 0 : total, currentPage, pageSize);
+    }
+
+    // 页号接近 Long.MAX_VALUE 时相乘会溢出成负数，偏移量必须饱和而不是回绕
+    private static long offset(long currentPage, long pageSize) {
+        long pages = currentPage - 1L;
+        if (pages <= 0L) {
+            return 0L;
+        }
+        return pages > Long.MAX_VALUE / pageSize ? Long.MAX_VALUE : pages * pageSize;
     }
 
     public static long normalizeCurrent(long current) {

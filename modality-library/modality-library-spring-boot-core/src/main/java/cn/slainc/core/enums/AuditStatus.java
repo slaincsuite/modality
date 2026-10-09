@@ -25,14 +25,6 @@ public enum AuditStatus implements DictEnum {
     }
 
     public static AuditStatus of(Integer value) {
-        if (value == null) {
-            return null;
-        }
-        for (AuditStatus status : values()) {
-            if (status.value == value) {
-                return status;
-            }
-        }
-        return null;
+        return DictEnums.of(AuditStatus.class, value);
     }
 }

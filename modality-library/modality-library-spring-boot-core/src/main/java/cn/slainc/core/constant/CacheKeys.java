@@ -16,6 +16,16 @@ public final class CacheKeys {
     public static final String SEQUENCE = PREFIX + "sequence:";
     public static final String SIGN = PREFIX + "sign:";
     public static final String ID_WORKER = PREFIX + "id:worker:";
+    public static final String CACHE = PREFIX + "cache:";
+    public static final String SECURITY = PREFIX + "security:";
+    public static final String SESSION = PREFIX + "session:";
+    public static final String JWT = PREFIX + "jwt:";
+    public static final String OAUTH2 = PREFIX + "oauth2:";
+    public static final String POLICY = PREFIX + "policy:";
+    public static final String THIRDAUTH = PREFIX + "thirdauth:";
+    public static final String AUTH = PREFIX + "auth:";
+    public static final String QUEUE_DELAY = PREFIX + "queue:delay:";
+    public static final String WEBSOCKET_BROADCAST = PREFIX + "websocket:broadcast";
 
     private CacheKeys() {
     }
