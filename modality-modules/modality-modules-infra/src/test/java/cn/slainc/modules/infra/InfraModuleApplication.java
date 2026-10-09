@@ -24,8 +24,8 @@ public class InfraModuleApplication {
     public static class InfraTestController {
 
         @GetMapping("/infra-test/login")
-        public Result<String> login() {
-            StpKit.tenantUser().login(94001L);
+        public Result<String> login(@org.springframework.web.bind.annotation.RequestParam(required = false) Long userId) {
+            StpKit.tenantUser().login(userId == null ? 94001L : userId);
             return Result.ok(StpKit.tenantUser().getTokenValue());
         }
     }

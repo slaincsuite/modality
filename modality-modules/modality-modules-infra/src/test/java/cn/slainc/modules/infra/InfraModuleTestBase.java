@@ -46,16 +46,24 @@ public abstract class InfraModuleTestBase {
     }
 
     protected HttpResponse<String> send(String method, String path, String body) throws Exception {
+        return sendAs(token, method, path, body);
+    }
+
+    protected HttpResponse<String> sendAs(String satoken, String method, String path, String body) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port() + path))
                 .timeout(Duration.ofSeconds(30))
                 .header("Content-Type", "application/json")
                 .header("X-Login-Type", "TENANT_USER");
-        if (token != null) {
-            builder.header("satoken", token);
+        if (satoken != null) {
+            builder.header("satoken", satoken);
         }
         builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody()
                 : HttpRequest.BodyPublishers.ofString(body));
         return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    protected String loginAs(long userId) throws Exception {
+        return JsonPath.read(raw("GET", "/infra-test/login?userId=" + userId, null), "$.data");
     }
 
     protected String get(String path) throws Exception {

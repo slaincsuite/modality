@@ -134,6 +134,57 @@ class FileModuleTest extends cn.slainc.modules.infra.InfraModuleTestBase {
         assertThat(missing.body()).contains("分片上传任务不存在");
     }
 
+    @Test
+    void previewRejectsActiveContentAndKeepsSecurityHeaders() throws Exception {
+        HttpResponse<String> html = upload("/infra/file/upload", "file", "恶意.html",
+                "<script>alert(1)</script>".getBytes(StandardCharsets.UTF_8), "text/html", Map.of());
+        String htmlId = JsonPath.read(html.body(), "$.data.id").toString();
+        HttpResponse<String> htmlPreview = send("GET", "/infra/file/" + htmlId + "/preview", null);
+        assertThat(htmlPreview.statusCode()).isEqualTo(400);
+        assertThat(htmlPreview.body()).contains("不允许在线预览");
+
+        HttpResponse<String> svg = upload("/infra/file/upload", "file", "恶意.svg",
+                "<svg onload=\"alert(1)\"></svg>".getBytes(StandardCharsets.UTF_8), "image/svg+xml", Map.of());
+        String svgId = JsonPath.read(svg.body(), "$.data.id").toString();
+        assertThat(send("GET", "/infra/file/" + svgId + "/preview", null).statusCode()).isEqualTo(400);
+
+        HttpResponse<String> disguised = upload("/infra/file/upload", "file", "伪装.png",
+                "<html>伪装内容</html>".getBytes(StandardCharsets.UTF_8), "image/png", Map.of());
+        String disguisedId = JsonPath.read(disguised.body(), "$.data.id").toString();
+        HttpResponse<String> disguisedPreview = send("GET", "/infra/file/" + disguisedId + "/preview", null);
+        assertThat(disguisedPreview.statusCode()).isEqualTo(400);
+        assertThat(disguisedPreview.body()).contains("与声明的类型不一致");
+
+        byte[] text = "正常文本预览".getBytes(StandardCharsets.UTF_8);
+        HttpResponse<String> uploaded = upload("/infra/file/upload", "file", "正常预览.txt", text, "text/plain",
+                Map.of());
+        String id = JsonPath.read(uploaded.body(), "$.data.id").toString();
+        HttpResponse<byte[]> previewed = sendBytes("GET", "/infra/file/" + id + "/preview");
+        assertThat(previewed.statusCode()).isEqualTo(200);
+        assertThat(previewed.body()).isEqualTo(text);
+        assertThat(previewed.headers().firstValue("Content-Security-Policy"))
+                .contains("default-src 'none'; sandbox");
+        assertThat(previewed.headers().firstValue("X-Content-Type-Options")).contains("nosniff");
+    }
+
+    @Test
+    void chunkSessionIsBoundToInitiator() throws Exception {
+        String init = post("/infra/file/chunk/init", "{\"filename\":\"他人任务.bin\",\"totalSize\":5242880,"
+                + "\"contentType\":\"application/octet-stream\"}");
+        String uploadId = JsonPath.read(init, "$.data.uploadId").toString();
+        String otherToken = loginAs(94002L);
+
+        HttpResponse<String> forbidden = sendAs(otherToken, "GET", "/infra/file/chunk/" + uploadId + "/parts", null);
+        assertThat(forbidden.statusCode()).isEqualTo(403);
+        assertThat(forbidden.body()).contains("无权操作该分片上传任务");
+        assertThat(sendAs(otherToken, "POST", "/infra/file/chunk/" + uploadId + "/complete", null).statusCode())
+                .isEqualTo(403);
+        assertThat(sendAs(otherToken, "POST", "/infra/file/chunk/" + uploadId + "/abort", null).statusCode())
+                .isEqualTo(403);
+
+        assertThat(send("GET", "/infra/file/chunk/" + uploadId + "/parts", null).statusCode()).isEqualTo(200);
+    }
+
     private String getDetail(String id) throws Exception {
         return raw("GET", "/infra/file/" + id, null);
     }
