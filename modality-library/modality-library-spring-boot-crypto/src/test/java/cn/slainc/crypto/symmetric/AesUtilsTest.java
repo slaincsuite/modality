@@ -11,9 +11,21 @@ import cn.slainc.crypto.codec.HexUtils;
 import cn.slainc.crypto.random.SecureRandomUtils;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class AesUtilsTest {
+
+    @BeforeAll
+    static void allowWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(true);
+    }
+
+    @AfterAll
+    static void resetWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(false);
+    }
 
     private static final byte[] SP800_KEY = HexUtils.decode("2b7e151628aed2a6abf7158809cf4f3c");
 

@@ -6,10 +6,23 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import cn.slainc.crypto.CryptoException;
 import cn.slainc.crypto.symmetric.AesKeySize;
+import cn.slainc.crypto.symmetric.WeakAlgorithmPolicy;
 import javax.crypto.SecretKey;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class SecretKeyUtilsTest {
+
+    @BeforeAll
+    static void allowWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(true);
+    }
+
+    @AfterAll
+    static void resetWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(false);
+    }
 
     @Test
     void createsSymmetricKeys() {

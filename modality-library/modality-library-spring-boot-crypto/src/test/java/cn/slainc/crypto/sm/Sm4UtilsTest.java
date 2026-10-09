@@ -14,9 +14,23 @@ import cn.slainc.crypto.symmetric.CipherMode;
 import cn.slainc.crypto.symmetric.Padding;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import cn.slainc.crypto.symmetric.WeakAlgorithmPolicy;
+
 class Sm4UtilsTest {
+
+    @BeforeAll
+    static void allowWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(true);
+    }
+
+    @AfterAll
+    static void resetWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(false);
+    }
 
     private static final byte[] GB_KEY = HexUtils.decode("0123456789abcdeffedcba9876543210");
 

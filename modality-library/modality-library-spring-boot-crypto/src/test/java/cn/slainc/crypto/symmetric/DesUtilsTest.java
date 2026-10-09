@@ -8,9 +8,21 @@ import cn.slainc.crypto.CryptoException;
 import cn.slainc.crypto.codec.HexUtils;
 import cn.slainc.crypto.random.SecureRandomUtils;
 import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class DesUtilsTest {
+
+    @BeforeAll
+    static void allowWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(true);
+    }
+
+    @AfterAll
+    static void resetWeakAlgorithms() {
+        WeakAlgorithmPolicy.allowWeakAlgorithms(false);
+    }
 
     @Test
     void matchesClassicDesVector() {

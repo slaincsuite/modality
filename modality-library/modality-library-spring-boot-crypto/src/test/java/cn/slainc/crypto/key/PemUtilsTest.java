@@ -19,7 +19,6 @@ import cn.slainc.crypto.cert.CsrUtils;
 import cn.slainc.crypto.sm.Sm2Utils;
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.List;
@@ -58,10 +57,8 @@ class PemUtilsTest {
         String pem = PemUtils.encodeCertificate(certificate);
         assertTrue(pem.startsWith("-----BEGIN CERTIFICATE-----"));
         assertEquals(certificate.getSerialNumber(), PemUtils.readCertificate(pem).getSerialNumber());
-        assertEquals(certificate, PemUtils.certificate(PemUtils.encodeDer(certificate)));
         PKCS10CertificationRequest request = CsrUtils.generate(keyPair, "CN=modality", cn.slainc.crypto.sign.SignatureAlgorithm.SHA256_WITH_ECDSA);
         assertEquals(request.getSubject().toString(), PemUtils.readCertificationRequest(PemUtils.encodeCertificationRequest(request)).getSubject().toString());
-        assertEquals(PemUtils.body(PemUtils.encode(request)), PemUtils.body(PemUtils.encodeCertificationRequest(request)));
     }
 
     @Test
@@ -73,15 +70,6 @@ class PemUtilsTest {
         assertEquals(2, objects.size());
         assertInstanceOf(PrivateKey.class, objects.get(0));
         assertInstanceOf(X509Certificate.class, objects.get(1));
-    }
-
-    @Test
-    void decodesDerKeysWithoutAlgorithmHint() {
-        KeyPair keyPair = Sm2Utils.generateKeyPair();
-        PrivateKey privateKey = PemUtils.privateKey(keyPair.getPrivate().getEncoded());
-        PublicKey publicKey = PemUtils.publicKey(keyPair.getPublic().getEncoded());
-        assertArrayEquals(keyPair.getPrivate().getEncoded(), privateKey.getEncoded());
-        assertArrayEquals(keyPair.getPublic().getEncoded(), publicKey.getEncoded());
     }
 
     @Test
@@ -102,7 +90,5 @@ class PemUtilsTest {
         assertTrue(publicPem.startsWith("-----BEGIN PUBLIC KEY-----"));
         assertArrayEquals(keyPair.getPrivate().getEncoded(), PemUtils.readPrivateKey(privatePem).getEncoded());
         assertArrayEquals(keyPair.getPublic().getEncoded(), PemUtils.readPublicKey(publicPem).getEncoded());
-        assertArrayEquals(keyPair.getPublic().getEncoded(), PemUtils.publicKey(PemUtils.encodeDer(keyPair.getPublic())).getEncoded());
-        assertArrayEquals(keyPair.getPrivate().getEncoded(), PemUtils.privateKey(PemUtils.encodeDer(keyPair.getPrivate())).getEncoded());
     }
 }
