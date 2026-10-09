@@ -6,13 +6,13 @@ import cn.slainc.logger.query.LogEntry;
 import cn.slainc.modules.infra.InfraKeys;
 import cn.slainc.modules.infra.service.LogConsoleService;
 import cn.slainc.security.annotation.RequirePermission;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,13 +55,13 @@ public class LogConsoleController {
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_LOG_QUERY)
     @GetMapping("/download")
-    public ResponseEntity<byte[]> download(@RequestParam String file) throws IOException {
+    public void download(@RequestParam String file, HttpServletResponse response) throws IOException {
         Path path = logConsoleService.download(file);
-        MediaType mediaType = file.endsWith(".gz") ? MediaType.APPLICATION_OCTET_STREAM : MediaType.TEXT_PLAIN;
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file + "\"")
-                .body(logConsoleService.readFile(path));
+        response.setContentType(file.endsWith(".gz") ? MediaType.APPLICATION_OCTET_STREAM_VALUE
+                : MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file + "\"");
+        response.setHeader("X-Content-Type-Options", "nosniff");
+        logConsoleService.downloadTo(path, response.getOutputStream());
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_LOG_LEVEL)

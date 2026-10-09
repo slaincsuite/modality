@@ -10,12 +10,14 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 @AutoConfiguration(afterName = "cn.slainc.logger.autoconfigure.LoggerAutoConfiguration")
 @ConditionalOnBean(LogFileQueryService.class)
 @ConditionalOnProperty(prefix = "modality.infra", name = "enabled", matchIfMissing = true)
+@EnableConfigurationProperties(InfraModuleProperties.class)
 @Import(LogConsoleController.class)
 public class InfraLogConsoleAutoConfiguration {
 
@@ -23,7 +25,9 @@ public class InfraLogConsoleAutoConfiguration {
     @ConditionalOnMissingBean
     public LogConsoleService logConsoleService(LogFileQueryService queryService,
                                                ObjectProvider<LogLevelManager> levelManager,
-                                               ObjectProvider<LogArchiveService> archiveService) {
-        return new LogConsoleService(queryService, levelManager, archiveService);
+                                               ObjectProvider<LogArchiveService> archiveService,
+                                               InfraModuleProperties properties) {
+        return new LogConsoleService(queryService, levelManager, archiveService, java.time.Duration.ofSeconds(30), 16,
+                properties.getLogDownloadMaxBytes());
     }
 }

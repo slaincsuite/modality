@@ -22,7 +22,7 @@ public class DictTransferService {
     }
 
     public void export(HttpServletResponse response, String typeCode) throws IOException {
-        List<DictService.DictItemView> items = dictService.itemPage(1, 100000, typeCode, null).records();
+        List<DictService.DictItemView> items = dictService.itemsAll(typeCode);
         List<DictItemRow> rows = new ArrayList<>();
         for (DictService.DictItemView item : items) {
             DictItemRow row = new DictItemRow();

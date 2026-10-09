@@ -129,23 +129,21 @@ public class FileManagerService {
 
     public DownloadPayload preview(long id) throws IOException {
         FileRecordStore.FileView view = find(id);
-        String contentType = view.contentType() == null ? "application/octet-stream" : view.contentType();
-        if (contentType.startsWith("video/")) {
-            byte[] data = storageTemplate.download(view.fileKey()).readAllBytes();
-            return new DownloadPayload(contentType, data, view.name(), true);
-        }
-        if (contentType.startsWith("text/") || "application/json".equals(contentType)) {
-            byte[] data = storageTemplate.download(view.fileKey()).readNBytes(previewTextMaxBytes);
-            return new DownloadPayload(contentType, data, view.name(), true);
+        String declared = view.contentType() == null || view.contentType().isBlank()
+                ? cn.slainc.storage.support.ContentTypes.detect(view.name()) : view.contentType();
+        String contentType = PreviewGuard.requireInlineAllowed(declared);
+        if ("text/plain".equals(contentType)) {
+            byte[] data;
+            try (java.io.InputStream input = storageTemplate.download(view.fileKey())) {
+                data = input.readNBytes(previewTextMaxBytes);
+            }
+            PreviewGuard.assertMagicMatches(contentType, data);
+            return new DownloadPayload("text/plain; charset=UTF-8", data, view.name(), true);
         }
         PreviewResult result = previewService.preview(view.fileKey(), contentType);
         if (result.kind() == PreviewResult.Kind.INLINE) {
-            return new DownloadPayload(result.contentType(), result.binary(), view.name(), true);
-        }
-        if (result.kind() == PreviewResult.Kind.TEXT) {
-            return new DownloadPayload(result.contentType(),
-                    result.text() == null ? new byte[0] : result.text().getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                    view.name(), true);
+            PreviewGuard.assertMagicMatches(contentType, result.binary());
+            return new DownloadPayload(contentType, result.binary(), view.name(), true);
         }
         throw new cn.slainc.core.exception.BizException(cn.slainc.core.result.ResultCode.BUSINESS_ERROR,
                 "该文件类型暂不支持预览：" + contentType + "（" + result.reason() + "）");

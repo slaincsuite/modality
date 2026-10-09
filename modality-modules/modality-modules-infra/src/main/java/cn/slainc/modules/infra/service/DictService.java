@@ -4,10 +4,14 @@ import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.infra.InfraKeys;
+import cn.slainc.redis.cache.CacheInvalidationListener;
+import cn.slainc.redis.cache.CacheInvalidationPublisher;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class DictService {
@@ -20,12 +24,34 @@ public class DictService {
                                String remark, long createTime, long updateTime) {
     }
 
+    public static final String CACHE_NAME = "infra:dict";
+
+    private static final Duration DEFAULT_CACHE_TTL = Duration.ofMinutes(5);
+
+    private static final long CACHE_MAX_ENTRIES = 1000;
+
     private final JdbcTemplate jdbc;
 
-    private final Map<String, List<DictItemView>> cache = new ConcurrentHashMap<>();
+    private final Cache<String, Object> cache;
+
+    private final CacheInvalidationPublisher invalidationPublisher;
 
     public DictService(JdbcTemplate jdbc) {
+        this(jdbc, DEFAULT_CACHE_TTL, null, null);
+    }
+
+    public DictService(JdbcTemplate jdbc, Duration cacheTtl, CacheInvalidationPublisher invalidationPublisher,
+                       CacheInvalidationListener invalidationListener) {
         this.jdbc = jdbc;
+        this.invalidationPublisher = invalidationPublisher;
+        this.cache = Caffeine.newBuilder()
+                .maximumSize(CACHE_MAX_ENTRIES)
+                .expireAfterWrite(cacheTtl == null || cacheTtl.isZero() || cacheTtl.isNegative()
+                        ? DEFAULT_CACHE_TTL : cacheTtl)
+                .build();
+        if (invalidationListener != null) {
+            invalidationListener.register(CACHE_NAME, cache);
+        }
     }
 
     public PageResult<DictTypeView> typePage(long current, long size, String keyword) {
@@ -78,14 +104,20 @@ public class DictService {
         jdbc.update("DELETE FROM " + InfraKeys.DICT_TYPE_TABLE + " WHERE code = ?", code);
     }
 
+    @SuppressWarnings("unchecked")
     public List<DictItemView> itemsByType(String typeCode) {
-        return cache.computeIfAbsent(typeCode, code -> jdbc.query(
+        Object cached = cache.get(typeCode, this::loadItems);
+        return cached == null ? List.of() : (List<DictItemView>) cached;
+    }
+
+    private List<DictItemView> loadItems(String typeCode) {
+        return jdbc.query(
                 "SELECT id, type_code, label, item_value, sort, enabled, remark, create_time, update_time FROM "
                         + InfraKeys.DICT_ITEM_TABLE + " WHERE type_code = ? AND enabled = 1 ORDER BY sort, id",
                 (rs, rowNum) -> new DictItemView(rs.getLong("id"), rs.getString("type_code"), rs.getString("label"),
                         rs.getString("item_value"), rs.getInt("sort"), rs.getInt("enabled") == 1, rs.getString("remark"),
                         rs.getLong("create_time"), rs.getLong("update_time")),
-                code));
+                typeCode);
     }
 
     public PageResult<DictItemView> itemPage(long current, long size, String typeCode, String keyword) {
@@ -111,6 +143,18 @@ public class DictService {
                         rs.getString("remark"), rs.getLong("create_time"), rs.getLong("update_time")));
     }
 
+    public List<DictItemView> itemsAll(String typeCode) {
+        String where = typeCode == null || typeCode.isBlank() ? "" : " WHERE type_code = ?";
+        Object[] args = where.isEmpty() ? new Object[0] : new Object[] {typeCode.trim()};
+        return jdbc.query(
+                "SELECT id, type_code, label, item_value, sort, enabled, remark, create_time, update_time FROM "
+                        + InfraKeys.DICT_ITEM_TABLE + where + " ORDER BY type_code, sort, id",
+                (rs, rowNum) -> new DictItemView(rs.getLong("id"), rs.getString("type_code"), rs.getString("label"),
+                        rs.getString("item_value"), rs.getInt("sort"), rs.getInt("enabled") == 1,
+                        rs.getString("remark"), rs.getLong("create_time"), rs.getLong("update_time")),
+                args);
+    }
+
     public void createItem(String typeCode, String label, String value, Integer sort, String remark) {
         BizAssert.hasText(typeCode, "字典编码不能为空");
         BizAssert.hasText(label, "字典标签不能为空");
@@ -125,7 +169,7 @@ public class DictService {
                         + " (type_code, label, item_value, sort, enabled, remark, create_time, update_time)"
                         + " VALUES (?, ?, ?, ?, 1, ?, ?, ?)",
                 typeCode, label, value, sort == null ? 0 : sort, remark, now, now);
-        cache.remove(typeCode);
+        invalidate(typeCode);
     }
 
     public void updateItem(long id, String label, String value, Integer sort, Boolean enabled, String remark) {
@@ -137,14 +181,14 @@ public class DictService {
                         + " sort = COALESCE(?, sort), enabled = COALESCE(?, enabled),"
                         + " remark = COALESCE(?, remark), update_time = ? WHERE id = ?",
                 label, value, sort, enabled == null ? null : (enabled ? 1 : 0), remark, now, id);
-        cache.remove(item.typeCode());
+        invalidate(item.typeCode());
     }
 
     public void deleteItem(long id) {
         DictItemView item = findItem(id);
         BizAssert.isTrue(item != null, "字典项不存在");
         jdbc.update("DELETE FROM " + InfraKeys.DICT_ITEM_TABLE + " WHERE id = ?", id);
-        cache.remove(item.typeCode());
+        invalidate(item.typeCode());
     }
 
     public String resolveLabel(String typeCode, String value) {
@@ -167,11 +211,24 @@ public class DictService {
     }
 
     public long cacheSize() {
-        return cache.size();
+        return cache.estimatedSize();
     }
 
     public void clearCache() {
-        cache.clear();
+        cache.invalidateAll();
+        if (invalidationPublisher != null) {
+            invalidationPublisher.publishClear(CACHE_NAME);
+        }
+    }
+
+    private void invalidate(String typeCode) {
+        if (typeCode == null) {
+            return;
+        }
+        cache.invalidate(typeCode);
+        if (invalidationPublisher != null) {
+            invalidationPublisher.publishInvalidate(CACHE_NAME, typeCode);
+        }
     }
 
     private DictTypeView findType(String code) {

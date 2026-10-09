@@ -7,6 +7,7 @@ import cn.slainc.modules.infra.service.ChunkUploadService;
 import cn.slainc.modules.infra.service.FileManagerService;
 import cn.slainc.modules.infra.store.FileRecordStore;
 import cn.slainc.modules.infra.service.FileUploadService;
+import cn.slainc.modules.infra.service.PreviewGuard;
 import cn.slainc.security.annotation.RequirePermission;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -96,6 +97,7 @@ public class FileController {
                 : view.contentType());
         response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''"
                 + managerService.encodeFilename(view.name()));
+        response.setHeader("X-Content-Type-Options", PreviewGuard.CONTENT_TYPE_OPTIONS);
         managerService.download(id, response.getOutputStream());
     }
 
@@ -113,6 +115,8 @@ public class FileController {
     public void preview(@PathVariable long id, HttpServletResponse response) throws IOException {
         FileManagerService.DownloadPayload payload = managerService.preview(id);
         response.setContentType(payload.contentType());
+        response.setHeader("Content-Security-Policy", PreviewGuard.CONTENT_SECURITY_POLICY);
+        response.setHeader("X-Content-Type-Options", PreviewGuard.CONTENT_TYPE_OPTIONS);
         response.setHeader("Content-Disposition", "inline; filename*=UTF-8''"
                 + managerService.encodeFilename(payload.filename()));
         response.getOutputStream().write(payload.data());
@@ -152,7 +156,8 @@ public class FileController {
     @RequirePermission(permissions = InfraKeys.PERMISSION_FILE_MANAGE)
     @PostMapping("/{id}/rename")
     public Result<Void> rename(@PathVariable long id, @RequestBody Map<String, Object> body) {
-        managerService.rename(id, String.valueOf(body.get("name")));
+        Object name = body.get("name");
+        managerService.rename(id, name == null ? null : String.valueOf(name));
         return Result.ok();
     }
 

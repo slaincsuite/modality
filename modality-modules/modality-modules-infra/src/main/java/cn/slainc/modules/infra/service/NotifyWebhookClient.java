@@ -3,6 +3,7 @@ package cn.slainc.modules.infra.service;
 import cn.slainc.core.exception.ThirdPartyException;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.monitor.alert.WebhookSignatures;
+import cn.slainc.monitor.alert.WebhookUrlValidator;
 import cn.slainc.utils.json.JsonUtils;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -34,15 +35,27 @@ public class NotifyWebhookClient {
 
     private final HttpClient client;
 
+    private final boolean allowInternalWebhook;
+
     public NotifyWebhookClient(int connectTimeoutMillis, int readTimeoutMillis) {
+        this(connectTimeoutMillis, readTimeoutMillis, false);
+    }
+
+    public NotifyWebhookClient(int connectTimeoutMillis, int readTimeoutMillis, boolean allowInternalWebhook) {
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(connectTimeoutMillis))
                 .build();
+        this.allowInternalWebhook = allowInternalWebhook;
+    }
+
+    public void validateUrl(String url) {
+        WebhookUrlValidator.validate(url, allowInternalWebhook);
     }
 
     public SendOutcome send(WebhookConfig config, String title, String content, String level) {
         try {
             BizAssert.hasText(config.url(), "Webhook 地址不能为空");
+            validateUrl(config.url());
             String platform = config.platform() == null ? "CUSTOM" : config.platform().toUpperCase();
             BizAssert.isTrue(PLATFORMS.contains(platform), "Webhook 平台只允许 DINGTALK、FEISHU、WECOM、CUSTOM");
             String body = switch (platform) {

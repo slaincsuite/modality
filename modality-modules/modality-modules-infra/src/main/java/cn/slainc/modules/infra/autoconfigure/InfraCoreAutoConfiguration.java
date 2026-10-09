@@ -15,6 +15,8 @@ import cn.slainc.modules.infra.web.DictController;
 import cn.slainc.modules.infra.web.NoticeController;
 import cn.slainc.modules.infra.web.NotifyAdminController;
 import cn.slainc.modules.infra.web.NotifyUserController;
+import cn.slainc.redis.cache.CacheInvalidationListener;
+import cn.slainc.redis.cache.CacheInvalidationPublisher;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,8 +80,12 @@ public class InfraCoreAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public DictService dictService(JdbcTemplate jdbc) {
-        return new DictService(jdbc);
+    public DictService dictService(JdbcTemplate jdbc,
+                                   ObjectProvider<CacheInvalidationPublisher> invalidationPublisher,
+                                   ObjectProvider<CacheInvalidationListener> invalidationListener,
+                                   InfraModuleProperties properties) {
+        return new DictService(jdbc, properties.getDictCacheTtl(), invalidationPublisher.getIfAvailable(),
+                invalidationListener.getIfAvailable());
     }
 
     @Bean
@@ -98,7 +104,7 @@ public class InfraCoreAutoConfiguration {
     @ConditionalOnMissingBean
     public NotifyWebhookClient notifyWebhookClient(InfraModuleProperties properties) {
         return new NotifyWebhookClient(properties.getNotify().getConnectTimeoutMillis(),
-                properties.getNotify().getReadTimeoutMillis());
+                properties.getNotify().getReadTimeoutMillis(), properties.getNotify().isAllowInternalWebhook());
     }
 
     @Bean

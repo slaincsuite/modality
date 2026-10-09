@@ -189,6 +189,7 @@ public class NotifyService {
     public void createWebhook(String name, String platform, String url, String secret) {
         BizAssert.hasText(name, "Webhook 名称不能为空");
         BizAssert.hasText(url, "Webhook 地址不能为空");
+        webhookClient.validateUrl(url);
         String safePlatform = platform == null || platform.isBlank() ? "CUSTOM" : platform.toUpperCase();
         long now = System.currentTimeMillis();
         jdbc.update("INSERT INTO " + InfraKeys.NOTIFY_WEBHOOK_TABLE
@@ -198,6 +199,9 @@ public class NotifyService {
 
     public void updateWebhook(long id, String name, String platform, String url, String secret, Boolean enabled) {
         BizAssert.isTrue(findWebhook(id) != null, "Webhook 配置不存在");
+        if (url != null && !url.isBlank()) {
+            webhookClient.validateUrl(url);
+        }
         jdbc.update("UPDATE " + InfraKeys.NOTIFY_WEBHOOK_TABLE
                         + " SET name = COALESCE(?, name), platform = COALESCE(?, platform), url = COALESCE(?, url),"
                         + " secret = COALESCE(?, secret), enabled = COALESCE(?, enabled), update_time = ? WHERE id = ?",
