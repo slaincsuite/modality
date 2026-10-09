@@ -1,6 +1,7 @@
 package cn.slainc.utils.json;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,6 +43,22 @@ class JsonUtilsTest {
         assertEquals("x", JsonUtils.<String>path(json, "c"));
         assertNull(JsonUtils.pathNode(json, "a.missing"));
         assertEquals(2, JsonUtils.pathNode(json, "a.b").size());
+    }
+
+    @Test
+    void typedPathConversion() {
+        String json = "{\"data\":{\"id\":9007199254740993,\"name\":\"modality\"},\"tags\":[\"a\",\"b\"]}";
+
+        PathDto data = JsonUtils.path(json, "data", PathDto.class);
+        assertEquals(9007199254740993L, data.id());
+        assertEquals("modality", data.name());
+        assertEquals(9007199254740993L, JsonUtils.path(json, "data.id", Long.class));
+        assertEquals(List.of("a", "b"), JsonUtils.path(json, "tags", new TypeReference<List<String>>() {
+        }));
+        assertNull(JsonUtils.path(json, "data.missing", Long.class));
+    }
+
+    record PathDto(long id, String name) {
     }
 
     @Test
