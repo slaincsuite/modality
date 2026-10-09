@@ -96,6 +96,16 @@ public final class JsonUtils {
         });
     }
 
+    public static <T> T path(String json, String path, Class<T> type) {
+        JsonNode node = pathNode(json, path);
+        return node == null || node.isNull() ? null : convert(node, type);
+    }
+
+    public static <T> T path(String json, String path, TypeReference<T> typeReference) {
+        JsonNode node = pathNode(json, path);
+        return node == null || node.isNull() ? null : convert(node, typeReference);
+    }
+
     public static JsonNode pathNode(String json, String path) {
         JsonNode root = readTree(json);
         return root == null ? null : pathNode(root, path);
