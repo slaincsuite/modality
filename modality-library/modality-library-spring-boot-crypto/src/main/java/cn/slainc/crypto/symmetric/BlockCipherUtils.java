@@ -34,17 +34,22 @@ public final class BlockCipherUtils {
         int blockSize = engine.getBlockSize();
         return switch (mode) {
             case GCM -> gcm(encrypt, engine, key, requireIv(iv), data);
-            case CTR -> ctr(encrypt, engine, key, iv, requirePlain(padding, mode), data, blockSize);
+            case CTR -> {
+                requirePlain(padding, mode);
+                yield ctr(engine, key, iv, data, blockSize);
+            }
             case CBC -> cbc(encrypt, engine, key, iv, padding, data, blockSize);
-            case ECB -> ecb(encrypt, engine, key, padding, data, blockSize);
+            case ECB -> {
+                WeakAlgorithmPolicy.requireOptIn("ECB");
+                yield ecb(encrypt, engine, key, padding, data, blockSize);
+            }
         };
     }
 
-    private static Padding requirePlain(Padding padding, CipherMode mode) {
+    private static void requirePlain(Padding padding, CipherMode mode) {
         if (padding.isPadded()) {
             throw new CryptoException(mode + " 模式不支持填充");
         }
-        return padding;
     }
 
     private static byte[] ecb(boolean encrypt, BlockCipher engine, byte[] key, Padding padding, byte[] data, int blockSize) {
@@ -83,7 +88,7 @@ public final class BlockCipherUtils {
         return encrypt ? output : unpad(output, padding, blockSize);
     }
 
-    private static byte[] ctr(boolean encrypt, BlockCipher engine, byte[] key, byte[] iv, Padding padding, byte[] data, int blockSize) {
+    private static byte[] ctr(BlockCipher engine, byte[] key, byte[] iv, byte[] data, int blockSize) {
         byte[] counter = requireIv(iv, blockSize).clone();
         engine.init(true, new KeyParameter(key));
         byte[] output = new byte[data.length];

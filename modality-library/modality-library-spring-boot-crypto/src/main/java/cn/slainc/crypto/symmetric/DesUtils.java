@@ -9,6 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.bouncycastle.crypto.engines.DESEngine;
 import org.bouncycastle.crypto.engines.DESedeEngine;
 
+@Deprecated(forRemoval = true)
 public final class DesUtils {
 
     public static final int BLOCK_LENGTH = 8;
@@ -21,6 +22,7 @@ public final class DesUtils {
     }
 
     public static SecretKey generateKey() {
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
         try {
             KeyGenerator generator = KeyGenerator.getInstance("DES");
             generator.init(56, SecureRandomUtils.secureRandom());
@@ -31,6 +33,7 @@ public final class DesUtils {
     }
 
     public static SecretKey generateTripleDesKey() {
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
         try {
             KeyGenerator generator = KeyGenerator.getInstance("DESede");
             generator.init(168, SecureRandomUtils.secureRandom());
@@ -41,33 +44,37 @@ public final class DesUtils {
     }
 
     public static SecretKey key(byte[] bytes) {
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
         requireKey(bytes, KEY_LENGTH, "DES");
         return new SecretKeySpec(bytes, "DES");
     }
 
     public static SecretKey tripleKey(byte[] bytes) {
-        if (bytes == null || bytes.length != TRIPLE_KEY_LENGTH && bytes.length != 16) {
-            throw new CryptoException("DESede 密钥长度必须为 16 或 24 字节");
-        }
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
+        requireTripleKey(bytes);
         return new SecretKeySpec(bytes, "DESede");
     }
 
     public static byte[] encryptDes(CipherMode mode, Padding padding, byte[] key, byte[] iv, byte[] data) {
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
         requireKey(key, KEY_LENGTH, "DES");
         return BlockCipherUtils.encrypt(new DESEngine(), mode, padding, key, iv, data);
     }
 
     public static byte[] decryptDes(CipherMode mode, Padding padding, byte[] key, byte[] iv, byte[] data) {
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
         requireKey(key, KEY_LENGTH, "DES");
         return BlockCipherUtils.decrypt(new DESEngine(), mode, padding, key, iv, data);
     }
 
     public static byte[] encryptTripleDes(CipherMode mode, Padding padding, byte[] key, byte[] iv, byte[] data) {
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
         requireTripleKey(key);
         return BlockCipherUtils.encrypt(new DESedeEngine(), mode, padding, key, iv, data);
     }
 
     public static byte[] decryptTripleDes(CipherMode mode, Padding padding, byte[] key, byte[] iv, byte[] data) {
+        WeakAlgorithmPolicy.requireOptIn("DES/DESede");
         requireTripleKey(key);
         return BlockCipherUtils.decrypt(new DESedeEngine(), mode, padding, key, iv, data);
     }
