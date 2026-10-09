@@ -87,6 +87,16 @@ class JdbcPagerTest {
     }
 
     @Test
+    void extremePageNumberDoesNotProduceNegativeOffset() {
+        PageResult<Long> result = JdbcPager.page(jdbcTemplate,
+                "SELECT COUNT(*) FROM t_pager_sample",
+                "SELECT id FROM t_pager_sample ORDER BY id",
+                List.of(), Long.MAX_VALUE, 10, (rs, rowNum) -> rs.getLong(1));
+        assertEquals(25, result.total());
+        assertEquals(0, result.records().size());
+    }
+
+    @Test
     void lastPageReturnsRemainingRecords() {
         PageResult<Long> result = JdbcPager.page(jdbcTemplate,
                 "SELECT COUNT(*) FROM t_pager_sample",

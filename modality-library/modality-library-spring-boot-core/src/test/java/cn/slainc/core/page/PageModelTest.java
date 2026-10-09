@@ -26,6 +26,15 @@ class PageModelTest {
     }
 
     @Test
+    void offsetSaturatesInsteadOfOverflowing() {
+        assertEquals(0L, PageParam.of(0L, 10L).offset());
+        assertEquals(0L, PageParam.of(1L, -5L).offset());
+        assertEquals(20L, PageParam.of(3L, 10L).offset());
+        assertEquals(Long.MAX_VALUE, PageParam.of(Long.MAX_VALUE, 10L).offset());
+        assertTrue(PageParam.of(Long.MAX_VALUE, PageParam.MAX_SIZE).offset() > 0L);
+    }
+
+    @Test
     void sortDirections() {
         assertTrue(Sort.desc("createdAt").descending());
         assertFalse(Sort.asc("id").descending());

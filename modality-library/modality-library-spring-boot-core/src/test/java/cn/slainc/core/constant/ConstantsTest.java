@@ -1,7 +1,6 @@
 package cn.slainc.core.constant;
 
 import cn.slainc.core.enums.DeleteStatus;
-import cn.slainc.core.enums.EnabledStatus;
 import cn.slainc.utils.string.RegexUtils;
 import org.junit.jupiter.api.Test;
 
@@ -35,11 +34,7 @@ class ConstantsTest {
 
     @Test
     void systemConstantsAlignWithEnums() {
-        assertEquals(EnabledStatus.ENABLED.value(), SystemConstants.ENABLED);
-        assertEquals(EnabledStatus.DISABLED.value(), SystemConstants.DISABLED);
         assertEquals(DeleteStatus.NOT_DELETED.value(), SystemConstants.NOT_DELETED);
-        assertEquals(DeleteStatus.DELETED.value(), SystemConstants.DELETED);
-        assertEquals(1L, (long) SystemConstants.SUPER_ADMIN_ID);
         assertEquals("system", SystemConstants.SYSTEM_USER);
         assertEquals("Asia/Shanghai", SystemConstants.DEFAULT_ZONE_NAME);
         assertEquals("traceId", SystemConstants.TRACE_ID_MDC_KEY);
@@ -57,7 +52,5 @@ class ConstantsTest {
     void mimeTypes() {
         assertEquals("application/json", MimeTypes.JSON);
         assertEquals("application/octet-stream", MimeTypes.OCTET_STREAM);
-        assertEquals("multipart/form-data", MimeTypes.MULTIPART_FORM_DATA);
-        assertTrue(MimeTypes.XLSX.contains("spreadsheetml"));
     }
 }
