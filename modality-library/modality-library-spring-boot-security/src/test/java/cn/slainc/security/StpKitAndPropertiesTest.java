@@ -2,6 +2,7 @@ package cn.slainc.security;
 
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.security.config.SecurityProperties;
+import cn.slainc.security.stp.SecurityStpLogic;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -9,22 +10,40 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class StpKitAndPropertiesTest {
 
+    private static final Map<LoginType, SecurityStpLogic> SNAPSHOT = new EnumMap<>(LoginType.class);
+
     @BeforeAll
     static void clearStaticAssignments() {
+        for (LoginType type : LoginType.values()) {
+            SecurityStpLogic logic = current(type);
+            if (logic != null) {
+                SNAPSHOT.put(type, logic);
+            }
+        }
         StpKit.clearAssignments();
     }
 
     @AfterAll
     static void restoreAssignments() {
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_PLATFORM_ADMIN));
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_TENANT_USER));
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_APP));
+        StpKit.clearAssignments();
+        SNAPSHOT.values().forEach(StpKit::assign);
+    }
+
+    private static SecurityStpLogic current(LoginType type) {
+        try {
+            return StpKit.of(type);
+        } catch (IllegalStateException exception) {
+            return null;
+        }
     }
 
     @Test
@@ -37,7 +56,7 @@ class StpKitAndPropertiesTest {
     @Test
     @Order(2)
     void ofNullTypeThrowsChineseException() {
-        StpKit.assign(new cn.slainc.security.stp.SecurityStpLogic(StpKit.TYPE_TENANT_USER));
+        StpKit.assign(new SecurityStpLogic(StpKit.TYPE_TENANT_USER));
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> StpKit.of(null));
         assertThat(exception.getMessage()).isEqualTo("账号体系不能为空");
     }
@@ -54,9 +73,10 @@ class StpKitAndPropertiesTest {
     @Order(4)
     void securityPropertiesCarriesDocumentedDefaults() {
         SecurityProperties properties = new SecurityProperties();
-        assertThat(properties.getFilter().getExcludePatterns()).contains("/actuator/**", "/v3/api-docs/**",
-                "/swagger-ui/**", "/swagger-ui.html", "/webjars/**", "/favicon.ico", "/error", "/captcha/**",
-                "/auth/login", "/auth/logout");
+        assertThat(properties.getFilter().getExcludePatterns()).contains("/actuator/health", "/actuator/info",
+                "/favicon.ico", "/error", "/captcha/**", "/auth/login", "/auth/refresh", "/auth/logout",
+                "/auth/token/refresh", "/oauth2/jwks", "/oauth2/token", "/oauth2/userinfo", "/sso/**")
+                .doesNotContain("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/webjars/**");
         assertThat(properties.getFilter().getProtectedPatterns()).containsExactly("/**");
         assertThat(properties.getFilter().getBlacklistPatterns()).isEmpty();
         assertThat(properties.getTypeHeader()).isEqualTo("X-Login-Type");
@@ -65,7 +85,9 @@ class StpKitAndPropertiesTest {
         assertThat(properties.getPermissionCacheTtlSeconds()).isEqualTo(300);
         assertThat(properties.getOrigin().isEnabled()).isTrue();
         assertThat(properties.getOrigin().getAllowedOrigins()).isEmpty();
-        assertThat(properties.getSession().getTimeoutTenantUser()).isEqualTo(2592000);
+        assertThat(properties.getSession().getTimeoutTenantUser()).isEqualTo(7200);
+        assertThat(properties.getSession().getActiveTimeout()).isEqualTo(1800);
+        assertThat(properties.getCookie().isSecure()).isTrue();
         assertThat(properties.getDevice().getMaxCountPerType()).isEqualTo(5);
         assertThat(properties.getDevice().getOverflowMode().name()).isEqualTo("KICK_OLDEST");
         assertThat(properties.getDevice().isSingleSessionPerType()).isFalse();
