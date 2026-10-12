@@ -68,7 +68,8 @@ class JwtVerifierTest {
         RevocationService revocation = new RevocationService(new MemoryRevocationStore());
         JwtTokenService service = new JwtTokenService(manager, JwtAlgorithmWhitelist.defaults(), settings, clock);
         JwtVerifier verifier = new JwtVerifier(manager, whitelist, settings, revocation, clock);
-        return new VerifierFixture(manager, service, verifier, revocation, dynamic);
+        RevocationService verifiable = new RevocationService(revocation.store(), verifier::verifyStrict);
+        return new VerifierFixture(manager, service, verifier, verifiable, dynamic);
     }
 
     record VerifierFixture(JwtKeyManager manager, JwtTokenService service, JwtVerifier verifier,
@@ -301,7 +302,7 @@ class JwtVerifierTest {
         VerifierFixture fixture = fixture();
         var signed = fixture.service().issueToken(TokenIssuanceSpec.of("user-1"));
         assertThat(fixture.verifier().verify(signed.tokenValue()).valid()).isTrue();
-        fixture.revocation().revokeByToken(signed.tokenValue());
+        fixture.revocation().revoke(signed.jti(), Instant.now().plus(Duration.ofHours(1)));
         JwtVerification verification = fixture.verifier().verify(signed.tokenValue());
         assertThat(verification.valid()).isFalse();
         assertThat(verification.error()).contains("吊销");

@@ -121,7 +121,8 @@ class RevocationStoreTest {
 
     @Test
     void revocationParsedByJti() {
-        RevocationService service = new RevocationService(new MemoryRevocationStore());
+        RevocationService service = new RevocationService(new MemoryRevocationStore(), token -> {
+        });
         String header = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
                 "{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes());
         String token = header + "." + java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
@@ -133,7 +134,8 @@ class RevocationStoreTest {
 
     @Test
     void missingJtiThrowsChinese() {
-        RevocationService service = new RevocationService(new MemoryRevocationStore());
+        RevocationService service = new RevocationService(new MemoryRevocationStore(), token -> {
+        });
         String header = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
                 "{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes());
         String token = header + "." + java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
