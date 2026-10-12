@@ -23,6 +23,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @AutoConfiguration(beforeName = "cn.dev33.satoken.spring.sso.SaSsoBeanRegister")
@@ -52,10 +53,28 @@ public class SsoAutoConfiguration {
         return new SsoClientAdminService(repository, cache, configService);
     }
 
-    @Bean
-    @ConditionalOnMissingBean(DynamicSsoServerTemplate.class)
-    public DynamicSsoServerTemplate ssoServerTemplate(SsoClientRecordCache cache) {
-        return new DynamicSsoServerTemplate(cache);
+    // 服务端装配要求 secretKey 非空：空密钥下票据签名形同虚设，宁可整体禁用服务端能力
+    @Configuration(proxyBeanMethods = false)
+    @Conditional(ServerSecretKeyConfiguredCondition.class)
+    static class SsoServerConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(DynamicSsoServerTemplate.class)
+        public DynamicSsoServerTemplate ssoServerTemplate(SsoClientRecordCache cache) {
+            return new DynamicSsoServerTemplate(cache);
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        public SsoLogoutService ssoLogoutService(DynamicSsoServerTemplate template) {
+            return new SsoLogoutService(template);
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        public SsoServerDelegate ssoServerDelegate(DynamicSsoServerTemplate template) {
+            return new SsoServerDelegate(template);
+        }
     }
 
     @Bean
@@ -66,27 +85,17 @@ public class SsoAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public SsoLogoutService ssoLogoutService(DynamicSsoServerTemplate template) {
-        return new SsoLogoutService(template);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public SsoServerDelegate ssoServerDelegate(DynamicSsoServerTemplate template) {
-        return new SsoServerDelegate(template);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
     public SsoClientDelegate ssoClientDelegate(DynamicSsoClientTemplate template) {
         return new SsoClientDelegate(template);
     }
 
     @Bean
-    public SsoStrategyBinder ssoStrategyBinder(SsoProperties properties, DynamicSsoServerTemplate serverTemplate,
+    @ConditionalOnMissingBean
+    public SsoStrategyBinder ssoStrategyBinder(SsoProperties properties,
+                                               ObjectProvider<DynamicSsoServerTemplate> serverTemplate,
                                                DynamicSsoClientTemplate clientTemplate,
                                                ObjectProvider<cn.slainc.security.login.SecurityLoginService> loginService) {
-        return new SsoStrategyBinder(properties, serverTemplate, clientTemplate, loginService);
+        return new SsoStrategyBinder(properties, serverTemplate.getIfAvailable(), clientTemplate, loginService);
     }
 
     @Configuration(proxyBeanMethods = false)
