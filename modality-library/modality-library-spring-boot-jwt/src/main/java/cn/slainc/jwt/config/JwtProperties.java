@@ -38,6 +38,8 @@ public class JwtProperties {
 
     private int notBeforeSeconds = 0;
 
+    private boolean failOnMissingKey = false;
+
     private List<String> audiences = new ArrayList<>();
 
     private boolean refreshRotation = true;
@@ -150,6 +152,14 @@ public class JwtProperties {
 
     public void setNotBeforeSeconds(int notBeforeSeconds) {
         this.notBeforeSeconds = notBeforeSeconds;
+    }
+
+    public boolean isFailOnMissingKey() {
+        return failOnMissingKey;
+    }
+
+    public void setFailOnMissingKey(boolean failOnMissingKey) {
+        this.failOnMissingKey = failOnMissingKey;
     }
 
     public List<String> getAudiences() {

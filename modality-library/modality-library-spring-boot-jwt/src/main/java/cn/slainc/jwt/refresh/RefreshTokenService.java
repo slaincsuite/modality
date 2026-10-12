@@ -43,7 +43,7 @@ public class RefreshTokenService {
                     + (verification.tokenType() == null ? "未知" : verification.tokenType().name()));
         }
         if (settings.refreshRotation()) {
-            revocationService.revokeByToken(refreshToken);
+            revocationService.revoke(verification.jti(), expiresAtOf(verification));
         }
         String subject = newAccessSpec != null && newAccessSpec.subject() != null ? newAccessSpec.subject()
                 : String.valueOf(verification.claims().get("sub"));
@@ -57,6 +57,11 @@ public class RefreshTokenService {
         }
         SignedToken nextRefresh = tokenService.issueToken(refreshBuilder.build());
         return new RefreshedTokens(access, nextRefresh);
+    }
+
+    private java.time.Instant expiresAtOf(JwtVerification verification) {
+        Object value = verification.claims().get("exp");
+        return value instanceof Number number ? java.time.Instant.ofEpochSecond(number.longValue()) : null;
     }
 
     private TokenIssuanceSpec.Builder rebuild(TokenIssuanceSpec spec, String subject) {

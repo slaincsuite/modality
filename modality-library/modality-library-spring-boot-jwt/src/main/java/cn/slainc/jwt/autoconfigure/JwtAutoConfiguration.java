@@ -61,8 +61,10 @@ public class JwtAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(RevocationService.class)
-    public RevocationService revocationService(RevocationStore revocationStore) {
-        return new RevocationService(revocationStore);
+    public RevocationService revocationService(RevocationStore revocationStore,
+                                               ObjectProvider<JwtVerifier> jwtVerifier) {
+        // 延迟取 JwtVerifier：它反过来依赖本 Bean，构造期不能成环
+        return new RevocationService(revocationStore, token -> jwtVerifier.getObject().verifyStrict(token));
     }
 
     @Bean

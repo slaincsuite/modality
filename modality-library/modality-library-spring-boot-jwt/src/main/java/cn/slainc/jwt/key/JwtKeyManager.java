@@ -23,7 +23,8 @@ import javax.crypto.SecretKey;
 
 public class JwtKeyManager {
 
-    public static final String GENERATED_KEY_WARNING = "未配置 jwt 密钥，已生成临时密钥，进程重启后旧令牌全部失效，生产环境请配置持久化";
+    public static final String GENERATED_KEY_WARNING = "未配置 jwt 密钥，已生成临时密钥，进程重启后旧令牌全部失效，生产环境请配置持久化；"
+            + "如需直接阻断启动，请开启 modality.jwt.fail-on-missing-key";
 
     private static final Logger log = LoggerFactory.getLogger(JwtKeyManager.class);
 
@@ -68,7 +69,10 @@ public class JwtKeyManager {
                 entries.put(entry.kid(), entry);
             }
             if (entries.isEmpty()) {
-                log.warn(GENERATED_KEY_WARNING);
+                if (properties.isFailOnMissingKey()) {
+                    throw new JwtVerifyException("未配置任何 jwt 密钥，已按 modality.jwt.fail-on-missing-key 拒绝自动生成临时密钥");
+                }
+                log.error(GENERATED_KEY_WARNING);
                 JwtKeyEntry entry = generate(properties.getDefaultAlgorithm(), defaultKid());
                 entries.put(entry.kid(), entry);
             }
