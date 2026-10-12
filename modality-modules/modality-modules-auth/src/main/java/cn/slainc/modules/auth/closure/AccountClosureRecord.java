@@ -28,6 +28,8 @@ public class AccountClosureRecord {
 
     private long coolDownUntil;
 
+    private int attemptCount;
+
     private Long executedAt;
 
     private String executeError;
@@ -102,6 +104,14 @@ public class AccountClosureRecord {
 
     public void setCoolDownUntil(long coolDownUntil) {
         this.coolDownUntil = coolDownUntil;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void setAttemptCount(int attemptCount) {
+        this.attemptCount = attemptCount;
     }
 
     public Long getExecutedAt() {

@@ -1,6 +1,7 @@
 package cn.slainc.modules.auth.service;
 
 import cn.slainc.core.exception.BizException;
+import cn.slainc.core.result.ResultCode;
 import cn.slainc.jwt.issue.SignedToken;
 import cn.slainc.jwt.issue.TokenIssuanceSpec;
 import cn.slainc.jwt.issue.TokenType;
@@ -26,12 +27,24 @@ public class AuthTokenService {
 
     private final IntrospectionService introspectionService;
 
+    private final TokenClientAuthenticator clientAuthenticator;
+
+    private final TokenEndpointGuard endpointGuard;
+
     public AuthTokenService(JwtVerifier verifier, RefreshTokenService refreshService,
                             RevocationService revocationService, IntrospectionService introspectionService) {
+        this(verifier, refreshService, revocationService, introspectionService, null, null);
+    }
+
+    public AuthTokenService(JwtVerifier verifier, RefreshTokenService refreshService,
+                            RevocationService revocationService, IntrospectionService introspectionService,
+                            TokenClientAuthenticator clientAuthenticator, TokenEndpointGuard endpointGuard) {
         this.verifier = verifier;
         this.refreshService = refreshService;
         this.revocationService = revocationService;
         this.introspectionService = introspectionService;
+        this.clientAuthenticator = clientAuthenticator;
+        this.endpointGuard = endpointGuard;
     }
 
     public record TokenPairView(String accessToken, String refreshToken, String tokenType,
@@ -68,11 +81,25 @@ public class AuthTokenService {
     }
 
     public boolean revoke(String token) {
-        revocationService.revokeByToken(token);
+        if (endpointGuard != null) {
+            endpointGuard.checkRevoke();
+        }
+        try {
+            revocationService.revokeByToken(token);
+        } catch (JwtVerifyException e) {
+            throw new BizException("令牌无效，无法吊销：" + e.getMessage());
+        }
         return true;
     }
 
-    public IntrospectionResult introspect(String token) {
+    public IntrospectionResult introspect(String token, String clientId, String clientSecret) {
+        if (endpointGuard != null) {
+            endpointGuard.checkIntrospect();
+        }
+        if (clientAuthenticator == null) {
+            throw new BizException(ResultCode.UNAUTHORIZED, "introspect 需要客户端鉴权，但未装配客户端鉴权组件");
+        }
+        clientAuthenticator.requireAuthenticated(clientId, clientSecret);
         return introspectionService.introspect(token);
     }
 

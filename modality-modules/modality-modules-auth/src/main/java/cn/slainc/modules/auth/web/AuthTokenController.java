@@ -25,6 +25,9 @@ public class AuthTokenController {
     public record TokenBody(String token) {
     }
 
+    public record IntrospectBody(String token, String clientId, String clientSecret) {
+    }
+
     @PostMapping("/refresh")
     public Result<AuthTokenService.TokenPairView> refresh(@RequestBody TokenBody body) {
         return Result.ok(tokenService.refresh(body.token()));
@@ -36,8 +39,8 @@ public class AuthTokenController {
     }
 
     @PostMapping("/introspect")
-    public Result<Object> introspect(@RequestBody TokenBody body) {
-        return Result.ok(tokenService.introspect(body.token()));
+    public Result<Object> introspect(@RequestBody IntrospectBody body) {
+        return Result.ok(tokenService.introspect(body.token(), body.clientId(), body.clientSecret()));
     }
 
     @GetMapping("/info")

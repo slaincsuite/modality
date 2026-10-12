@@ -6,6 +6,7 @@ import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.security.StpKit;
+import cn.slainc.security.audit.SecurityAuditRecorder;
 import cn.slainc.security.spi.AccountAdminPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +26,20 @@ public class AccountClosureService {
 
     private final ObjectProvider<AccountAdminPort> adminPort;
 
+    private final ObjectProvider<SecurityAuditRecorder> recorder;
+
     public AccountClosureService(AccountClosureStore store, AuthProperties properties,
                                  ObjectProvider<AccountAdminPort> adminPort) {
+        this(store, properties, adminPort, null);
+    }
+
+    public AccountClosureService(AccountClosureStore store, AuthProperties properties,
+                                 ObjectProvider<AccountAdminPort> adminPort,
+                                 ObjectProvider<SecurityAuditRecorder> recorder) {
         this.store = store;
         this.properties = properties;
         this.adminPort = adminPort;
+        this.recorder = recorder;
     }
 
     public AccountClosureRecord apply(LoginType type, Long userId, String username, String reason) {
@@ -46,7 +56,8 @@ public class AccountClosureService {
         record.setStatus(AccountClosureRecord.STATUS_PENDING);
         record.setRequestedAt(now);
         record.setCoolDownUntil(now + properties.getClosure().getCoolDownSeconds() * 1000);
-        return store.insert(record);
+        return store.insertIfAbsent(record)
+                .orElseThrow(() -> new BizException("已存在待执行的注销申请，冷静期内可撤销"));
     }
 
     public void cancel(Long userId) {
@@ -89,11 +100,32 @@ public class AccountClosureService {
                 executed++;
                 log.info("账号注销已执行：userId={}，loginType={}", record.getUserId(), record.getLoginType());
             } catch (Exception e) {
-                store.updateStatus(record.getId(), AccountClosureRecord.STATUS_FAILED, System.currentTimeMillis(),
-                        e.getMessage());
-                log.warn("账号注销执行失败：userId={}，原因：{}", record.getUserId(), e.getMessage());
+                handleFailure(record, e);
             }
         }
         return executed;
+    }
+
+    // 单次失败不能直接置 FAILED（否则永不重试）：未达上限时保持 PENDING 并按退避顺延 cool_down_until
+    private void handleFailure(AccountClosureRecord record, Exception cause) {
+        int attempts = record.getAttemptCount() + 1;
+        long now = System.currentTimeMillis();
+        String error = cause.getMessage() == null ? cause.getClass().getSimpleName() : cause.getMessage();
+        int maxAttempts = Math.max(1, properties.getClosure().getMaxExecuteAttempts());
+        if (attempts < maxAttempts) {
+            store.markRetry(record.getId(), attempts, now + properties.getClosure().getRetryBackoffSeconds() * 1000,
+                    error);
+            log.warn("账号注销执行失败，将在退避后重试（第 {} 次，共 {} 次）：userId={}，原因：{}", attempts, maxAttempts,
+                    record.getUserId(), error);
+            return;
+        }
+        store.markFailed(record.getId(), attempts, error);
+        log.error("账号注销执行失败已达重试上限（{} 次），已置为 FAILED：userId={}，原因：{}", maxAttempts,
+                record.getUserId(), error);
+        SecurityAuditRecorder audit = recorder == null ? null : recorder.getIfAvailable();
+        if (audit != null) {
+            audit.alarm("账号注销执行失败", LoginType.of(record.getLoginType()), record.getUserId(), null,
+                    "连续 " + maxAttempts + " 次执行失败：" + error);
+        }
     }
 }

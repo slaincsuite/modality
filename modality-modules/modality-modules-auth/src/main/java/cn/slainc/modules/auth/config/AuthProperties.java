@@ -21,6 +21,8 @@ public class AuthProperties {
 
     private Closure closure = new Closure();
 
+    private Token token = new Token();
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -85,9 +87,40 @@ public class AuthProperties {
         this.closure = closure;
     }
 
+    public Token getToken() {
+        return token;
+    }
+
+    public void setToken(Token token) {
+        this.token = token;
+    }
+
+    public static class Token {
+
+        private long revokeLimitPerMinute = 20;
+
+        private long introspectLimitPerMinute = 60;
+
+        public long getRevokeLimitPerMinute() {
+            return revokeLimitPerMinute;
+        }
+
+        public void setRevokeLimitPerMinute(long revokeLimitPerMinute) {
+            this.revokeLimitPerMinute = revokeLimitPerMinute;
+        }
+
+        public long getIntrospectLimitPerMinute() {
+            return introspectLimitPerMinute;
+        }
+
+        public void setIntrospectLimitPerMinute(long introspectLimitPerMinute) {
+            this.introspectLimitPerMinute = introspectLimitPerMinute;
+        }
+    }
+
     public static class Captcha {
 
-        private boolean enabled = false;
+        private boolean enabled = true;
 
         private String channel = "WEB";
 
@@ -253,6 +286,10 @@ public class AuthProperties {
 
         private long cleanupIntervalSeconds = 3600;
 
+        private int maxExecuteAttempts = 3;
+
+        private long retryBackoffSeconds = 3600;
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -283,6 +320,22 @@ public class AuthProperties {
 
         public void setCleanupIntervalSeconds(long cleanupIntervalSeconds) {
             this.cleanupIntervalSeconds = cleanupIntervalSeconds;
+        }
+
+        public int getMaxExecuteAttempts() {
+            return maxExecuteAttempts;
+        }
+
+        public void setMaxExecuteAttempts(int maxExecuteAttempts) {
+            this.maxExecuteAttempts = maxExecuteAttempts;
+        }
+
+        public long getRetryBackoffSeconds() {
+            return retryBackoffSeconds;
+        }
+
+        public void setRetryBackoffSeconds(long retryBackoffSeconds) {
+            this.retryBackoffSeconds = retryBackoffSeconds;
         }
     }
 }

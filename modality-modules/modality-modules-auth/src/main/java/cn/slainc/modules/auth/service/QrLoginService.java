@@ -15,6 +15,7 @@ import org.springframework.beans.factory.ObjectProvider;
 
 import java.security.SecureRandom;
 import java.util.Map;
+import java.util.Objects;
 
 public class QrLoginService {
 
@@ -54,8 +55,10 @@ public class QrLoginService {
                                long expireAt) {
 
         public static QrStatusView of(QrLoginTicket ticket) {
+            // 状态查询匿名可达，确认前回传用户名等于泄露扫码者身份，只允许确认后回传
+            String username = ticket.getStatus() == QrLoginStatus.CONFIRMED ? ticket.getUsername() : null;
             return new QrStatusView(ticket.getTicketId(), ticket.getStatus().name(), ticket.getStatus().label(),
-                    ticket.getUsername(), ticket.getExpireAt());
+                    username, ticket.getExpireAt());
         }
 
         public static QrStatusView expired(String ticketId) {
@@ -92,24 +95,35 @@ public class QrLoginService {
         if (ticket.getStatus() != QrLoginStatus.SCANNED) {
             throw new BizException("二维码状态已变化，请刷新后重试");
         }
-        if (!java.util.Objects.equals(ticket.getLoginId(), asLong(loginId))) {
+        Long userId = asLong(loginId);
+        if (!Objects.equals(ticket.getLoginId(), userId)) {
             throw new BizException("仅扫码用户本人可确认登录");
         }
         ticket.setStatus(QrLoginStatus.CONFIRMED);
-        saveRemaining(ticket);
+        if (!store.compareAndSet(ticketId, current -> current.getStatus() == QrLoginStatus.SCANNED
+                && Objects.equals(current.getLoginId(), userId), ticket,
+                ticket.remainingSeconds(System.currentTimeMillis()))) {
+            throw new BizException("二维码状态已变化，请刷新后重试");
+        }
         push(ticket);
     }
 
     public void cancel(String ticketId, LoginType type, Object loginId) {
         QrLoginTicket ticket = requireActive(ticketId);
-        if (ticket.getStatus() != QrLoginStatus.WAITING && ticket.getStatus() != QrLoginStatus.SCANNED) {
+        QrLoginStatus expected = ticket.getStatus();
+        if (expected != QrLoginStatus.WAITING && expected != QrLoginStatus.SCANNED) {
             return;
         }
-        if (!java.util.Objects.equals(ticket.getLoginId(), asLong(loginId))) {
+        Long userId = asLong(loginId);
+        if (!Objects.equals(ticket.getLoginId(), userId)) {
             throw new BizException("仅扫码用户本人可取消登录");
         }
         ticket.setStatus(QrLoginStatus.CANCELLED);
-        saveRemaining(ticket);
+        if (!store.compareAndSet(ticketId, current -> current.getStatus() == expected
+                && Objects.equals(current.getLoginId(), userId), ticket,
+                ticket.remainingSeconds(System.currentTimeMillis()))) {
+            throw new BizException("二维码状态已变化，请刷新后重试");
+        }
         push(ticket);
     }
 

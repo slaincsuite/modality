@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS t_auth_account_closure (
     status VARCHAR(16) NOT NULL,
     requested_at BIGINT NOT NULL,
     cool_down_until BIGINT NOT NULL,
+    attempt_count INT NOT NULL DEFAULT 0,
     executed_at BIGINT,
     execute_error VARCHAR(256)
 );

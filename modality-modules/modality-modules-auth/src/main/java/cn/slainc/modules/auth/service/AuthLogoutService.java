@@ -9,12 +9,16 @@ import cn.slainc.security.StpKit;
 import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.security.spi.PasswordAccount;
 import cn.slainc.web.websocket.WebSocketPusher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Map;
 
 public class AuthLogoutService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthLogoutService.class);
 
     private final ApplicationEventPublisher publisher;
 
@@ -63,6 +67,8 @@ public class AuthLogoutService {
         try {
             return provider.findAccountByUserId(userId, type);
         } catch (Exception e) {
+            log.warn("注销时查询账号信息失败，按匿名处理（账号体系={}，用户={}）：{}", type.value(), userId,
+                    e.getMessage());
             return null;
         }
     }

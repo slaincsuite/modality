@@ -19,6 +19,7 @@ import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.security.login.LoginResult;
 import cn.slainc.security.password.PasswordPolicyService;
 import cn.slainc.security.spi.AccountAuthProvider;
+import cn.slainc.security.spi.AccountRestrictionPort;
 import cn.slainc.security.spi.PasswordAccount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +58,23 @@ public class AuthSessionService {
 
     private final ObjectProvider<BusinessMetrics> metrics;
 
+    private final ObjectProvider<AccountRestrictionPort> restrictionPort;
+
     public AuthSessionService(SecurityConfigReader config, ObjectProvider<AccountAuthProvider> authProvider,
                               AccountBanService banService, KickService kickService, SecurityAuditRecorder recorder,
                               ObjectProvider<PasswordPolicyService> passwordPolicy,
                               ApplicationEventPublisher publisher, CurrentRequestReader requestReader,
                               ObjectProvider<StringRedisTemplate> redis, ObjectProvider<BusinessMetrics> metrics) {
+        this(config, authProvider, banService, kickService, recorder, passwordPolicy, publisher, requestReader, redis,
+                metrics, null);
+    }
+
+    public AuthSessionService(SecurityConfigReader config, ObjectProvider<AccountAuthProvider> authProvider,
+                              AccountBanService banService, KickService kickService, SecurityAuditRecorder recorder,
+                              ObjectProvider<PasswordPolicyService> passwordPolicy,
+                              ApplicationEventPublisher publisher, CurrentRequestReader requestReader,
+                              ObjectProvider<StringRedisTemplate> redis, ObjectProvider<BusinessMetrics> metrics,
+                              ObjectProvider<AccountRestrictionPort> restrictionPort) {
         this.config = config;
         this.authProvider = authProvider;
         this.banService = banService;
@@ -72,6 +85,7 @@ public class AuthSessionService {
         this.requestReader = requestReader;
         this.redis = redis;
         this.metrics = metrics;
+        this.restrictionPort = restrictionPort;
     }
 
     public LoginResult establish(LoginType type, Object loginId, String deviceType, String deviceId) {
@@ -94,10 +108,12 @@ public class AuthSessionService {
             if (banService.isBanned(type, loginId)) {
                 throw new BizException("账号已被封禁，禁止登录");
             }
+            checkUserRestrictions(type, account, clientIp, resolvedDeviceType);
             checkDeviceLimitBeforeLogin(type, loginId, resolvedDeviceType);
             SaLoginParameter parameter = buildParameter(type, account, clientIp, userAgent, resolvedDeviceType,
                     deviceId);
             StpKit.of(type).login(loginId, parameter);
+            bindSessionTenant(type);
             checkDeviceOverflowAfterLogin(type, loginId, resolvedDeviceType);
             checkTravelAlarm(type, loginId, clientIp);
             SaTokenInfo info = StpKit.of(type).getTokenInfo();
@@ -119,6 +135,26 @@ public class AuthSessionService {
             }
             throw e;
         }
+    }
+
+    // 免密链路（扫码/第三方回调/绑定）此前绕过了用户级登录限制，这里与密码登录做同样的裁决
+    private void checkUserRestrictions(LoginType type, PasswordAccount account, String clientIp, String deviceType) {
+        AccountRestrictionPort port = restrictionPort == null ? null : restrictionPort.getIfAvailable();
+        if (port == null) {
+            return;
+        }
+        List<String> violations = port.validate(account.username(), type, clientIp, deviceType);
+        if (violations != null && !violations.isEmpty()) {
+            throw new BizException(String.join("；", violations));
+        }
+    }
+
+    private void bindSessionTenant(LoginType type) {
+        Long tenantId = TenantContext.get();
+        if (tenantId == null) {
+            return;
+        }
+        StpKit.of(type).getSession().set(TenantContext.SESSION_ATTRIBUTE, tenantId);
     }
 
     private SaLoginParameter buildParameter(LoginType type, PasswordAccount account, String clientIp,

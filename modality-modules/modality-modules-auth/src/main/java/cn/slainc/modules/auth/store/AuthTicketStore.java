@@ -1,13 +1,17 @@
 package cn.slainc.modules.auth.store;
 
 import cn.slainc.utils.json.JsonUtils;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public final class AuthTicketStore<T> {
 
@@ -89,6 +93,42 @@ public final class AuthTicketStore<T> {
         }
         String raw = redis.opsForValue().getAndDelete(keyPrefix + id);
         return Optional.ofNullable(raw).map(this::parse);
+    }
+
+    public boolean compareAndSet(String id, Predicate<T> guard, T updated, long ttlSeconds) {
+        long now = System.currentTimeMillis();
+        long ttl = Math.max(1, ttlSeconds);
+        if (redis == null) {
+            boolean[] replaced = {false};
+            memory.compute(id, (key, entry) -> {
+                if (entry == null || entry.expired(now) || !guard.test(entry.ticket())) {
+                    return entry;
+                }
+                replaced[0] = true;
+                return new MemoryEntry<>(updated, now + ttl * 1000);
+            });
+            return replaced[0];
+        }
+        // Redis 侧用 WATCH/MULTI/EXEC 做真正的条件替换：守卫不成立或被并发改写时 exec 返回 null
+        List<Object> results = redis.execute(new SessionCallback<>() {
+            @Override
+            @SuppressWarnings("unchecked")
+            public <K, V> List<Object> execute(RedisOperations<K, V> operations) {
+                RedisOperations<String, String> ops = (RedisOperations<String, String>) operations;
+                String key = keyPrefix + id;
+                ops.watch(key);
+                String raw = ops.opsForValue().get(key);
+                T current = raw == null ? null : parse(raw);
+                if (current == null || !guard.test(current)) {
+                    ops.unwatch();
+                    return List.of();
+                }
+                ops.multi();
+                ops.opsForValue().set(key, JsonUtils.toJson(updated), Duration.ofSeconds(ttl));
+                return ops.exec();
+            }
+        });
+        return results != null && !results.isEmpty();
     }
 
     private T parse(String raw) {

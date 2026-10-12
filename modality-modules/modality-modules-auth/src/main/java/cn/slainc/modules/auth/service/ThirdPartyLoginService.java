@@ -87,7 +87,6 @@ public class ThirdPartyLoginService {
 
     public LoginResult bindWithPassword(String bindTicketId, LoginType type, String username, String password,
                                         String deviceType, String deviceId) {
-        ThirdBindTicket ticket = consume(bindTicketId);
         AccountAuthProvider provider = authProvider.getIfAvailable();
         if (provider == null) {
             throw new BizException("未接入账号数据源，无法完成绑定");
@@ -103,6 +102,8 @@ public class ThirdPartyLoginService {
         if (!account.enabled()) {
             throw new BizException("账号已被禁用，绑定失败");
         }
+        // 票据必须在密码校验通过后才消费：先消费会让一次输错的密码白白作废用户已扫码换来的绑定凭证
+        ThirdBindTicket ticket = consume(bindTicketId);
         thirdAuthService.bind(toUser(ticket), String.valueOf(account.userId()));
         return sessionService.establish(type, account.userId(), deviceType, deviceId);
     }

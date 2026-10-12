@@ -57,9 +57,10 @@ public class AuthAutoConfiguration {
                                                  ApplicationEventPublisher publisher,
                                                  CurrentRequestReader requestReader,
                                                  ObjectProvider<StringRedisTemplate> redis,
-                                                 ObjectProvider<BusinessMetrics> metrics) {
+                                                 ObjectProvider<BusinessMetrics> metrics,
+                                                 ObjectProvider<AccountRestrictionPort> restrictionPort) {
         return new AuthSessionService(config, authProvider, banService, kickService, recorder, passwordPolicy,
-                publisher, requestReader, redis, metrics);
+                publisher, requestReader, redis, metrics, restrictionPort);
     }
 
     @Bean
@@ -114,6 +115,7 @@ public class AuthAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     @ConditionalOnWebApplication
     public FilterRegistrationBean<SessionRenewalFilter> sessionRenewalFilter(AuthProperties properties,
                                                                               SessionRenewalService renewalService,
