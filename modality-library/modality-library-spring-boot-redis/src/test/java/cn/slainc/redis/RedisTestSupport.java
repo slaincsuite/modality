@@ -23,7 +23,7 @@ public final class RedisTestSupport {
 
     public static final int PORT = 6379;
 
-    public static final String PASSWORD = "omni-redis-pass";
+    public static final String PASSWORD = System.getenv().getOrDefault("MODALITY_REDIS_PASSWORD", "");
 
     public static final int DATABASE = 1;
 

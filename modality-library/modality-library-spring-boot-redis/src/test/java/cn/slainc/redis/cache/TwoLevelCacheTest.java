@@ -121,6 +121,40 @@ class TwoLevelCacheTest {
     }
 
     @Test
+    void localCacheHonoursShortCallerTtl() throws Exception {
+        TwoLevelCache shortLived = newCacheWithSecondLevelTtl(Duration.ofMinutes(5));
+        String name = "调用方短TTL-" + UUID.randomUUID().toString().substring(0, 6);
+        String key = "键";
+        shortLived.put(name, key, "旧值", Duration.ofMillis(50));
+
+        Thread.sleep(150L);
+        redisTemplate.opsForValue().set(TwoLevelCache.redisKey(name, key), "新值", Duration.ofMinutes(5));
+
+        assertThat(shortLived.get(name, key, Duration.ofMillis(50), () -> "回源")).isEqualTo("新值");
+    }
+
+    @Test
+    void localCacheHonoursShortSecondLevelTtl() throws Exception {
+        TwoLevelCache shortLived = newCacheWithSecondLevelTtl(Duration.ofMillis(50));
+        String name = "二级短TTL-" + UUID.randomUUID().toString().substring(0, 6);
+        String key = "键";
+        shortLived.put(name, key, "旧值", Duration.ofMinutes(5));
+
+        Thread.sleep(150L);
+        redisTemplate.opsForValue().set(TwoLevelCache.redisKey(name, key), "新值", Duration.ofMinutes(5));
+
+        assertThat(shortLived.get(name, key, Duration.ofMinutes(5), () -> "回源")).isEqualTo("新值");
+    }
+
+    private static TwoLevelCache newCacheWithSecondLevelTtl(Duration secondLevelTtl) {
+        RedisProperties properties = new RedisProperties();
+        properties.getCache().setSecondLevelEnabled(true);
+        properties.getCache().setSecondLevelMaxSize(1000L);
+        properties.getCache().setSecondLevelTtl(secondLevelTtl);
+        return new TwoLevelCache(redisTemplate, stringRedisTemplate, properties, new CacheInvalidationListener());
+    }
+
+    @Test
     void keyPrefixConventions() {
         assertThat(TwoLevelCache.redisKey("订单", "1")).isEqualTo("modality:cache:订单:1");
         assertThat(CacheInvalidationListener.channel()).isEqualTo("modality:cache:invalidate");

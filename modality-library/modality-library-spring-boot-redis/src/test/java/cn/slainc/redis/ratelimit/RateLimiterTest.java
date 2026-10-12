@@ -92,6 +92,33 @@ class RateLimiterTest {
     }
 
     @Test
+    void multiplePermitsApplyToEveryAlgorithm() {
+        String sliding = newKey();
+        assertThat(rateLimiter.tryAcquire(sliding, RateLimitType.SLIDING_WINDOW, 5L, Duration.ofSeconds(60), 4L))
+                .isTrue();
+        assertThat(rateLimiter.tryAcquire(sliding, RateLimitType.SLIDING_WINDOW, 5L, Duration.ofSeconds(60), 2L))
+                .isFalse();
+        assertThat(rateLimiter.tryAcquire(sliding, RateLimitType.SLIDING_WINDOW, 5L, Duration.ofSeconds(60), 1L))
+                .isTrue();
+
+        String leaky = newKey();
+        assertThat(rateLimiter.tryAcquire(leaky, RateLimitType.LEAKY_BUCKET, 5L, Duration.ofSeconds(60), 4L))
+                .isTrue();
+        assertThat(rateLimiter.tryAcquire(leaky, RateLimitType.LEAKY_BUCKET, 5L, Duration.ofSeconds(60), 2L))
+                .isFalse();
+        assertThat(rateLimiter.tryAcquire(leaky, RateLimitType.LEAKY_BUCKET, 5L, Duration.ofSeconds(60), 1L))
+                .isTrue();
+
+        String fixed = newKey();
+        assertThat(rateLimiter.tryAcquire(fixed, RateLimitType.FIXED_WINDOW, 5L, Duration.ofSeconds(60), 4L))
+                .isTrue();
+        assertThat(rateLimiter.tryAcquire(fixed, RateLimitType.FIXED_WINDOW, 5L, Duration.ofSeconds(60), 2L))
+                .isFalse();
+        assertThat(rateLimiter.tryAcquire(fixed, RateLimitType.FIXED_WINDOW, 5L, Duration.ofSeconds(60), 1L))
+                .isTrue();
+    }
+
+    @Test
     void statsTrackAllowDenyAndRate() {
         rateLimiter.getStats().reset();
         String key = newKey();
