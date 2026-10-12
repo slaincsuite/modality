@@ -7,8 +7,8 @@ import cn.slainc.oauth2.config.Oauth2Keys;
 import cn.slainc.oauth2.config.Oauth2Properties;
 import cn.slainc.redis.ratelimit.RateLimitType;
 import cn.slainc.redis.ratelimit.RateLimiter;
+import cn.slainc.utils.net.IpMatcher;
 import cn.slainc.utils.net.IpUtils;
-import inet.ipaddr.IPAddressString;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -56,10 +56,8 @@ public class ClientGuard {
         if (requestIp == null) {
             throw new SaOAuth2Exception("客户端 " + clientId + " 的请求无法解析来源 IP，拒绝访问");
         }
-        for (String entry : record.getIpWhitelist()) {
-            if (matchesIp(requestIp, entry)) {
-                return;
-            }
+        if (IpMatcher.matchesAny(requestIp, record.getIpWhitelist())) {
+            return;
         }
         throw new SaOAuth2Exception("客户端 " + clientId + " 的来源 IP 不在白名单：" + requestIp);
     }
@@ -88,19 +86,4 @@ public class ClientGuard {
         }
     }
 
-    private boolean matchesIp(String requestIp, String entry) {
-        if (requestIp == null || entry == null || entry.isBlank()) {
-            return false;
-        }
-        if (entry.equals(requestIp)) {
-            return true;
-        }
-        try {
-            IPAddressString network = new IPAddressString(entry.trim());
-            IPAddressString address = new IPAddressString(requestIp);
-            return network.contains(address);
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
 }

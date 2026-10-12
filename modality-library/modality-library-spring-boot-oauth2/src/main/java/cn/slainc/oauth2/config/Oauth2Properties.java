@@ -171,7 +171,7 @@ public class Oauth2Properties {
 
         private boolean enabled = true;
 
-        private long defaultQpsLimit = 0;
+        private long defaultQpsLimit = 100;
 
         public boolean isEnabled() {
             return enabled;

@@ -1,11 +1,11 @@
 package cn.slainc.oauth2.client;
 
+import cn.slainc.crypto.hash.Pbkdf2Algorithm;
+import cn.slainc.crypto.hash.Pbkdf2Utils;
 import cn.slainc.crypto.symmetric.AesUtils;
 import cn.slainc.crypto.key.SecretKeyUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 public class ClientSecretCipher {
@@ -13,6 +13,8 @@ public class ClientSecretCipher {
     public static final String PREFIX = "ENC(";
 
     public static final String SUFFIX = ")";
+
+    private static final byte[] KDF_SALT = "modality:oauth2:client-secret".getBytes(StandardCharsets.UTF_8);
 
     private final boolean enabled;
 
@@ -55,12 +57,13 @@ public class ClientSecretCipher {
         if (configuredKey.startsWith(SecretKeyUtils.HEX_PREFIX) || configuredKey.startsWith(SecretKeyUtils.BASE64_PREFIX)) {
             return SecretKeyUtils.decode(configuredKey, "AES").getEncoded();
         }
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashed = digest.digest(configuredKey.getBytes(StandardCharsets.UTF_8));
-            return SecretKeyUtils.aesKey(hashed).getEncoded();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("初始化 client_secret 加密密钥失败", e);
-        }
+        return SecretKeyUtils.aesKey(deriveFromPassphrase(configuredKey)).getEncoded();
+    }
+
+    // 口令派生必须与配置字符串一一对应才能解出历史密文，盐只能固定，靠 PBKDF2 迭代抬高暴力破解成本
+    private static byte[] deriveFromPassphrase(String configuredKey) {
+        return Pbkdf2Utils.derive(Pbkdf2Algorithm.PBKDF2_HMAC_SHA256,
+                configuredKey.toCharArray(), KDF_SALT, Pbkdf2Utils.DEFAULT_ITERATIONS,
+                Pbkdf2Utils.DEFAULT_KEY_LENGTH);
     }
 }

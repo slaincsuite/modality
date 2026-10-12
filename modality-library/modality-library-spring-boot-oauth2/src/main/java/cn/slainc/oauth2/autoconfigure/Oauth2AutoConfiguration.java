@@ -72,6 +72,7 @@ public class Oauth2AutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public ConsentService consentService(ObjectProvider<ConsentRecordStore> store,
                                          ObjectProvider<SaOAuth2Template> template) {
         return new ConsentService(store, template);
@@ -127,6 +128,7 @@ public class Oauth2AutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public Oauth2StrategyBinder oauth2StrategyBinder(Oauth2Properties properties, ScopeRegistry scopeRegistry,
                                                      DynamicOauth2Template template, SaOAuth2DataLoader dataLoader,
                                                      ObjectProvider<PkceDataGenerate> pkceDataGenerate,

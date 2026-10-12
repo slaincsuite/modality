@@ -11,6 +11,8 @@ import cn.slainc.oauth2.client.Oauth2ClientRecord;
 import cn.slainc.oauth2.consent.ConsentService;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +34,7 @@ public class DynamicOauth2Template extends SaOAuth2Template {
     @Override
     public SaClientModel checkClientSecret(String clientId, String clientSecret) {
         SaClientModel cm = checkClientModel(clientId);
-        if (cm.clientSecret != null && cm.clientSecret.equals(clientSecret)) {
+        if (secretEquals(cm.clientSecret, clientSecret)) {
             return cm;
         }
         Optional<Oauth2ClientRecord> record = cache.get(clientId);
@@ -77,7 +79,14 @@ public class DynamicOauth2Template extends SaOAuth2Template {
         if (expireAt != null && expireAt > 0 && System.currentTimeMillis() > expireAt) {
             return false;
         }
-        String previous = cipher.decrypt(record.getPreviousSecret());
-        return previous != null && previous.equals(clientSecret);
+        return secretEquals(cipher.decrypt(record.getPreviousSecret()), clientSecret);
+    }
+
+    private boolean secretEquals(String expected, String actual) {
+        if (expected == null || actual == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
+                actual.getBytes(StandardCharsets.UTF_8));
     }
 }
