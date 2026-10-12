@@ -4,6 +4,7 @@ import cn.slainc.core.constant.CacheKeys;
 import cn.slainc.redis.autoconfigure.RedisProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -14,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class TwoLevelCache {
+
+    private static final Duration MIN_TTL = Duration.ofSeconds(1);
 
     private final RedisProperties properties;
 
@@ -51,16 +54,19 @@ public class TwoLevelCache {
         Cache<String, Object> local = localCache(cacheName);
         if (local != null) {
             Object cached = local.getIfPresent(key);
-            if (cached instanceof NullValueHolder) {
-                return null;
-            }
-            if (cached != null) {
-                return (T) cached;
+            if (cached instanceof LocalEntry entry) {
+                if (entry.expired(System.nanoTime())) {
+                    local.invalidate(key);
+                } else if (entry.value() instanceof NullValueHolder) {
+                    return null;
+                } else {
+                    return (T) entry.value();
+                }
             }
         }
         T value = cacheTemplate.get(redisKey(cacheName, key), ttl, loader);
         if (local != null) {
-            local.put(key, value == null ? NullValueHolder.INSTANCE : value);
+            local.put(key, localEntry(value, ttl));
         }
         return value;
     }
@@ -68,7 +74,7 @@ public class TwoLevelCache {
     public void put(String cacheName, String key, Object value, Duration ttl) {
         Cache<String, Object> local = localCache(cacheName);
         if (local != null) {
-            local.put(key, value == null ? NullValueHolder.INSTANCE : value);
+            local.put(key, localEntry(value, ttl));
         }
         cacheTemplate.put(redisKey(cacheName, key), value, ttl);
         publisher.publishInvalidate(cacheName, key);
@@ -106,6 +112,32 @@ public class TwoLevelCache {
         return CacheKeys.PREFIX + "cache:" + cacheName + ":" + (key == null ? "" : key);
     }
 
+    private LocalEntry localEntry(Object value, Duration ttl) {
+        return new LocalEntry(value == null ? NullValueHolder.INSTANCE : value,
+                System.nanoTime() + effectiveTtlNanos(ttl));
+    }
+
+    private long effectiveTtlNanos(Duration ttl) {
+        Duration requested = ttl == null || ttl.isZero() || ttl.isNegative()
+                ? properties.getCache().getDefaultTtl()
+                : ttl;
+        Duration max = properties.getCache().getSecondLevelTtl();
+        Duration effective = max != null && !max.isZero() && !max.isNegative() && max.compareTo(requested) < 0
+                ? max
+                : requested;
+        if (effective == null || effective.isZero() || effective.isNegative()) {
+            effective = MIN_TTL;
+        }
+        return effective.toNanos();
+    }
+
+    private long remainingNanos(Object value, long currentNanos) {
+        if (value instanceof LocalEntry entry) {
+            return Math.max(entry.expireAtNanos() - currentNanos, 0L);
+        }
+        return effectiveTtlNanos(properties.getCache().getSecondLevelTtl());
+    }
+
     private Cache<String, Object> localCache(String cacheName) {
         if (!properties.getCache().isSecondLevelEnabled() || cacheName == null) {
             return null;
@@ -113,7 +145,7 @@ public class TwoLevelCache {
         return localCaches.computeIfAbsent(cacheName, name -> {
             Cache<String, Object> cache = Caffeine.newBuilder()
                     .maximumSize(Math.max(properties.getCache().getSecondLevelMaxSize(), 1L))
-                    .expireAfterWrite(properties.getCache().getSecondLevelTtl())
+                    .expireAfter(new EntryExpiry())
                     .recordStats()
                     .build();
             if (invalidationListener != null) {
@@ -121,5 +153,30 @@ public class TwoLevelCache {
             }
             return cache;
         });
+    }
+
+    private record LocalEntry(Object value, long expireAtNanos) {
+
+        boolean expired(long nowNanos) {
+            return nowNanos - expireAtNanos >= 0L;
+        }
+    }
+
+    private final class EntryExpiry implements Expiry<String, Object> {
+
+        @Override
+        public long expireAfterCreate(String key, Object value, long currentTime) {
+            return remainingNanos(value, currentTime);
+        }
+
+        @Override
+        public long expireAfterUpdate(String key, Object value, long currentTime, long currentDuration) {
+            return remainingNanos(value, currentTime);
+        }
+
+        @Override
+        public long expireAfterRead(String key, Object value, long currentTime, long currentDuration) {
+            return currentDuration;
+        }
     }
 }

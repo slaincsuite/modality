@@ -385,7 +385,7 @@ public class RedisDynamicConfigService implements DynamicConfigService {
             config.setEnabled(Boolean.TRUE);
         }
         long version = nextVersion();
-        config.setVersion((int) version);
+        config.setVersion(toEntityVersion(version));
         if (repository != null) {
             repository.save(config);
         }
@@ -482,6 +482,11 @@ public class RedisDynamicConfigService implements DynamicConfigService {
             return cipher.decrypt(config.getConfigValue());
         }
         return config.getConfigValue();
+    }
+
+    // 实体版本字段是 Integer：Redis 不可用时 nextVersion 退化为毫秒时间戳，直接强转会截断成负数
+    static int toEntityVersion(long version) {
+        return (int) Math.min(Math.max(version, 0L), Integer.MAX_VALUE);
     }
 
     private long nextVersion() {

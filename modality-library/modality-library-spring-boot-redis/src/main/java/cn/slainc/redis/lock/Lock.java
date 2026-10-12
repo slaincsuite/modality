@@ -1,5 +1,7 @@
 package cn.slainc.redis.lock;
 
+import cn.slainc.core.constant.CacheKeys;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -13,7 +15,7 @@ public @interface Lock {
 
     String key() default "";
 
-    String prefix() default "modality:lock:";
+    String prefix() default CacheKeys.LOCK;
 
     long waitTime() default 3L;
 

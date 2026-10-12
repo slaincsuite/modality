@@ -79,10 +79,12 @@ public class RateLimiter {
         long now = System.currentTimeMillis();
         return switch (type == null ? RateLimitType.TOKEN_BUCKET : type) {
             case SLIDING_WINDOW -> new Object[]{String.valueOf(now), String.valueOf(windowMillis),
-                    String.valueOf(limit), now + "-" + UUID.randomUUID().toString().substring(0, 8)};
+                    String.valueOf(limit), now + "-" + UUID.randomUUID().toString().substring(0, 8),
+                    String.valueOf(permits)};
             case LEAKY_BUCKET -> new Object[]{String.valueOf(limit), String.valueOf(perSecond),
-                    String.valueOf(now), String.valueOf(windowMillis * 2)};
-            case FIXED_WINDOW -> new Object[]{String.valueOf(limit), String.valueOf(windowMillis)};
+                    String.valueOf(now), String.valueOf(windowMillis * 2), String.valueOf(permits)};
+            case FIXED_WINDOW -> new Object[]{String.valueOf(limit), String.valueOf(windowMillis),
+                    String.valueOf(permits)};
             default -> new Object[]{String.valueOf(perSecond), String.valueOf(limit), String.valueOf(now),
                     String.valueOf(permits), String.valueOf(windowMillis * 2)};
         };

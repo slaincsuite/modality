@@ -21,8 +21,9 @@ public class RedisAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(name = "redisValueSerializer")
     public RedisSerializer<Object> redisValueSerializer(RedisProperties properties) {
-        int threshold = properties.getSerializer().getCompressThreshold();
-        return RedisSerializers.compressedJson(threshold);
+        RedisProperties.Serializer serializer = properties.getSerializer();
+        return RedisSerializers.compressedJson(serializer.getCompressThreshold(), serializer.getAllowedPackages(),
+                serializer.getAllowedTypes());
     }
 
     @Bean

@@ -37,10 +37,13 @@ public final class RateLimitScripts {
             local window = tonumber(ARGV[2])
             local limit = tonumber(ARGV[3])
             local member = ARGV[4]
+            local permits = tonumber(ARGV[5])
             redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
             local count = redis.call('ZCARD', key)
-            if count < limit then
-              redis.call('ZADD', key, now, member)
+            if count + permits <= limit then
+              for i = 1, permits do
+                redis.call('ZADD', key, now, member .. ':' .. i)
+              end
               redis.call('PEXPIRE', key, window)
               return 1
             end
@@ -54,6 +57,7 @@ public final class RateLimitScripts {
             local leakRate = tonumber(ARGV[2])
             local now = tonumber(ARGV[3])
             local ttl = tonumber(ARGV[4])
+            local permits = tonumber(ARGV[5])
             local data = redis.call('HMGET', key, 'water', 'ts')
             local water = tonumber(data[1])
             local ts = tonumber(data[2])
@@ -64,8 +68,8 @@ public final class RateLimitScripts {
             local delta = math.max(0, now - ts) / 1000.0
             water = math.max(0, water - delta * leakRate)
             local allowed = 0
-            if water + 1 <= capacity then
-              water = water + 1
+            if water + permits <= capacity then
+              water = water + permits
               allowed = 1
             end
             redis.call('HMSET', key, 'water', water, 'ts', now)
@@ -77,12 +81,14 @@ public final class RateLimitScripts {
             local key = KEYS[1]
             local limit = tonumber(ARGV[1])
             local window = tonumber(ARGV[2])
-            local count = redis.call('INCR', key)
-            if count == 1 then
-              redis.call('PEXPIRE', key, window)
-            end
-            if count > limit then
+            local permits = tonumber(ARGV[3])
+            local current = tonumber(redis.call('GET', key) or '0')
+            if current + permits > limit then
               return 0
+            end
+            local count = redis.call('INCRBY', key, permits)
+            if count == permits then
+              redis.call('PEXPIRE', key, window)
             end
             return 1
             """;

@@ -2,13 +2,16 @@ package cn.slainc.redis.dao;
 
 import cn.slainc.core.constant.CacheKeys;
 import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +51,44 @@ public class SaTokenRedisStore {
             return null;
         }
         return value;
+    }
+
+    public Map<String, String> getMany(List<String> keys) {
+        Map<String, String> result = new LinkedHashMap<>();
+        if (keys == null || keys.isEmpty()) {
+            return result;
+        }
+        List<String> values = stringRedisTemplate.opsForValue().multiGet(keys);
+        if (values == null) {
+            return result;
+        }
+        for (int index = 0; index < keys.size() && index < values.size(); index++) {
+            String value = values.get(index);
+            if (value != null && !NOT_VALUE.equals(value)) {
+                result.put(keys.get(index), value);
+            }
+        }
+        return result;
+    }
+
+    public Map<String, Long> getTimeouts(List<String> keys) {
+        Map<String, Long> result = new LinkedHashMap<>();
+        if (keys == null || keys.isEmpty()) {
+            return result;
+        }
+        List<Object> values = stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            for (String key : keys) {
+                connection.keyCommands().ttl(key.getBytes(StandardCharsets.UTF_8));
+            }
+            return null;
+        });
+        for (int index = 0; index < keys.size() && index < values.size(); index++) {
+            Object value = values.get(index);
+            if (value instanceof Long ttl) {
+                result.put(keys.get(index), ttl);
+            }
+        }
+        return result;
     }
 
     public void set(String key, String value, long timeout) {

@@ -3,6 +3,8 @@ package cn.slainc.redis.autoconfigure;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @ConfigurationProperties(prefix = "modality.redis")
 public class RedisProperties {
@@ -71,12 +73,32 @@ public class RedisProperties {
 
         private int compressThreshold = 4096;
 
+        private List<String> allowedPackages = new ArrayList<>();
+
+        private List<String> allowedTypes = new ArrayList<>();
+
         public int getCompressThreshold() {
             return compressThreshold;
         }
 
         public void setCompressThreshold(int compressThreshold) {
             this.compressThreshold = compressThreshold;
+        }
+
+        public List<String> getAllowedPackages() {
+            return allowedPackages;
+        }
+
+        public void setAllowedPackages(List<String> allowedPackages) {
+            this.allowedPackages = allowedPackages == null ? new ArrayList<>() : allowedPackages;
+        }
+
+        public List<String> getAllowedTypes() {
+            return allowedTypes;
+        }
+
+        public void setAllowedTypes(List<String> allowedTypes) {
+            this.allowedTypes = allowedTypes == null ? new ArrayList<>() : allowedTypes;
         }
     }
 
@@ -203,6 +225,8 @@ public class RedisProperties {
 
         private long lockWaitMillis = 2000L;
 
+        private Duration lockTtl = Duration.ofSeconds(30);
+
         private long spinIntervalMillis = 50L;
 
         public boolean isEnabled() {
@@ -275,6 +299,14 @@ public class RedisProperties {
 
         public void setLockWaitMillis(long lockWaitMillis) {
             this.lockWaitMillis = lockWaitMillis;
+        }
+
+        public Duration getLockTtl() {
+            return lockTtl;
+        }
+
+        public void setLockTtl(Duration lockTtl) {
+            this.lockTtl = lockTtl;
         }
 
         public long getSpinIntervalMillis() {

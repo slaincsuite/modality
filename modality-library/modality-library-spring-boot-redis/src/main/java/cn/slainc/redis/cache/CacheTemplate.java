@@ -101,9 +101,10 @@ public class CacheTemplate {
                 String lockKey = redisKey + ":lock";
                 String token = UUID.randomUUID().toString();
                 long waitMillis = Math.max(properties.getCache().getLockWaitMillis(), 0L);
+                long lockMillis = lockTtlMillis(waitMillis);
                 long spinMillis = Math.max(properties.getCache().getSpinIntervalMillis(), 1L);
                 long deadline = System.currentTimeMillis() + waitMillis;
-                boolean locked = acquire(lockKey, token, waitMillis);
+                boolean locked = acquire(lockKey, token, lockMillis);
                 try {
                     if (!locked) {
                         while (System.currentTimeMillis() < deadline) {
@@ -117,7 +118,7 @@ public class CacheTemplate {
                                 hits.increment();
                                 return (T) value;
                             }
-                            locked = acquire(lockKey, token, 1L);
+                            locked = acquire(lockKey, token, lockMillis);
                             if (locked) {
                                 break;
                             }
@@ -232,6 +233,15 @@ public class CacheTemplate {
         double factor = 1d + jitter * (ThreadLocalRandom.current().nextDouble() * 2d - 1d);
         long jittered = (long) (millis * factor);
         return Duration.ofMillis(Math.max(jittered, MIN_TTL.toMillis()));
+    }
+
+    // 锁 TTL 必须显著大于等待时长，否则加载未完成锁就过期，防击穿退化为并发回源
+    private long lockTtlMillis(long waitMillis) {
+        Duration configured = properties.getCache().getLockTtl();
+        long ttl = configured == null || configured.isZero() || configured.isNegative()
+                ? MIN_TTL.toMillis()
+                : configured.toMillis();
+        return Math.max(ttl, Math.max(waitMillis, MIN_TTL.toMillis()));
     }
 
     private boolean acquire(String lockKey, String token, long ttlMillis) {
