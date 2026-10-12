@@ -131,6 +131,15 @@ class CaptchaServiceMemoryStoreIntegrationTest {
     }
 
     @Test
+    void failedAttemptKeepsChallengeUntilThreshold() {
+        CaptchaChallenge challenge = generate(CaptchaType.CHAR_ALNUM);
+        String answer = storedData(challenge.id()).answer();
+        assertFalse(verify(challenge.id(), CaptchaInput.ofCode("错")).success());
+        assertNotNull(captchaStore.get(CaptchaKeys.dataKey(CHANNEL, challenge.id())), "未达阈值不应作废挑战");
+        assertTrue(verify(challenge.id(), CaptchaInput.ofCode(answer)).success());
+    }
+
+    @Test
     void unknownIdFailsGracefully() {
         CaptchaVerifyResult result = verify("missing-id", CaptchaInput.ofCode("x"));
         assertFalse(result.success());

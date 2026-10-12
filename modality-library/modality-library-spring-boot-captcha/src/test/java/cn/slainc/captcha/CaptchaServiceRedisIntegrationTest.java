@@ -208,10 +208,12 @@ class CaptchaServiceRedisIntegrationTest {
     }
 
     @Test
-    void failedVerifyDeletesDataImmediately() {
+    void failedVerifyKeepsDataUntilThreshold() {
         CaptchaChallenge challenge = generate(CaptchaType.CHAR_ALNUM);
-        verifyCode(challenge.id(), "错误答案");
-        assertNull(captchaStore.get(CaptchaKeys.dataKey(CHANNEL, challenge.id())));
+        String answer = storedData(challenge.id()).answer();
+        assertFalse(verifyCode(challenge.id(), "错误答案").success());
+        assertNotNull(captchaStore.get(CaptchaKeys.dataKey(CHANNEL, challenge.id())));
+        assertTrue(verifyCode(challenge.id(), answer).success());
     }
 
     @Test
@@ -373,12 +375,12 @@ class CaptchaServiceRedisIntegrationTest {
     }
 
     @Test
-    void nullInputCountsAsFailure() {
+    void nullInputCountsAsFailureWithoutDiscardingChallenge() {
         CaptchaChallenge challenge = generate(CaptchaType.CHAR_ALNUM);
         CaptchaVerifyResult result = verify(challenge.id(), null);
         assertFalse(result.success());
         assertEquals("验证码错误", result.message());
-        assertNull(captchaStore.get(CaptchaKeys.dataKey(CHANNEL, challenge.id())));
+        assertNotNull(captchaStore.get(CaptchaKeys.dataKey(CHANNEL, challenge.id())));
     }
 
     @Test
