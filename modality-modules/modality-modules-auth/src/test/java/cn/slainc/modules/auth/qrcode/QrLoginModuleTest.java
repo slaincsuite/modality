@@ -137,6 +137,38 @@ class QrLoginModuleTest {
         assertThat(status(newTicket)).isEqualTo("WAITING");
     }
 
+    @Test
+    void statusHidesUsernameBeforeConfirm() throws Exception {
+        registry.create("hider");
+        String mobileToken = login("hider", "mobile-hide");
+        String ticketId = createTicket();
+        assertThat(post("/auth/qrcode/" + ticketId + "/scan", "{}", mobileToken).statusCode()).isEqualTo(200);
+
+        HttpResponse<String> scanned = get("/auth/qrcode/" + ticketId, null);
+        assertThat(scanned.body()).contains("SCANNED");
+        assertThat(scanned.body()).doesNotContain("hider");
+        assertThat(JsonPath.<String>read(scanned.body(), "$.data.scannedUsername")).isNull();
+
+        assertThat(post("/auth/qrcode/" + ticketId + "/confirm", "{}", mobileToken).statusCode()).isEqualTo(200);
+        assertThat(get("/auth/qrcode/" + ticketId, null).body()).contains("hider");
+    }
+
+    @Test
+    void restrictedAccountCannotEstablishSessionByQr() throws Exception {
+        registry.create("restricted-qr");
+        String mobileToken = login("restricted-qr", "mobile-6");
+        String ticketId = createTicket();
+        post("/auth/qrcode/" + ticketId + "/scan", "{}", mobileToken);
+        post("/auth/qrcode/" + ticketId + "/confirm", "{}", mobileToken);
+
+        registry.restrict("restricted-qr", java.util.List.of("该账号已被禁止扫码登录"));
+
+        HttpResponse<String> exchange = post("/auth/qrcode/" + ticketId + "/exchange",
+                "{\"deviceType\":\"PC\"}", null);
+        assertThat(exchange.statusCode()).as(exchange.body()).isEqualTo(400);
+        assertThat(exchange.body()).contains("该账号已被禁止扫码登录");
+    }
+
     private String createTicket() throws Exception {
         HttpResponse<String> create = post("/auth/qrcode", "{}", null);
         assertThat(create.statusCode()).as(create.body()).isEqualTo(200);

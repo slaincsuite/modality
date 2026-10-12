@@ -1,5 +1,6 @@
 package cn.slainc.modules.auth.store;
 
+import cn.slainc.modules.auth.qrcode.QrLoginStatus;
 import cn.slainc.modules.auth.qrcode.QrLoginTicket;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthTicketStoreTest {
@@ -30,7 +32,7 @@ class AuthTicketStoreTest {
     static void startRedis() {
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration("127.0.0.1", 6379);
         configuration.setDatabase(15);
-        configuration.setPassword(RedisPassword.of("omni-redis-pass"));
+        configuration.setPassword(RedisPassword.of(System.getenv().getOrDefault("MODALITY_REDIS_PASSWORD", "")));
         redisFactory = new LettuceConnectionFactory(configuration);
         redisFactory.afterPropertiesSet();
         redisTemplate = new StringRedisTemplate(redisFactory);
@@ -65,6 +67,27 @@ class AuthTicketStoreTest {
         assertTrue(store.consume("m-2").isPresent());
         assertTrue(store.consume("m-2").isEmpty());
         assertTrue(store.find("m-2").isEmpty());
+    }
+
+    @Test
+    void memoryModeCompareAndSetRespectsGuard() {
+        AuthTicketStore<QrLoginTicket> store = AuthTicketStore.of(null, "test:qr:",
+                QrLoginTicket::getTicketId, QrLoginTicket.class);
+        store.save(ticket("m-cas"), 60);
+        QrLoginTicket confirmed = ticket("m-cas");
+        confirmed.setStatus(QrLoginStatus.CONFIRMED);
+        assertFalse(store.compareAndSet("m-cas", current -> current.getStatus() == QrLoginStatus.SCANNED,
+                confirmed, 60));
+        assertTrue(store.compareAndSet("m-cas", current -> current.getStatus() == QrLoginStatus.WAITING,
+                confirmed, 60));
+        assertEquals(QrLoginStatus.CONFIRMED, store.find("m-cas").orElseThrow().getStatus());
+    }
+
+    @Test
+    void memoryModeCompareAndSetMissesUnknownTicket() {
+        AuthTicketStore<QrLoginTicket> store = AuthTicketStore.of(null, "test:qr:",
+                QrLoginTicket::getTicketId, QrLoginTicket.class);
+        assertFalse(store.compareAndSet("absent", current -> true, ticket("absent"), 60));
     }
 
     @Test

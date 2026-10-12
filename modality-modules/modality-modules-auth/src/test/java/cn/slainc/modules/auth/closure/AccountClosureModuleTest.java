@@ -25,7 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = AuthModuleApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"modality.auth.closure.cool-down-seconds=3600",
-                "modality.auth.closure.cleanup-interval-seconds=3600"})
+                "modality.auth.closure.cleanup-interval-seconds=3600",
+                "modality.auth.closure.max-execute-attempts=2",
+                "modality.auth.closure.retry-backoff-seconds=0"})
 class AccountClosureModuleTest {
 
     @Autowired
@@ -98,6 +100,45 @@ class AccountClosureModuleTest {
                 "SELECT status FROM t_auth_account_closure WHERE user_id = ? ORDER BY id DESC LIMIT 1",
                 String.class, account.userId());
         assertThat(recordStatus).isEqualTo("EXECUTED");
+    }
+
+    @Test
+    void failedExecutionKeepsPendingThenMarksFailedAfterCap() {
+        PasswordAccount account = registry.create("retryer");
+        closureService.apply(cn.slainc.core.enums.LoginType.TENANT_USER, account.userId(), "retryer", "重试测试");
+        registry.failDelete(account.userId(), true);
+        try {
+            dueNow(account.userId());
+            assertThat(closureService.executeDue()).as("首轮失败不计数为已执行").isZero();
+            assertThat(statusOf(account.userId())).isEqualTo("PENDING");
+            assertThat(attemptsOf(account.userId())).isEqualTo(1);
+
+            dueNow(account.userId());
+            assertThat(closureService.executeDue()).isZero();
+            assertThat(statusOf(account.userId())).isEqualTo("FAILED");
+            assertThat(attemptsOf(account.userId())).isEqualTo(2);
+            assertThat(registry.isDeleted(account.userId())).isFalse();
+        } finally {
+            registry.failDelete(account.userId(), false);
+        }
+    }
+
+    private void dueNow(long userId) {
+        jdbc.update("UPDATE t_auth_account_closure SET cool_down_until = ? WHERE user_id = ? AND status = 'PENDING'",
+                System.currentTimeMillis() - 1000, userId);
+    }
+
+    private String statusOf(long userId) {
+        return jdbc.queryForObject(
+                "SELECT status FROM t_auth_account_closure WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+                String.class, userId);
+    }
+
+    private int attemptsOf(long userId) {
+        Integer attempts = jdbc.queryForObject(
+                "SELECT attempt_count FROM t_auth_account_closure WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+                Integer.class, userId);
+        return attempts == null ? 0 : attempts;
     }
 
     private String login(String username) throws Exception {

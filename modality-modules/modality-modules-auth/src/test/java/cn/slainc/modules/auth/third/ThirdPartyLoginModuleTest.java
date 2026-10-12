@@ -134,7 +134,7 @@ class ThirdPartyLoginModuleTest {
     }
 
     @Test
-    void bindTicketIsSingleUseEvenWhenBindFails() throws Exception {
+    void bindTicketSurvivesWrongPasswordAndIsConsumedOnSuccess() throws Exception {
         createUser("victim");
         fakeProvider.nextUser(userOf("open-300", "union-300"));
         String state = stateOf();
@@ -149,8 +149,32 @@ class ThirdPartyLoginModuleTest {
         HttpResponse<String> retry = post("/auth/third/bind",
                 "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"victim\",\"password\":\"" + PASSWORD
                         + "\"}", null);
-        assertThat(retry.statusCode()).as(retry.body()).isEqualTo(400);
-        assertThat(retry.body()).contains("绑定凭证已过期或不存在");
+        assertThat(retry.statusCode()).as(retry.body()).isEqualTo(200);
+        assertThat(JsonPath.<String>read(retry.body(), "$.data.tokenValue")).isNotBlank();
+
+        HttpResponse<String> reuse = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"victim\",\"password\":\"" + PASSWORD
+                        + "\"}", null);
+        assertThat(reuse.statusCode()).as(reuse.body()).isEqualTo(400);
+        assertThat(reuse.body()).contains("绑定凭证已过期或不存在");
+    }
+
+    @Test
+    void restrictedAccountCannotLoginByThirdCallback() throws Exception {
+        createUser("restricted-third");
+        fakeProvider.nextUser(userOf("open-400", "union-400"));
+        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=code-d&state=" + stateOf(), null);
+        String bindTicket = JsonPath.<String>read(callback.body(), "$.data.bindTicketId");
+        HttpResponse<String> bind = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"restricted-third\",\"password\":\""
+                        + PASSWORD + "\"}", null);
+        assertThat(bind.statusCode()).as(bind.body()).isEqualTo(200);
+
+        registry.restrict("restricted-third", java.util.List.of("该账号已被禁止登录"));
+
+        HttpResponse<String> second = get("/auth/third/callback/wechat?code=code-e&state=" + stateOf(), null);
+        assertThat(second.statusCode()).as(second.body()).isEqualTo(400);
+        assertThat(second.body()).contains("该账号已被禁止登录");
     }
 
     private ThirdPartyUser userOf(String openId, String unionId) {

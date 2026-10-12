@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -24,6 +25,8 @@ public class TestAccountRegistry implements AccountAuthProvider, AccountPassword
     private final Map<String, PasswordAccount> accounts = new LinkedHashMap<>();
 
     private final Map<Long, Boolean> deleted = new ConcurrentHashMap<>();
+
+    private final Set<Long> deleteFailures = ConcurrentHashMap.newKeySet();
 
     private final Map<String, List<String>> restrictions = new ConcurrentHashMap<>();
 
@@ -48,6 +51,14 @@ public class TestAccountRegistry implements AccountAuthProvider, AccountPassword
 
     public boolean isDeleted(Long userId) {
         return Boolean.TRUE.equals(deleted.get(userId));
+    }
+
+    public void failDelete(Long userId, boolean fail) {
+        if (fail) {
+            deleteFailures.add(userId);
+        } else {
+            deleteFailures.remove(userId);
+        }
     }
 
     @Override
@@ -81,6 +92,9 @@ public class TestAccountRegistry implements AccountAuthProvider, AccountPassword
 
     @Override
     public void delete(Long userId) {
+        if (deleteFailures.contains(userId)) {
+            throw new IllegalStateException("模拟注销删除失败");
+        }
         deleted.put(userId, true);
     }
 
