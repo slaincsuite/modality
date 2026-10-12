@@ -16,6 +16,8 @@ public class ThirdAuthProperties {
 
     private long qrTicketTtlSeconds = 300;
 
+    private long requestTimeoutSeconds = 10;
+
     private final Jdbc jdbc = new Jdbc();
 
     private final Map<String, Platform> platform = new LinkedHashMap<>();
@@ -151,6 +153,14 @@ public class ThirdAuthProperties {
 
     public void setQrTicketTtlSeconds(long qrTicketTtlSeconds) {
         this.qrTicketTtlSeconds = qrTicketTtlSeconds;
+    }
+
+    public long getRequestTimeoutSeconds() {
+        return requestTimeoutSeconds;
+    }
+
+    public void setRequestTimeoutSeconds(long requestTimeoutSeconds) {
+        this.requestTimeoutSeconds = requestTimeoutSeconds;
     }
 
     public Jdbc getJdbc() {

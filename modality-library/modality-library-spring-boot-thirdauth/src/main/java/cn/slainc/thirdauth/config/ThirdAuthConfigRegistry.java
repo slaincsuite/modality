@@ -47,6 +47,10 @@ public class ThirdAuthConfigRegistry {
         return overlayEnabled && overlayString(platform, "app-key", config.getAppKey()) != null;
     }
 
+    public long requestTimeoutSeconds() {
+        return Math.max(1, properties.getRequestTimeoutSeconds());
+    }
+
     public String redirectUriOf(ThirdPartyPlatform platform) {
         ThirdAuthProperties.Platform config = require(platform);
         String configured = overlayString(platform, "redirect-uri", config.getRedirectUri());
