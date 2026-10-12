@@ -1,5 +1,6 @@
 package cn.slainc.sign.config;
 
+import cn.slainc.core.constant.HttpHeaders;
 import cn.slainc.sign.SignAlgorithm;
 import cn.slainc.sign.key.SignKeyDefinition;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -18,6 +19,10 @@ public class SignProperties {
 
     private int minNonceLength = 8;
 
+    private boolean allowStoreFallback = true;
+
+    private List<String> highSensitivityAppIds = new ArrayList<>();
+
     private OutputEncoding outputEncoding = OutputEncoding.BASE64;
 
     private Header header = new Header();
@@ -33,9 +38,9 @@ public class SignProperties {
 
         private String appId = "X-App-Id";
 
-        private String timestamp = "X-Timestamp";
+        private String timestamp = HttpHeaders.TIMESTAMP;
 
-        private String nonce = "X-Nonce";
+        private String nonce = HttpHeaders.NONCE;
 
         private String sign = "X-Sign";
 
@@ -112,6 +117,22 @@ public class SignProperties {
 
     public void setMinNonceLength(int minNonceLength) {
         this.minNonceLength = minNonceLength;
+    }
+
+    public boolean isAllowStoreFallback() {
+        return allowStoreFallback;
+    }
+
+    public void setAllowStoreFallback(boolean allowStoreFallback) {
+        this.allowStoreFallback = allowStoreFallback;
+    }
+
+    public List<String> getHighSensitivityAppIds() {
+        return highSensitivityAppIds;
+    }
+
+    public void setHighSensitivityAppIds(List<String> highSensitivityAppIds) {
+        this.highSensitivityAppIds = highSensitivityAppIds == null ? new ArrayList<>() : highSensitivityAppIds;
     }
 
     public OutputEncoding getOutputEncoding() {

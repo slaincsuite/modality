@@ -7,8 +7,8 @@ import cn.slainc.sign.key.SignKeyDefinition;
 import cn.slainc.sign.key.SignKeyRegistry;
 import cn.slainc.sign.store.MemorySignNonceStore;
 import cn.slainc.sign.store.SignNonceStore;
+import cn.slainc.utils.net.IpMatcher;
 import cn.slainc.utils.net.IpUtils;
-import inet.ipaddr.IPAddressString;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,9 +98,6 @@ public class SignVerifier {
         if (ipRejectedReason != null) {
             return fail(appId, ipRejectedReason);
         }
-        if (!acquire(appId, nonce, Math.max(window, 1))) {
-            return fail(appId, "nonce 已被使用，疑似重放请求，已拦截");
-        }
         String canonical = composer.compose(version, appId, timestamp, nonce, params, includeEmpty);
         boolean matched = false;
         try {
@@ -110,6 +107,11 @@ public class SignVerifier {
         }
         if (!matched) {
             return fail(appId, "签名不匹配");
+        }
+        // 必须验签通过后再消费 nonce：否则一次签名错误的请求会烧掉 nonce，合法重试被误判为重放
+        String acquireFailure = acquire(appId, nonce, Math.max(window, 1));
+        if (acquireFailure != null) {
+            return fail(appId, acquireFailure);
         }
         return SignVerifyResult.ok(appId);
     }
@@ -137,10 +139,8 @@ public class SignVerifier {
         if (requestIp == null || requestIp.isBlank()) {
             return "无法解析来源 IP，拒绝验签";
         }
-        for (String entry : allowed) {
-            if (matchesIp(requestIp, entry)) {
-                return null;
-            }
+        if (IpMatcher.matchesAny(requestIp, allowed)) {
+            return null;
         }
         return "来源 IP 不在应用白名单：" + requestIp;
     }
@@ -152,30 +152,27 @@ public class SignVerifier {
         return null;
     }
 
-    private boolean matchesIp(String requestIp, String entry) {
-        if (entry == null || entry.isBlank()) {
-            return false;
-        }
-        if (entry.trim().equals(requestIp)) {
-            return true;
-        }
+    private String acquire(String appId, String nonce, long ttlSeconds) {
+        SignNonceStore target = store == null ? fallbackStore : store;
         try {
-            IPAddressString network = new IPAddressString(entry.trim());
-            IPAddressString address = new IPAddressString(requestIp);
-            return network.contains(address);
-        } catch (IllegalArgumentException exception) {
-            return false;
+            return target.tryAcquire(appId, nonce, ttlSeconds) ? null : "nonce 已被使用，疑似重放请求，已拦截";
+        } catch (RuntimeException exception) {
+            if (!fallbackAllowed(appId)) {
+                log.error("签名 nonce 存储不可用，该应用禁止降级为单机内存，已拒绝本次请求（appId={}）：{}",
+                        appId, exception.getMessage());
+                return "随机数存储不可用，已拒绝本次请求";
+            }
+            log.warn("签名 nonce 存储不可用，降级为本地内存（appId={}）：{}", appId, exception.getMessage());
+            return fallbackStore.tryAcquire(appId, nonce, ttlSeconds) ? null : "nonce 已被使用，疑似重放请求，已拦截";
         }
     }
 
-    private boolean acquire(String appId, String nonce, long ttlSeconds) {
-        SignNonceStore target = store == null ? fallbackStore : store;
-        try {
-            return target.tryAcquire(appId, nonce, ttlSeconds);
-        } catch (RuntimeException exception) {
-            log.warn("签名 nonce 存储不可用，降级为本地内存（appId={}）：{}", appId, exception.getMessage());
-            return fallbackStore.tryAcquire(appId, nonce, ttlSeconds);
+    private boolean fallbackAllowed(String appId) {
+        if (!properties.isAllowStoreFallback()) {
+            return false;
         }
+        List<String> sensitive = properties.getHighSensitivityAppIds();
+        return sensitive == null || sensitive.stream().noneMatch(entry -> entry != null && entry.equals(appId));
     }
 
     private void countFailure(String appId) {
