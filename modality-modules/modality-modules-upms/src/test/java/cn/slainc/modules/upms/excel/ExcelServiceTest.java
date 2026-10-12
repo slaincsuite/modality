@@ -1,6 +1,7 @@
 package cn.slainc.modules.upms.excel;
 
 import cn.slainc.core.enums.LoginType;
+import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.service.UserService;
@@ -10,10 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExcelServiceTest extends UpmsIntegrationTestBase {
 
@@ -67,6 +70,19 @@ class ExcelServiceTest extends UpmsIntegrationTestBase {
         assertThat(report.get("failure")).isEqualTo(1);
         List<Map<String, Object>> failures = (List<Map<String, Object>>) report.get("failures");
         assertThat(failures.get(0).get("reason").toString()).contains("已存在");
+    }
+
+    @Test
+    void importRejectsFileAboveRowLimit() {
+        List<UserImportRow> rows = new ArrayList<>();
+        for (int i = 0; i <= 5000; i++) {
+            rows.add(rowOf("bulk-" + i, "TENANT_USER", null));
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        EasyExcel.write(out, UserImportRow.class).sheet().doWrite(rows);
+        assertThatThrownBy(() -> userExcelService.importUsers(new ByteArrayInputStream(out.toByteArray()), 1L, "admin"))
+                .isInstanceOf(BizException.class).hasMessageContaining("超过上限");
+        assertThat(userService.findByUsername("bulk-0", LoginType.TENANT_USER)).isNull();
     }
 
     @Test

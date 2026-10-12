@@ -61,6 +61,20 @@ class RoleServiceTest extends UpmsIntegrationTestBase {
     }
 
     @Test
+    void updateRejectsDescendantAsParent() {
+        RoleRecord parent = roleService.create("tree-parent", "树父", null, null, null, null, null);
+        RoleRecord child = roleService.create("tree-child", "树子", parent.getId(), null, null, null, null);
+        RoleRecord grandChild = roleService.create("tree-grand", "树孙", child.getId(), null, null, null, null);
+        assertThatThrownBy(() -> roleService.update(parent.getId(), null, grandChild.getId(), null, null, null, null,
+                null)).isInstanceOf(BizException.class).hasMessageContaining("不能是自身的下级");
+        assertThat(roleService.require(parent.getId()).getParentId()).isZero();
+        assertThat(roleService.collectSubtreeIds(parent.getId()))
+                .containsExactlyInAnyOrder(parent.getId(), child.getId(), grandChild.getId());
+        roleService.update(grandChild.getId(), null, 0L, null, null, null, null, null);
+        assertThat(roleService.require(grandChild.getId()).getParentId()).isZero();
+    }
+
+    @Test
     void copyDuplicatesPermissionsAndCustomScope() {
         PermissionRecord read = permissionService.create("doc:read2", "读", "API", null, null, null);
         RoleRecord source = roleService.create("auditor", "审计", null, "CUSTOM", null, null, null);

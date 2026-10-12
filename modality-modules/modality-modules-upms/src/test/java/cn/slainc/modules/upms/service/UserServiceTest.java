@@ -5,17 +5,36 @@ import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
 import cn.slainc.modules.upms.UpmsKeys;
+import cn.slainc.modules.upms.entity.RoleRecord;
+import cn.slainc.modules.upms.entity.UserGroupRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.entity.UserRoleRecord;
+import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
+import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.policy.engine.PolicyEngine;
+import cn.slainc.policy.model.Effect;
+import cn.slainc.policy.model.PolicyBinding;
+import cn.slainc.policy.model.PolicyDocument;
+import cn.slainc.policy.model.PolicyRequest;
+import cn.slainc.policy.model.PolicyStatement;
+import cn.slainc.policy.model.PolicySubjectType;
+import cn.slainc.security.kick.KickService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class UserServiceTest extends UpmsIntegrationTestBase {
 
@@ -24,6 +43,27 @@ class UserServiceTest extends UpmsIntegrationTestBase {
 
     @Autowired
     private UserRoleMapper userRoleMapper;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
+    private UserGroupService userGroupService;
+
+    @Autowired
+    private PolicyAdminService policyAdminService;
+
+    @Autowired
+    private PolicyBindingService policyBindingService;
+
+    @Autowired
+    private PolicyEngine policyEngine;
+
+    @MockitoSpyBean
+    private KickService kickService;
 
     @Test
     void createUserWithDefaultPasswordForcesChange() {
@@ -110,6 +150,103 @@ class UserServiceTest extends UpmsIntegrationTestBase {
         int disabled = userService.batchDisable(List.of(user.getId(), 9999L));
         assertThat(disabled).isEqualTo(1);
         assertThat(userService.batchDisable(List.of(user.getId()))).isZero();
+    }
+
+    @Test
+    void softDeleteReleasesUsernameForReuse() {
+        UserRecord user = userService.create("reuse-me", null, null, null, null, null, LoginType.TENANT_USER, 1L,
+                "admin");
+        userService.delete(user.getId());
+        assertThat(userMapper.selectById(user.getId()).getUsername()).isEqualTo("reuse-me#deleted#" + user.getId());
+
+        UserRecord rebuilt = userService.create("reuse-me", null, null, null, null, null, LoginType.TENANT_USER, 1L,
+                "admin");
+        assertThat(rebuilt.getId()).isNotEqualTo(user.getId());
+
+        String longName = "n".repeat(64);
+        UserRecord longUser = userService.create(longName, null, null, null, null, null, LoginType.TENANT_USER, 1L,
+                "admin");
+        userService.delete(longUser.getId());
+        String released = userMapper.selectById(longUser.getId()).getUsername();
+        assertThat(released).hasSizeLessThanOrEqualTo(64).endsWith("#deleted#" + longUser.getId());
+        assertThat(userService.create(longName, null, null, null, null, null, LoginType.TENANT_USER, 1L, "admin"))
+                .isNotNull();
+    }
+
+    @Test
+    void searchFiltersByRoleAndGroup() {
+        RoleRecord role = roleService.create("search-role", "检索角色", null, null, null, null, null);
+        UserGroupRecord group = userGroupService.create("检索组", null);
+        UserRecord bound = userService.create("search-bound", null, null, null, null, null, LoginType.TENANT_USER,
+                1L, "admin");
+        userService.create("search-free", null, null, null, null, null, LoginType.TENANT_USER, 1L, "admin");
+        userService.assignRoles(bound.getId(), List.of(role.getId()));
+        userGroupService.assignMembers(group.getId(), List.of(bound.getId()));
+
+        PageResult<UserRecord> byRole = userService.search(null, null, null, null, null, null, role.getId(), null,
+                null, null, null, 1, 10);
+        assertThat(byRole.total()).isEqualTo(1);
+        assertThat(byRole.records().get(0).getUsername()).isEqualTo("search-bound");
+        assertThat(userService.search(null, null, null, null, null, null, null, group.getId(), null, null, null, 1, 10)
+                .total()).isEqualTo(1);
+        assertThat(userService.search(null, null, null, null, null, null, 404040L, null, null, null, null, 1, 10)
+                .total()).isZero();
+        assertThat(userService.search(null, null, null, null, null, null, null, null, null, null, null, 1, 10)
+                .total()).isEqualTo(2);
+    }
+
+    @Test
+    void mergeMigratesPolicyBindingsToTarget() {
+        PolicyStatement statement = new PolicyStatement();
+        statement.setSid("allow-report");
+        statement.setEffect(Effect.ALLOW.name());
+        statement.setActions(List.of("report:*"));
+        statement.setResources(List.of("finance:quarterly"));
+        PolicyDocument document = new PolicyDocument();
+        document.setStatements(List.of(statement));
+        String policyId = policyAdminService.create("报表查看", PolicySubjectType.ROLE, "nobody", null, document,
+                "测试种子策略", "tester").getId();
+
+        UserRecord source = userService.create("policy-src", null, null, null, null, null, LoginType.TENANT_USER, 1L,
+                "admin");
+        UserRecord target = userService.create("policy-dst", null, null, null, null, null, LoginType.TENANT_USER, 1L,
+                "admin");
+        PolicyBinding binding = policyBindingService.bindToUser(policyId, source.getId(), LoginType.TENANT_USER,
+                "tester");
+
+        userService.merge(source.getId(), target.getId());
+
+        List<PolicyBinding> targetBindings = policyBindingService.query(PolicyBinding.SUBJECT_USER,
+                String.valueOf(target.getId()), null);
+        assertThat(targetBindings).hasSize(1);
+        assertThat(targetBindings.get(0).getPolicyId()).isNotEqualTo(binding.getPolicyId());
+        assertThat(policyBindingService.query(PolicyBinding.SUBJECT_USER, String.valueOf(source.getId()), null))
+                .isEmpty();
+
+        policyEngine.invalidate();
+        PolicyRequest request = PolicyRequest.of("report:read", "finance:quarterly")
+                .userId(String.valueOf(target.getId())).loginType(LoginType.TENANT_USER.value());
+        assertThat(policyEngine.evaluate(request).allowed()).isTrue();
+        PolicyRequest sourceRequest = PolicyRequest.of("report:read", "finance:quarterly")
+                .userId(String.valueOf(source.getId())).loginType(LoginType.TENANT_USER.value());
+        assertThat(policyEngine.evaluate(sourceRequest).allowed()).isFalse();
+    }
+
+    @Test
+    void disablingOrLockingUserKicksExistingSessions() {
+        doNothing().when(kickService).kickout(any(LoginType.class), any(), anyString());
+        UserRecord user = userService.create("kick-me", null, null, null, null, null, LoginType.TENANT_USER, 1L,
+                "admin");
+
+        userService.changeStatus(user.getId(), UpmsKeys.STATUS_DISABLED);
+        verify(kickService).kickout(LoginType.TENANT_USER, user.getId(), "账号已被禁用");
+
+        userService.changeStatus(user.getId(), UpmsKeys.STATUS_LOCKED);
+        verify(kickService).kickout(LoginType.TENANT_USER, user.getId(), "账号已被锁定");
+
+        userService.changeStatus(user.getId(), UpmsKeys.STATUS_ENABLED);
+        verify(kickService, times(1)).kickout(LoginType.TENANT_USER, user.getId(), "账号已被禁用");
+        verify(kickService, times(1)).kickout(LoginType.TENANT_USER, user.getId(), "账号已被锁定");
     }
 
     @Test

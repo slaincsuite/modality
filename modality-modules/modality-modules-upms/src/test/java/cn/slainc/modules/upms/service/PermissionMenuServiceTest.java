@@ -82,6 +82,25 @@ class PermissionMenuServiceTest extends UpmsIntegrationTestBase {
     }
 
     @Test
+    void permissionAndMenuDescendantParentRejected() {
+        PermissionRecord permParent = permissionService.create("cyc", "环", "MENU", null, null, null);
+        PermissionRecord permChild = permissionService.create("cyc:child", "环子", "BUTTON", permParent.getId(), null,
+                null);
+        assertThatThrownBy(() -> permissionService.update(permParent.getId(), null, null, permChild.getId(), null, null,
+                null)).isInstanceOf(BizException.class).hasMessageContaining("不能是自身的下级");
+        assertThat(permissionService.require(permParent.getId()).getParentId()).isZero();
+
+        MenuRecord menuParent = menuService.create("环目录", null, MenuRecord.TYPE_DIRECTORY, null, null, null, null,
+                true, 1);
+        MenuRecord menuChild = menuService.create("环页面", menuParent.getId(), MenuRecord.TYPE_MENU, null, null, null,
+                null, true, 1);
+        assertThatThrownBy(() -> menuService.update(menuParent.getId(), null, menuChild.getId(), null, null, null, null,
+                null, null, null, null)).isInstanceOf(BizException.class).hasMessageContaining("不能是自身的下级");
+        assertThat(menuService.collectSubtreeIds(menuParent.getId()))
+                .containsExactlyInAnyOrder(menuParent.getId(), menuChild.getId());
+    }
+
+    @Test
     void userMenuReflectsRolePermissions() {
         PermissionRecord perm = permissionService.create("menu:demo", "演示", "MENU", null, null, null);
         RoleRecord role = roleService.create("viewer", "观察员", null, null, null, null, null);

@@ -3,7 +3,9 @@ package cn.slainc.modules.upms.log;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.event.LoginEvent;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
+import cn.slainc.modules.upms.entity.RoleRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
+import cn.slainc.modules.upms.service.RoleService;
 import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.modules.upms.service.UserStatsService;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,9 @@ class LogAndStatsTest extends UpmsIntegrationTestBase {
 
     @Autowired
     private ApplicationEventPublisher publisher;
+
+    @Autowired
+    private RoleService roleService;
 
     @Test
     void loginEventsCollectedWithDeviceParsing() {
@@ -93,6 +98,26 @@ class LogAndStatsTest extends UpmsIntegrationTestBase {
 
         assertThat(statsService.roleDistribution()).extracting(row -> row.get("role"))
                 .containsExactly("未分配角色");
+    }
+
+    @Test
+    void roleDistributionAggregatesBindingsByRole() {
+        RoleRecord role = roleService.create("stats-role", "统计角色", null, null, null, null, null);
+        UserRecord bound = userService.create("stats-bound", null, null, null, null, null, LoginType.TENANT_USER, 1L,
+                "admin");
+        userService.create("stats-free", null, null, null, null, null, LoginType.TENANT_USER, 1L, "admin");
+        userService.assignRoles(bound.getId(), List.of(role.getId()));
+
+        List<Map<String, Object>> distribution = statsService.roleDistribution();
+        assertThat(distribution).anySatisfy(row -> {
+            assertThat(row).containsEntry("role", "统计角色");
+            assertThat(row).containsEntry("count", 1);
+        });
+        assertThat(distribution).anySatisfy(row -> {
+            assertThat(row).containsEntry("role", "未分配角色");
+            assertThat(row).containsEntry("count", 1);
+        });
+        assertThat(distribution).noneSatisfy(row -> assertThat(row.get("count")).isEqualTo(0));
     }
 
     @Test
