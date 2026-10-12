@@ -72,7 +72,7 @@ public class WebhookNotifierSource implements AlertNotifierSource {
                 continue;
             }
             try {
-                definition.validate();
+                definition.validate(properties.getAlert().isAllowInternalWebhooks());
                 notifiers.add(new WebhookAlertNotifier(definition, transport));
             } catch (RuntimeException exception) {
                 log.warn("忽略非法的告警 Webhook 配置: {}", exception.getMessage());

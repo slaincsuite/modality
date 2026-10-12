@@ -77,7 +77,7 @@ public class AlertAutoConfiguration {
     @ConditionalOnMissingBean
     public WebhookTransport webhookTransport(MonitorProperties properties) {
         return new HttpWebhookTransport(properties.getAlert().getConnectTimeout(),
-                properties.getAlert().getReadTimeout());
+                properties.getAlert().getReadTimeout(), properties.getAlert().isAllowInternalWebhooks());
     }
 
     @Bean

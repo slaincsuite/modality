@@ -80,14 +80,28 @@ public class AlertEvaluator {
         states.clear();
     }
 
+    public void restoreFiringStates(Map<String, Boolean> firingStates) {
+        if (firingStates == null || firingStates.isEmpty()) {
+            return;
+        }
+        firingStates.forEach((ruleId, fired) -> {
+            if (ruleId == null || !Boolean.TRUE.equals(fired)) {
+                return;
+            }
+            RuleState state = states.computeIfAbsent(ruleId, key -> new RuleState());
+            state.fired = true;
+            state.breachSinceMillis = 0L;
+        });
+    }
+
     private static final class RuleState {
 
-        private long breachSinceMillis;
+        private volatile long breachSinceMillis;
 
-        private boolean fired;
+        private volatile boolean fired;
 
-        private double lastValue;
+        private volatile double lastValue;
 
-        private long lastEvaluatedAt;
+        private volatile long lastEvaluatedAt;
     }
 }

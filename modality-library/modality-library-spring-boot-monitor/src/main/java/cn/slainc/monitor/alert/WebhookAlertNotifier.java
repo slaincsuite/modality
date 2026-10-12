@@ -38,7 +38,8 @@ public class WebhookAlertNotifier implements AlertNotifier {
 
     @Override
     public void send(AlertEvent event) {
-        definition.validate();
+        // 内网地址限制由 transport 按 allow-internal-webhooks 统一裁决，这里只校验 scheme/主机
+        definition.validate(true);
         String url = signedUrl(definition);
         String body = WebhookPayloads.of(definition, event);
         WebhookSignatures.verifyPlatformResponse(transport.post(url, body, definition.getHeaders()));

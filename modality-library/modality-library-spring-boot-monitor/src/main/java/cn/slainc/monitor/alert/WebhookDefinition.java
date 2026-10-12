@@ -104,8 +104,18 @@ public class WebhookDefinition {
     }
 
     public void validate() {
+        validate(false);
+    }
+
+    public void validate(boolean allowInternalAddresses) {
         if (url == null || url.isBlank()) {
             throw new IllegalArgumentException("告警 Webhook [" + resolvedName() + "] 缺少 url");
+        }
+        try {
+            WebhookUrlValidator.validate(url, allowInternalAddresses);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("告警 Webhook [" + resolvedName() + "] 配置不合法："
+                    + exception.getMessage());
         }
     }
 

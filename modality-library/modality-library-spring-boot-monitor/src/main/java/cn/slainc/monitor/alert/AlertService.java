@@ -102,7 +102,12 @@ public class AlertService {
                 log.info("规则 {} 在 {} 秒抑制窗口内，同类告警已合并", event.ruleId(), windowSeconds);
                 continue;
             }
-            dispatcher.dispatch(event);
+            int sent = dispatcher.dispatch(event);
+            if (sent <= 0 && event.type() == AlertType.TRIGGER) {
+                // 一个通道都没发出去就回滚抑制窗口，否则一次抖动会让整段抑制周期内的告警全部丢失
+                suppressor.release(event.ruleId(), nowMillis);
+                log.warn("规则 {} 的告警没有任何通道发送成功，已回滚抑制窗口等待下次重试", event.ruleId());
+            }
             notified.add(event);
         }
         return notified;

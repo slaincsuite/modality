@@ -466,6 +466,8 @@ public class MonitorProperties {
 
         private Duration readTimeout = Duration.ofSeconds(5);
 
+        private boolean allowInternalWebhooks = false;
+
         private List<AlertRule> rules = new ArrayList<>();
 
         private List<WebhookDefinition> webhooks = new ArrayList<>();
@@ -528,6 +530,14 @@ public class MonitorProperties {
 
         public void setReadTimeout(Duration readTimeout) {
             this.readTimeout = readTimeout;
+        }
+
+        public boolean isAllowInternalWebhooks() {
+            return allowInternalWebhooks;
+        }
+
+        public void setAllowInternalWebhooks(boolean allowInternalWebhooks) {
+            this.allowInternalWebhooks = allowInternalWebhooks;
         }
 
         public List<AlertRule> getRules() {

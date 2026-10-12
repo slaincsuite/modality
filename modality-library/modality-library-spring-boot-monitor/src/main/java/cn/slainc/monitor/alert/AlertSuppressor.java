@@ -23,6 +23,12 @@ public class AlertSuppressor {
         return suppressed.get();
     }
 
+    public void release(String key, long suppressedAtMillis) {
+        if (key != null) {
+            lastNotified.remove(key, suppressedAtMillis);
+        }
+    }
+
     public void reset(String key) {
         if (key != null) {
             lastNotified.remove(key);
