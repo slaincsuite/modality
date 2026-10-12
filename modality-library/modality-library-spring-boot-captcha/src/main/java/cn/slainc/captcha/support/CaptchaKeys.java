@@ -1,10 +1,11 @@
 package cn.slainc.captcha.support;
 
 import cn.slainc.captcha.Channels;
+import cn.slainc.core.constant.CacheKeys;
 
 public final class CaptchaKeys {
 
-    private static final String PREFIX = "modality:captcha:";
+    private static final String PREFIX = CacheKeys.CAPTCHA;
 
     private CaptchaKeys() {
     }

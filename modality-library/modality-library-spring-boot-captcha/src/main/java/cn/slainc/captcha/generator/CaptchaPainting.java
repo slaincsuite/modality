@@ -9,7 +9,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
-import java.util.concurrent.ThreadLocalRandom;
+
+import cn.slainc.crypto.random.SecureRandomUtils;
 
 final class CaptchaPainting {
 
@@ -17,7 +18,7 @@ final class CaptchaPainting {
     }
 
     static Color randomColor() {
-        int[] rgb = Captcha.COLOR[ThreadLocalRandom.current().nextInt(Captcha.COLOR.length)];
+        int[] rgb = Captcha.COLOR[SecureRandomUtils.nextInt(Captcha.COLOR.length)];
         return new Color(rgb[0], rgb[1], rgb[2]);
     }
 

@@ -7,7 +7,9 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
+
+import cn.slainc.crypto.random.SecureRandomUtils;
 
 final class SlidePuzzleImage {
 
@@ -20,7 +22,7 @@ final class SlidePuzzleImage {
     }
 
     static Result draw(int width, int height, int pieceSize) {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Random random = SecureRandomUtils.secureRandom();
         int size = Math.max(Math.min(pieceSize, Math.min(width, height) / 2), 16);
         int gapX = size + 8 + random.nextInt(Math.max(width - size * 2 - 16, 1));
         int gapY = 8 + random.nextInt(Math.max(height - size - 16, 1));
@@ -58,7 +60,7 @@ final class SlidePuzzleImage {
         return new Result(background, piece, gapX, gapY, size);
     }
 
-    private static void paintNoisyBackground(Graphics2D g, int width, int height, ThreadLocalRandom random) {
+    private static void paintNoisyBackground(Graphics2D g, int width, int height, Random random) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         Color start = Color.getHSBColor(random.nextFloat(), 0.45f, 0.75f);
         Color end = Color.getHSBColor(random.nextFloat(), 0.45f, 0.55f);

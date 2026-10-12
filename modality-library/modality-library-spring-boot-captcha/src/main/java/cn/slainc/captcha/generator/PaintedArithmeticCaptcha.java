@@ -6,7 +6,9 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.io.OutputStream;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
+
+import cn.slainc.crypto.random.SecureRandomUtils;
 
 class PaintedArithmeticCaptcha extends SpecCaptcha {
 
@@ -41,7 +43,7 @@ class PaintedArithmeticCaptcha extends SpecCaptcha {
 
     @Override
     protected char[] alphas() {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Random random = SecureRandomUtils.secureRandom();
         int operatorIndex = random.nextInt(OPERATORS.length);
         int left;
         int right;

@@ -172,11 +172,12 @@ public class CaptchaService {
     }
 
     private void recordFailure(String channel, String id) {
-        store.remove(CaptchaKeys.dataKey(channel, id));
         metrics.recordVerifyFailure();
         long threshold = resolveFailThreshold();
         long count = store.incrementFail(CaptchaKeys.failKey(channel, id), resolveTtl());
         if (threshold > 0 && count >= threshold) {
+            // 只有达到阈值才作废挑战并锁定：未达阈值时保留挑战，允许用户继续重试
+            store.remove(CaptchaKeys.dataKey(channel, id));
             store.lock(CaptchaKeys.lockKey(channel, id), resolveTtl());
         }
     }

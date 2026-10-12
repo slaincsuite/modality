@@ -14,7 +14,9 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
+
+import cn.slainc.crypto.random.SecureRandomUtils;
 
 final class ClickCaptchaImage {
 
@@ -27,7 +29,7 @@ final class ClickCaptchaImage {
     }
 
     static Result draw(int width, int height, int charCount) {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Random random = SecureRandomUtils.secureRandom();
         int count = Math.max(3, Math.min(4, charCount));
         List<Integer> pool = new ArrayList<>();
         for (int i = 0; i < CHAR_POOL.length(); i++) {
@@ -67,7 +69,7 @@ final class ClickCaptchaImage {
         return new Result(image, points, words);
     }
 
-    private static void drawCharacter(Graphics2D g, String word, int x, int y, ThreadLocalRandom random) {
+    private static void drawCharacter(Graphics2D g, String word, int x, int y, Random random) {
         Font font = CaptchaFonts.cjk(Font.BOLD, 22 + random.nextInt(9));
         g.setFont(font);
         FontMetrics metrics = g.getFontMetrics();
@@ -79,7 +81,7 @@ final class ClickCaptchaImage {
         g.setTransform(restore);
     }
 
-    private static void paintBackground(Graphics2D g, int width, int height, ThreadLocalRandom random) {
+    private static void paintBackground(Graphics2D g, int width, int height, Random random) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         Color start = Color.getHSBColor(random.nextFloat(), 0.22f, 0.94f);
         Color end = Color.getHSBColor(random.nextFloat(), 0.22f, 0.82f);
