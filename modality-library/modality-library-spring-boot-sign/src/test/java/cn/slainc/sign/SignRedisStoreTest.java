@@ -40,7 +40,7 @@ class SignRedisStoreTest {
 
     private static final int PORT = 6379;
 
-    private static final String PASSWORD = "omni-redis-pass";
+    private static final String PASSWORD = System.getenv().getOrDefault("MODALITY_REDIS_PASSWORD", "");
 
     private static final int DATABASE = 11;
 

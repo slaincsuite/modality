@@ -7,6 +7,7 @@ import cn.slainc.sign.config.SignProperties;
 import cn.slainc.sign.key.SignKeyDefinition;
 import cn.slainc.sign.key.SignKeyRegistry;
 import cn.slainc.sign.store.MemorySignNonceStore;
+import cn.slainc.sign.store.SignNonceStore;
 import cn.slainc.sign.tool.SignTool;
 import cn.slainc.sign.verify.SignVerifyResult;
 import cn.slainc.sign.verify.SignVerifier;
@@ -185,6 +186,58 @@ class SignVerifierLocalTest {
         assertThat(first.success()).isTrue();
         assertThat(second.success()).isFalse();
         assertThat(second.reason()).contains("重放");
+    }
+
+    @Test
+    void wrongSignatureDoesNotBurnNonce() {
+        SignResult result = signTool.sign(SignAlgorithm.HMAC_SHA256, hmacKey, 2, ORDER_PARAMS);
+        SignVerifyResult rejected = verifier.verify("hmac-app", null, 2, result.timestamp(), result.nonce(),
+                "wrong-signature", ORDER_PARAMS);
+        assertThat(rejected.success()).isFalse();
+        SignVerifyResult retried = verifier.verify("hmac-app", null, 2, result.timestamp(), result.nonce(),
+                result.signature(), ORDER_PARAMS);
+        assertThat(retried.success()).as(retried.reason()).isTrue();
+    }
+
+    @Test
+    void highSensitivityAppRefusesStoreFallback() {
+        properties.setHighSensitivityAppIds(List.of("hmac-app"));
+        SignVerifier guarded = verifierWithBrokenStore();
+        SignResult result = signTool.sign(SignAlgorithm.HMAC_SHA256, hmacKey, 2, ORDER_PARAMS);
+        SignVerifyResult verified = guarded.verify("hmac-app", null, 2, result.timestamp(), result.nonce(),
+                result.signature(), ORDER_PARAMS);
+        assertThat(verified.success()).isFalse();
+        assertThat(verified.reason()).contains("存储不可用");
+    }
+
+    @Test
+    void normalAppStillFallsBackToMemoryStore() {
+        SignVerifier tolerant = verifierWithBrokenStore();
+        SignResult result = signTool.sign(SignAlgorithm.HMAC_SHA256, hmacKey, 2, ORDER_PARAMS);
+        SignVerifyResult verified = tolerant.verify("hmac-app", null, 2, result.timestamp(), result.nonce(),
+                result.signature(), ORDER_PARAMS);
+        assertThat(verified.success()).as(verified.reason()).isTrue();
+    }
+
+    private SignVerifier verifierWithBrokenStore() {
+        return new SignVerifier(new SignKeyRegistry(properties, new SingleProvider<>(null)),
+                new SignComposer(properties), properties, new SignNonceStore() {
+
+                    @Override
+                    public boolean tryAcquire(String appId, String nonce, long ttlSeconds) {
+                        throw new IllegalStateException("存储不可用");
+                    }
+
+                    @Override
+                    public long incrementFailure(String appId, long ttlSeconds) {
+                        throw new IllegalStateException("存储不可用");
+                    }
+
+                    @Override
+                    public long failureCount(String appId) {
+                        throw new IllegalStateException("存储不可用");
+                    }
+                });
     }
 
     @Test
