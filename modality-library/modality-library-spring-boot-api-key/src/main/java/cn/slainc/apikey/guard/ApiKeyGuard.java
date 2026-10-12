@@ -5,8 +5,8 @@ import cn.dev33.satoken.apikey.model.ApiKeyModel;
 import cn.slainc.apikey.config.ApiKeyProperties;
 import cn.slainc.redis.ratelimit.RateLimitType;
 import cn.slainc.redis.ratelimit.RateLimiter;
+import cn.slainc.utils.net.IpMatcher;
 import cn.slainc.utils.net.IpUtils;
-import inet.ipaddr.IPAddressString;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -126,19 +126,7 @@ public class ApiKeyGuard {
     }
 
     private boolean matchesIp(String requestIp, String entry) {
-        if (requestIp == null || entry == null || entry.isBlank()) {
-            return false;
-        }
-        if (entry.equals(requestIp)) {
-            return true;
-        }
-        try {
-            IPAddressString network = new IPAddressString(entry.trim());
-            IPAddressString address = new IPAddressString(requestIp);
-            return network.contains(address);
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+        return IpMatcher.matches(requestIp, entry);
     }
 
     private static String mask(String apiKey) {

@@ -29,7 +29,7 @@ public class ApiKeyProperties {
 
         private boolean enabled = true;
 
-        private long defaultQpsLimit = 0;
+        private long defaultQpsLimit = 100;
 
         public boolean isEnabled() {
             return enabled;
