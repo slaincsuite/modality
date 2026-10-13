@@ -2,7 +2,6 @@ package cn.slainc.apikey.autoconfigure;
 
 import cn.dev33.satoken.apikey.template.SaApiKeyTemplate;
 import cn.slainc.apikey.ApiKeyRecord;
-import cn.slainc.apikey.ApiKeySchemaInitializer;
 import cn.slainc.apikey.config.ApiKeyProperties;
 import cn.slainc.apikey.loader.JdbcApiKeyDataLoader;
 import cn.slainc.apikey.mapper.ApiKeyMapper;
@@ -22,7 +21,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.sql.DataSource;
+
 import java.util.List;
 
 @AutoConfiguration(afterName = "com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration")
@@ -50,13 +49,6 @@ public class ApiKeyMybatisAutoConfiguration {
             MapperFactoryBean<ApiKeyMapper> factory = new MapperFactoryBean<>(ApiKeyMapper.class);
             factory.setSqlSessionFactory(sqlSessionFactory);
             return factory;
-        }
-
-        @Bean
-        @ConditionalOnMissingBean(ApiKeySchemaInitializer.class)
-        @ConditionalOnProperty(prefix = "modality.apikey", name = "auto-create-table", matchIfMissing = true)
-        public ApiKeySchemaInitializer apiKeySchemaInitializer(DataSource dataSource) {
-            return new ApiKeySchemaInitializer(dataSource);
         }
 
         @Bean

@@ -35,7 +35,7 @@ public class AuthClosureAutoConfiguration {
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnProperty(prefix = "modality.auth.closure", name = "auto-create-table", matchIfMissing = true)
     public ClasspathSchemaInitializer authSchemaInitializer(DataSource dataSource) {
-        return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/auth/auth-schema.sql");
+        return new ClasspathSchemaInitializer(dataSource, "auth-schema.sql");
     }
 
     @Bean

@@ -31,7 +31,7 @@ public class OpenStoreAutoConfiguration {
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnProperty(prefix = "modality.open", name = "auto-create-table", matchIfMissing = true)
     public ClasspathSchemaInitializer openSchemaInitializer(DataSource dataSource) {
-        return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/open/open-schema.sql");
+        return new ClasspathSchemaInitializer(dataSource, "open-schema.sql");
     }
 
     @Bean

@@ -10,7 +10,7 @@ import java.sql.Statement;
 public class InfraSchemaInitializer extends ClasspathSchemaInitializer {
 
     public InfraSchemaInitializer(DataSource dataSource) {
-        super(dataSource, "cn/slainc/modules/infra/infra-schema.sql");
+        super(dataSource, "infra-schema.sql");
     }
 
     @Override

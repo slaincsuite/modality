@@ -48,7 +48,7 @@ public class UpmsMybatisAutoConfiguration {
         @ConditionalOnBean(DataSource.class)
         @ConditionalOnProperty(prefix = "modality.upms", name = "auto-create-table", matchIfMissing = true)
         public ClasspathSchemaInitializer upmsSchemaInitializer(DataSource dataSource) {
-            return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/upms/upms-schema.sql");
+            return new ClasspathSchemaInitializer(dataSource, "upms-schema.sql");
         }
     }
 }

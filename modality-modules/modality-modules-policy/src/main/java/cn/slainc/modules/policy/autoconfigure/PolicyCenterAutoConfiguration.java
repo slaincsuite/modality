@@ -40,7 +40,7 @@ public class PolicyCenterAutoConfiguration {
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnProperty(prefix = "modality.policy-center", name = "auto-create-table", matchIfMissing = true)
     public ClasspathSchemaInitializer policyCenterSchemaInitializer(DataSource dataSource) {
-        return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/policy/policy-center-schema.sql");
+        return new ClasspathSchemaInitializer(dataSource, "policy-center-schema.sql");
     }
 
     @Bean

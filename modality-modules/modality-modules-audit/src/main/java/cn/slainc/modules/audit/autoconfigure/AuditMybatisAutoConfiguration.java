@@ -49,7 +49,7 @@ public class AuditMybatisAutoConfiguration {
         @ConditionalOnBean(DataSource.class)
         @ConditionalOnProperty(prefix = "modality.audit", name = "auto-create-table", matchIfMissing = true)
         public ClasspathSchemaInitializer auditSchemaInitializer(DataSource dataSource) {
-            return new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/audit/audit-schema.sql");
+            return new ClasspathSchemaInitializer(dataSource, "audit-schema.sql");
         }
     }
 }
