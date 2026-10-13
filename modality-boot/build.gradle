@@ -50,6 +50,7 @@ dependencies {
     implementation project(':modality-modules:modality-modules-audit')
     implementation project(':modality-modules:modality-modules-policy')
     implementation project(':modality-modules:modality-modules-infra')
+    implementation project(':modality-modules:modality-modules-workorder')
 
     testImplementation libs.archunit.junit5
 

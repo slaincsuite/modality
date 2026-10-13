@@ -1,0 +1,17 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = '工单中心'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-workorder')
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
+    api project(':modality-library:modality-library-spring-boot-storage')
+    api project(':modality-library:modality-library-spring-boot-excel')
+    compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    testRuntimeOnly libs.h2
+}
