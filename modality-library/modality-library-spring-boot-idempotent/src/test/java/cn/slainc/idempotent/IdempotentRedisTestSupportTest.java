@@ -15,7 +15,7 @@ class IdempotentRedisTestSupportTest {
 
     @Test
     void unreachableReasonUsesChineseAndFailFast() {
-        String reason = IdempotentRedisTestSupport.unavailableReason("127.0.0.1", 6379, "omni-redis-pass");
+        String reason = IdempotentRedisTestSupport.unavailableReason("127.0.0.1", 6379, "test-only-pass");
         assertThat(reason).contains("没有可用的 Redis").contains("真实 Redis").contains("快速失败");
     }
 }

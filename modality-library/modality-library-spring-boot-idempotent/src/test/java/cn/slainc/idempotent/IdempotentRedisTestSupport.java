@@ -19,7 +19,7 @@ public final class IdempotentRedisTestSupport {
 
     public static final int PORT = 6379;
 
-    public static final String PASSWORD = "omni-redis-pass";
+    public static final String PASSWORD = System.getenv().getOrDefault("MODALITY_REDIS_PASSWORD", "");
 
     private static volatile Boolean available;
 
