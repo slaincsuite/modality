@@ -24,6 +24,7 @@ import cn.slainc.modules.audit.web.PolicyEvaluationLogController;
 import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.session.kick.KickSessionService;
 import cn.slainc.session.online.OnlineUserService;
+import cn.slainc.session.stats.SessionStatsService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -108,7 +109,7 @@ public class AuditAutoConfiguration {
 
     // 在线用户管理依赖 session 库的查询与踢人服务：无 Redis（KickService 不装配）或宿主关闭 session 时整组端点退避
     @Configuration(proxyBeanMethods = false)
-    @ConditionalOnBean({OnlineUserService.class, KickSessionService.class})
+    @ConditionalOnBean({OnlineUserService.class, KickSessionService.class, SessionStatsService.class})
     @Import(OnlineUserAdminController.class)
     static class OnlineConfiguration {
 

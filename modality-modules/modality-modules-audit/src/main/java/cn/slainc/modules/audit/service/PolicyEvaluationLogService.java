@@ -4,6 +4,7 @@ import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.audit.entity.PolicyEvaluationLogRecord;
 import cn.slainc.modules.audit.mapper.PolicyEvaluationLogMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,17 +33,27 @@ public class PolicyEvaluationLogService {
     }
 
     public Map<String, Object> decisionStats(Long from, Long to) {
-        List<PolicyEvaluationLogRecord> records = mapper.selectList(baseWrapper(null, null, null, null, null,
-                from, to));
-        long total = records.size();
-        long denied = records.stream()
-                .filter(record -> "DENY".equals(record.getDecision()))
-                .count();
+        List<Map<String, Object>> rows = mapper.selectMaps(new QueryWrapper<PolicyEvaluationLogRecord>()
+                .select("COUNT(*) AS total", "SUM(CASE WHEN decision = 'DENY' THEN 1 ELSE 0 END) AS denied")
+                .ge(from != null, "create_time", from)
+                .le(to != null, "create_time", to));
+        Map<String, Object> row = rows.isEmpty() ? Map.of() : rows.get(0);
+        long total = countValue(row, "TOTAL");
+        long denied = countValue(row, "DENIED");
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("total", total);
         stats.put("denied", denied);
         stats.put("denyRate", total == 0 ? 0 : (double) denied / total);
         return stats;
+    }
+
+    private static long countValue(Map<String, Object> row, String key) {
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(key)) {
+                return entry.getValue() instanceof Number number ? number.longValue() : 0L;
+            }
+        }
+        return 0L;
     }
 
     public void insert(PolicyEvaluationLogRecord record) {

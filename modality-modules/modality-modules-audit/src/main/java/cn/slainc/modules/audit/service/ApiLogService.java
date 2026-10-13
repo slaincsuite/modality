@@ -4,6 +4,7 @@ import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.audit.entity.ApiLogRecord;
 import cn.slainc.modules.audit.mapper.ApiLogMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,20 +51,34 @@ public class ApiLogService {
                                    Long from, Long to, int limit) {
         return apiLogMapper.selectList(baseWrapper(path, method, statusCode, loginId, loginType, from, to)
                 .orderByDesc(ApiLogRecord::getId)
-                .last("LIMIT " + Math.max(1, limit)));
+                .last("LIMIT " + AuditLogService.clampLimit(limit)));
     }
 
     public Map<String, Object> requestStats(Long from, Long to) {
-        List<ApiLogRecord> records = apiLogMapper.selectList(baseWrapper(null, null, null, null, null, from, to));
-        long total = records.size();
-        long errors = records.stream().filter(record -> Boolean.TRUE.equals(record.getError())).count();
-        long slow = records.stream().filter(record -> Boolean.TRUE.equals(record.getSlow())).count();
+        List<Map<String, Object>> rows = apiLogMapper.selectMaps(new QueryWrapper<ApiLogRecord>()
+                .select("COUNT(*) AS total", "SUM(CASE WHEN error = 1 THEN 1 ELSE 0 END) AS errors",
+                        "SUM(CASE WHEN slow = 1 THEN 1 ELSE 0 END) AS slow")
+                .ge(from != null, "create_time", from)
+                .le(to != null, "create_time", to));
+        Map<String, Object> row = rows.isEmpty() ? Map.of() : rows.get(0);
+        long total = countValue(row, "TOTAL");
+        long errors = countValue(row, "ERRORS");
+        long slow = countValue(row, "SLOW");
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("total", total);
         stats.put("errors", errors);
         stats.put("slow", slow);
         stats.put("errorRate", total == 0 ? 0 : (double) errors / total);
         return stats;
+    }
+
+    private static long countValue(Map<String, Object> row, String key) {
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(key)) {
+                return entry.getValue() instanceof Number number ? number.longValue() : 0L;
+            }
+        }
+        return 0L;
     }
 
     public int purgeBefore(long epochMillis) {

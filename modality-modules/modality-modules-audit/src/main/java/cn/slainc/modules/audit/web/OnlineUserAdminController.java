@@ -16,6 +16,8 @@ import cn.slainc.session.SessionInfo;
 import cn.slainc.session.SessionSortField;
 import cn.slainc.session.kick.KickSessionService;
 import cn.slainc.session.online.OnlineUserService;
+import cn.slainc.session.stats.SessionStats;
+import cn.slainc.session.stats.SessionStatsService;
 import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -46,12 +48,16 @@ public class OnlineUserAdminController {
 
     private final OnlineUserExcelService excelService;
 
+    private final SessionStatsService sessionStatsService;
+
     public OnlineUserAdminController(OnlineUserService onlineUserService, KickSessionService kickSessionService,
-                                     AuditLogService auditLogService, OnlineUserExcelService excelService) {
+                                     AuditLogService auditLogService, OnlineUserExcelService excelService,
+                                     SessionStatsService sessionStatsService) {
         this.onlineUserService = onlineUserService;
         this.kickSessionService = kickSessionService;
         this.auditLogService = auditLogService;
         this.excelService = excelService;
+        this.sessionStatsService = sessionStatsService;
     }
 
     @GetMapping("/page")
@@ -74,15 +80,17 @@ public class OnlineUserAdminController {
     @RequirePermission(permissions = AuditKeys.PERMISSION_ONLINE_QUERY)
     public Object stats(@RequestParam(required = false) String type) {
         LoginType loginType = type == null || type.isBlank() ? null : LoginType.of(type);
+        SessionStats snapshot = sessionStatsService.snapshot(null);
         Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("total", onlineUserService.onlineCount(loginType));
-        stats.put("byType", onlineUserService.countByType());
-        // session 的 countByTenant 对无租户会话保留 null 键，Jackson 3 不接受 null 键，这里统一重命名
+        stats.put("total", loginType == null ? snapshot.total()
+                : snapshot.byType().getOrDefault(loginType.value(), 0L));
+        stats.put("byType", snapshot.byType());
+        // 无租户会话的键为 null，Jackson 3 不接受 null 键，这里统一重命名
         Map<String, Long> byTenant = new LinkedHashMap<>();
-        onlineUserService.countByTenant().forEach((tenant, count) ->
+        snapshot.byTenant().forEach((tenant, count) ->
                 byTenant.merge(tenant == null ? "无租户" : tenant, count, Long::sum));
         stats.put("byTenant", byTenant);
-        stats.put("byDeviceType", onlineUserService.countByDeviceType());
+        stats.put("byDeviceType", snapshot.byDeviceType());
         return stats;
     }
 

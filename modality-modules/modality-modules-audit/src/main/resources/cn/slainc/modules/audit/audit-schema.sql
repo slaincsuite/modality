@@ -26,7 +26,11 @@ CREATE TABLE IF NOT EXISTS t_audit_log (
     exception_message VARCHAR(1000),
     cost_millis BIGINT NOT NULL DEFAULT 0,
     trace_id VARCHAR(64),
-    create_time BIGINT NOT NULL
+    create_time BIGINT NOT NULL,
+    KEY idx_audit_log_query (tenant_id, create_time),
+    KEY idx_audit_log_category (category, create_time),
+    KEY idx_audit_log_username (username, create_time),
+    KEY idx_audit_log_level (level, create_time)
 );
 
 CREATE TABLE IF NOT EXISTS t_audit_api_log (
@@ -43,7 +47,9 @@ CREATE TABLE IF NOT EXISTS t_audit_api_log (
     cost_millis BIGINT NOT NULL DEFAULT 0,
     slow TINYINT NOT NULL DEFAULT 0,
     error TINYINT NOT NULL DEFAULT 0,
-    create_time BIGINT NOT NULL
+    create_time BIGINT NOT NULL,
+    KEY idx_audit_api_log_query (tenant_id, create_time),
+    KEY idx_audit_api_log_create_time (create_time)
 );
 
 CREATE TABLE IF NOT EXISTS t_audit_policy_log (
@@ -58,5 +64,7 @@ CREATE TABLE IF NOT EXISTS t_audit_policy_log (
     reason VARCHAR(500),
     client_ip VARCHAR(64),
     request_path VARCHAR(256),
-    create_time BIGINT NOT NULL
+    create_time BIGINT NOT NULL,
+    KEY idx_audit_policy_log_query (tenant_id, create_time),
+    KEY idx_audit_policy_log_decision (decision, create_time)
 );
