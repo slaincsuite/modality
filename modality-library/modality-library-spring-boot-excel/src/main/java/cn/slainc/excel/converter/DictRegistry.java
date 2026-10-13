@@ -63,10 +63,6 @@ public final class DictRegistry {
         return name == null ? null : ENTRIES.get(name);
     }
 
-    public static boolean contains(String name) {
-        return name != null && ENTRIES.containsKey(name);
-    }
-
     public static String toLabel(String name, Object value) {
         Entry entry = get(name);
         return entry == null ? null : entry.toLabel().apply(value);
@@ -75,10 +71,6 @@ public final class DictRegistry {
     public static Object toValue(String name, String label) {
         Entry entry = get(name);
         return entry == null ? null : entry.toValue().apply(label);
-    }
-
-    public static void remove(String name) {
-        ENTRIES.remove(name);
     }
 
     public static void clear() {

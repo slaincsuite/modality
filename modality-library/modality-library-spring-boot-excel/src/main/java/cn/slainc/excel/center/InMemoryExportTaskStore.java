@@ -43,27 +43,15 @@ public class InMemoryExportTaskStore implements ExportTaskStore {
                         .contains(actual.nameContains().toLowerCase(java.util.Locale.ROOT))))
                 .sorted(Comparator.comparing(ExportTask::getCreatedAt).reversed())
                 .toList();
-        int offset = actual.offset() == null ? 0 : Math.max(0, actual.offset());
-        if (offset >= matched.size()) {
-            return List.of();
+        if (actual.limit() == null) {
+            return matched;
         }
-        int end = actual.limit() == null ? matched.size() : Math.min(matched.size(), offset + actual.limit());
-        return List.copyOf(matched.subList(offset, end));
+        return List.copyOf(matched.subList(0, Math.min(matched.size(), actual.limit())));
     }
 
     @Override
     public boolean delete(String taskId) {
         return taskId != null && tasks.remove(taskId) != null;
-    }
-
-    @Override
-    public long clearFinished() {
-        List<String> finished = tasks.values().stream()
-                .filter(task -> task.getStatus().isFinished())
-                .map(ExportTask::getTaskId)
-                .toList();
-        finished.forEach(tasks::remove);
-        return finished.size();
     }
 
     @Override

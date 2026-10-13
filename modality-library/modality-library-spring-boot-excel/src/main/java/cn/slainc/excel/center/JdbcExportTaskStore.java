@@ -116,32 +116,33 @@ public class JdbcExportTaskStore implements ExportTaskStore {
             actual.statuses().forEach(status -> arguments.add(status.name()));
         }
         if (actual.nameContains() != null && !actual.nameContains().isBlank()) {
-            sql.append(" AND LOWER(task_name) LIKE ?");
-            arguments.add("%" + actual.nameContains().toLowerCase(java.util.Locale.ROOT) + "%");
+            sql.append(" AND LOWER(task_name) LIKE ? ESCAPE '!'");
+            arguments.add("%" + escapeLike(actual.nameContains().toLowerCase(java.util.Locale.ROOT)) + "%");
         }
         sql.append(" ORDER BY created_at DESC");
         if (actual.limit() != null) {
             sql.append(" LIMIT ?");
             arguments.add(actual.limit());
-            if (actual.offset() != null) {
-                sql.append(" OFFSET ?");
-                arguments.add(actual.offset());
-            }
         }
         return jdbcTemplate.query(sql.toString(), rowMapper, arguments.toArray());
+    }
+
+    static String escapeLike(String value) {
+        StringBuilder builder = new StringBuilder(value.length() + 8);
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (current == '%' || current == '_' || current == '!') {
+                builder.append('!');
+            }
+            builder.append(current);
+        }
+        return builder.toString();
     }
 
     @Override
     public boolean delete(String taskId) {
         ensureSchema();
         return taskId != null && jdbcTemplate.update("DELETE FROM " + TABLE + " WHERE task_id = ?", taskId) > 0;
-    }
-
-    @Override
-    public long clearFinished() {
-        ensureSchema();
-        return jdbcTemplate.update("DELETE FROM " + TABLE + " WHERE status IN (?,?,?)",
-                ExportTaskStatus.SUCCEEDED.name(), ExportTaskStatus.FAILED.name(), ExportTaskStatus.CANCELED.name());
     }
 
     @Override

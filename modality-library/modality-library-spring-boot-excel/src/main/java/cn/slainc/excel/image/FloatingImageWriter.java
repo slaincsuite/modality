@@ -65,11 +65,10 @@ public final class FloatingImageWriter {
 
     private static ClientAnchor clientAnchor(Workbook workbook, ImageAnchor anchor) {
         if (workbook instanceof XSSFWorkbook) {
-            return new XSSFClientAnchor(anchor.dx1(), anchor.dy1(), anchor.dx2(), anchor.dy2(), anchor.column1(),
-                    anchor.row1(), anchor.column2(), anchor.row2());
+            return new XSSFClientAnchor(0, 0, 0, 0, anchor.column1(), anchor.row1(), anchor.column2(), anchor.row2());
         }
-        return new HSSFClientAnchor(anchor.dx1(), anchor.dy1(), anchor.dx2(), anchor.dy2(), (short) anchor.column1(),
-                anchor.row1(), (short) anchor.column2(), anchor.row2());
+        return new HSSFClientAnchor(0, 0, 0, 0, (short) anchor.column1(), anchor.row1(), (short) anchor.column2(),
+                anchor.row2());
     }
 
     private static Sheet sheetAt(Workbook workbook, int sheetIndex) {

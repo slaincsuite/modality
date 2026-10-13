@@ -29,18 +29,6 @@ public final class ChartSpec {
         return new Builder();
     }
 
-    public static ChartSpec bar(String title, ChartSeries series) {
-        return builder().type(ChartType.BAR).title(title).series(series).build();
-    }
-
-    public static ChartSpec line(String title, ChartSeries series) {
-        return builder().type(ChartType.LINE).title(title).series(series).build();
-    }
-
-    public static ChartSpec pie(String title, ChartSeries series) {
-        return builder().type(ChartType.PIE).title(title).series(series).build();
-    }
-
     public ChartType getType() {
         return type;
     }

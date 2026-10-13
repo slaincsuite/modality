@@ -140,12 +140,25 @@ public final class CsvUtils {
         if (value == null) {
             return "";
         }
-        boolean needQuote = value.indexOf(delimiter) >= 0 || value.indexOf(QUOTE) >= 0
-                || value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0;
+        String safe = neutralizeFormula(value);
+        boolean needQuote = safe.indexOf(delimiter) >= 0 || safe.indexOf(QUOTE) >= 0
+                || safe.indexOf('\n') >= 0 || safe.indexOf('\r') >= 0;
         if (!needQuote) {
+            return safe;
+        }
+        return QUOTE + safe.replace(String.valueOf(QUOTE), String.valueOf(QUOTE) + QUOTE) + QUOTE;
+    }
+
+    // CSV 公式注入防护：以 = + - @ 或制表符/回车开头的值前置单引号，避免被表格软件当公式执行
+    public static String neutralizeFormula(String value) {
+        if (value == null || value.isEmpty()) {
             return value;
         }
-        return QUOTE + value.replace(String.valueOf(QUOTE), String.valueOf(QUOTE) + QUOTE) + QUOTE;
+        char first = value.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r') {
+            return "'" + value;
+        }
+        return value;
     }
 
     private static void writeRow(Writer writer, List<String> row, char delimiter) throws IOException {

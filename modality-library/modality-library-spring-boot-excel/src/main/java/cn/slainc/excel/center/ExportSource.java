@@ -16,8 +16,4 @@ public record ExportSource<T>(Class<T> head, String name, String sheetName, Expo
     public static <T> ExportSource<T> of(Class<T> head, String name, ExportDataProvider<T> provider) {
         return new ExportSource<>(head, name, null, provider);
     }
-
-    public ExportSource<T> withSheetName(String value) {
-        return new ExportSource<>(head, name, value, provider);
-    }
 }

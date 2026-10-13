@@ -14,7 +14,5 @@ public interface ExportTaskStore {
 
     boolean delete(String taskId);
 
-    long clearFinished();
-
     List<ExportTask> findResumable();
 }

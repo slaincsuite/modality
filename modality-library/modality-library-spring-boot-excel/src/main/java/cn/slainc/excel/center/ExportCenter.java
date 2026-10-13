@@ -3,24 +3,32 @@ package cn.slainc.excel.center;
 import cn.slainc.core.exception.ExceptionUtils;
 import cn.slainc.excel.format.BeanHead;
 import cn.slainc.excel.support.WorkbookAccess;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 public class ExportCenter {
 
     public static final int DEFAULT_BATCH_SIZE = 2000;
+
+    public static final int STREAM_WINDOW = 100;
+
+    private static final String PART_MARK = ".part-";
 
     private final ExportTaskStore store;
     private final Path storageDirectory;
@@ -44,10 +52,6 @@ public class ExportCenter {
 
     public ExportTaskStore getStore() {
         return store;
-    }
-
-    public Path getStorageDirectory() {
-        return storageDirectory;
     }
 
     public <T> ExportTask submit(ExportSource<T> source) {
@@ -130,10 +134,10 @@ public class ExportCenter {
     }
 
     public long cleanup() {
-        List<ExportTask> finished = new ArrayList<>();
-        finished.addAll(store.list(ExportTaskQuery.of(ExportTaskStatus.SUCCEEDED)));
-        finished.addAll(store.list(ExportTaskQuery.of(ExportTaskStatus.FAILED)));
-        finished.addAll(store.list(ExportTaskQuery.of(ExportTaskStatus.CANCELED)));
+        List<ExportTask> finished = Stream.of(ExportTaskStatus.SUCCEEDED, ExportTaskStatus.FAILED,
+                        ExportTaskStatus.CANCELED)
+                .flatMap(status -> store.list(ExportTaskQuery.of(status)).stream())
+                .toList();
         long removed = 0;
         for (ExportTask task : finished) {
             deleteFile(task);
@@ -164,20 +168,27 @@ public class ExportCenter {
         Path file = Path.of(task.getFilePath());
         try {
             task.setTotalRows(source.provider().total());
+            long processed = completedRows(file);
+            task.setProcessedRows(processed);
+            store.update(task);
             while (true) {
-                List<?> batch = fetch(source, task.getProcessedRows());
+                List<?> batch = fetch(source, processed);
                 if (batch.isEmpty()) {
                     task.setStatus(ExportTaskStatus.SUCCEEDED);
                     break;
                 }
-                appendBatch(file, source, batch, task.getProcessedRows());
-                task.setProcessedRows(task.getProcessedRows() + batch.size());
+                writePart(file, source, batch, processed, task.getTaskId());
+                processed += batch.size();
+                task.setProcessedRows(processed);
                 store.update(task);
             }
+            mergeParts(file, source);
+            removeParts(file);
         } catch (RuntimeException ex) {
             task.setStatus(ExportTaskStatus.FAILED);
             String message = ExceptionUtils.getMessage(ex);
             task.setErrorMessage(message == null || message.isBlank() ? "导出失败" : message);
+            checkpointQuietly(file, source);
         }
         store.update(task);
         return task;
@@ -188,36 +199,159 @@ public class ExportCenter {
         return ((ExportDataProvider<Object>) source.provider()).fetch(offset, batchSize);
     }
 
-    @SuppressWarnings("unchecked")
-    private void appendBatch(Path file, ExportSource<?> source, List<?> batch, long offset) {
-        append(file, (ExportSource<Object>) source, (List<Object>) batch, offset);
-    }
-
-    private <T> void append(Path file, ExportSource<T> source, List<T> batch, long offset) {
+    private <T> void writePart(Path file, ExportSource<T> source, List<?> batch, long offset, String taskId) {
         BeanHead<T> head = BeanHead.of(source.head());
-        boolean exists = Files.exists(file);
-        Workbook workbook = exists ? WorkbookAccess.open(file) : new XSSFWorkbook();
+        Path part = partPath(file, taskId, offset, batch.size());
+        SXSSFWorkbook workbook = new SXSSFWorkbook(STREAM_WINDOW);
         try {
-            Sheet sheet;
-            if (exists) {
-                sheet = workbook.getSheetAt(0);
-            } else {
-                sheet = workbook.createSheet(source.sheetName());
-                Row headerRow = sheet.createRow(0);
-                List<String> headers = head.headers();
-                for (int index = 0; index < headers.size(); index++) {
-                    headerRow.createCell(index).setCellValue(headers.get(index));
-                }
-            }
-            int rowIndex = (int) offset + 1;
-            for (T bean : batch) {
+            Sheet sheet = workbook.createSheet(source.sheetName());
+            int rowIndex = 0;
+            for (Object bean : batch) {
                 Row row = sheet.createRow(rowIndex++);
-                List<String> values = head.valuesOf(bean);
+                List<String> values = head.valuesOf((T) bean);
                 for (int index = 0; index < values.size(); index++) {
                     row.createCell(index).setCellValue(values.get(index));
                 }
             }
-            WorkbookAccess.write(workbook, file);
+            WorkbookAccess.write(workbook, part);
+        } finally {
+            dispose(workbook);
+        }
+    }
+
+    private <T> void mergeParts(Path file, ExportSource<T> source) {
+        List<Path> parts = partsInOrder(file);
+        if (parts.isEmpty()) {
+            throw new IllegalStateException("导出任务没有可合并的分片: " + file);
+        }
+        BeanHead<T> head = BeanHead.of(source.head());
+        SXSSFWorkbook target = new SXSSFWorkbook(STREAM_WINDOW);
+        try {
+            Sheet sheet = target.createSheet(source.sheetName());
+            Row headerRow = sheet.createRow(0);
+            List<String> headers = head.headers();
+            for (int index = 0; index < headers.size(); index++) {
+                headerRow.createCell(index).setCellValue(headers.get(index));
+            }
+            int rowIndex = 1;
+            for (Path part : parts) {
+                Workbook workbook = WorkbookAccess.open(part);
+                try {
+                    Sheet partSheet = workbook.getSheetAt(0);
+                    for (Row row : partSheet) {
+                        Row targetRow = sheet.createRow(rowIndex++);
+                        for (int index = 0; index < row.getLastCellNum(); index++) {
+                            Cell cell = row.getCell(index);
+                            if (cell == null) {
+                                continue;
+                            }
+                            targetRow.createCell(index).setCellValue(cellText(cell));
+                        }
+                    }
+                } finally {
+                    close(workbook);
+                }
+            }
+            WorkbookAccess.write(target, file);
+        } finally {
+            dispose(target);
+        }
+    }
+
+    private static String cellText(Cell cell) {
+        return cell.getCellType() == CellType.STRING ? cell.getStringCellValue() : cell.toString();
+    }
+
+    private void checkpointQuietly(Path file, ExportSource<?> source) {
+        try {
+            if (!partsInOrder(file).isEmpty()) {
+                mergeParts(file, source);
+            }
+        } catch (RuntimeException ignored) {
+            // 检查点文件只是可读副本，写失败不影响分片本身的可恢复性
+        }
+    }
+
+    private long completedRows(Path file) {
+        long expected = 0L;
+        for (Path part : partsInOrder(file)) {
+            long[] meta = parsePart(file, part);
+            if (meta == null) {
+                removePart(part);
+                continue;
+            }
+            if (meta[0] != expected) {
+                removePart(part);
+                continue;
+            }
+            expected += meta[1];
+        }
+        return expected;
+    }
+
+    private List<Path> partsInOrder(Path file) {
+        Path directory = file.toAbsolutePath().getParent();
+        String prefix = partPrefix(file);
+        if (directory == null || !Files.isDirectory(directory)) {
+            return List.of();
+        }
+        try (Stream<Path> stream = Files.list(directory)) {
+            List<Path> parts = new ArrayList<>(stream
+                    .filter(path -> path.getFileName().toString().startsWith(prefix))
+                    .toList());
+            parts.sort(Comparator.comparingLong(path -> offsetOf(parsePart(file, path))));
+            return parts;
+        } catch (IOException ex) {
+            throw new IllegalStateException("读取导出分片失败: " + file, ex);
+        }
+    }
+
+    private void removeParts(Path file) {
+        for (Path part : partsInOrder(file)) {
+            removePart(part);
+        }
+    }
+
+    private void removePart(Path part) {
+        try {
+            Files.deleteIfExists(part);
+        } catch (IOException ex) {
+            throw new IllegalStateException("删除导出分片失败: " + part, ex);
+        }
+    }
+
+    private static long offsetOf(long[] meta) {
+        return meta == null ? Long.MAX_VALUE : meta[0];
+    }
+
+    private Path partPath(Path file, String taskId, long offset, int rows) {
+        return file.toAbsolutePath().getParent().resolve(partPrefix(file) + offset + "-" + rows);
+    }
+
+    private static String partPrefix(Path file) {
+        return file.getFileName().toString() + PART_MARK;
+    }
+
+    private long[] parsePart(Path file, Path part) {
+        String prefix = partPrefix(file);
+        String name = part.getFileName().toString();
+        if (!name.startsWith(prefix)) {
+            return null;
+        }
+        String[] segments = name.substring(prefix.length()).split("-");
+        if (segments.length != 2) {
+            return null;
+        }
+        try {
+            return new long[]{Long.parseLong(segments[0]), Long.parseLong(segments[1])};
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    private void dispose(SXSSFWorkbook workbook) {
+        try {
+            workbook.dispose();
         } finally {
             close(workbook);
         }
@@ -235,8 +369,10 @@ public class ExportCenter {
         if (task.getFilePath() == null) {
             return;
         }
+        Path file = Path.of(task.getFilePath());
+        removeParts(file);
         try {
-            Files.deleteIfExists(Path.of(task.getFilePath()));
+            Files.deleteIfExists(file);
         } catch (IOException ex) {
             throw new IllegalStateException("删除导出文件失败: " + task.getFilePath(), ex);
         }

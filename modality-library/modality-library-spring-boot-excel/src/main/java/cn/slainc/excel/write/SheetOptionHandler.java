@@ -3,7 +3,6 @@ package cn.slainc.excel.write;
 import cn.idev.excel.write.handler.SheetWriteHandler;
 import cn.idev.excel.write.metadata.holder.WriteSheetHolder;
 import cn.idev.excel.write.metadata.holder.WriteWorkbookHolder;
-import org.apache.poi.ss.usermodel.CellRange;
 import org.apache.poi.ss.usermodel.DataValidation;
 import org.apache.poi.ss.usermodel.DataValidationConstraint;
 import org.apache.poi.ss.usermodel.DataValidationHelper;
@@ -63,9 +62,5 @@ public class SheetOptionHandler implements SheetWriteHandler {
             validation.setShowErrorBox(true);
             sheet.addValidationData(validation);
         }
-    }
-
-    @SuppressWarnings("unused")
-    private static void unusedTypeAnchor(CellRange<?> range) {
     }
 }

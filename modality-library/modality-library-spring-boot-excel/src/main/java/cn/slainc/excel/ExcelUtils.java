@@ -55,14 +55,6 @@ public final class ExcelUtils {
         return ImportPreview.preview(path, head, maxRows);
     }
 
-    public static <T> List<T> preview(Path path, Class<T> head, int maxRows, int sheetNo) {
-        return ImportPreview.preview(path, head, maxRows, sheetNo);
-    }
-
-    public static <T> void write(Path path, Class<T> head, List<T> data) {
-        write(path, head, data, null);
-    }
-
     public static <T> void write(Path path, Class<T> head, List<T> data, String sheetName) {
         try (OutputStream outputStream = Files.newOutputStream(path)) {
             write(outputStream, head, data, sheetName);
@@ -152,10 +144,6 @@ public final class ExcelUtils {
         } catch (IOException ex) {
             throw new IllegalStateException("读取 Excel 失败: " + path, ex);
         }
-    }
-
-    public static <T> ImportResult<T> readWithResult(Path path, Class<T> head) {
-        return read(path, head, ReadOptions.defaults(), null);
     }
 
     public static Map<String, SheetData<?>> sheets() {

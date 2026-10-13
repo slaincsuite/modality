@@ -42,17 +42,6 @@ public final class PivotWriter {
         });
     }
 
-    public static int pivotTableCount(Path file) {
-        try (Workbook workbook = WorkbookAccess.open(file)) {
-            if (!(workbook instanceof XSSFWorkbook xssfWorkbook)) {
-                return 0;
-            }
-            return xssfWorkbook.getPivotTables().size();
-        } catch (java.io.IOException ex) {
-            throw new IllegalStateException("统计透视表失败: " + file, ex);
-        }
-    }
-
     public static boolean hasPivotPart(Path file) {
         try (Workbook workbook = WorkbookAccess.open(file)) {
             if (!(workbook instanceof XSSFWorkbook xssfWorkbook)) {

@@ -89,10 +89,6 @@ public enum ExcelFormat {
         return CSV;
     }
 
-    public static boolean isSupported(Path path) {
-        return of(path) != UNKNOWN;
-    }
-
     private static boolean startsWith(byte[] source, byte[] prefix) {
         if (source.length < prefix.length) {
             return false;

@@ -29,20 +29,12 @@ public final class LegacyWorkbookWriter {
     private LegacyWorkbookWriter() {
     }
 
-    public static <T> void write(Path path, Class<T> head, List<T> data, String sheetName) {
-        write(path, head, data, sheetName, null);
-    }
-
     public static <T> void write(Path path, Class<T> head, List<T> data, String sheetName, SheetOptions options) {
         try (OutputStream outputStream = Files.newOutputStream(path)) {
             write(outputStream, head, data, sheetName, options);
         } catch (IOException ex) {
             throw new IllegalStateException("导出 .xls 失败: " + path, ex);
         }
-    }
-
-    public static <T> void write(OutputStream outputStream, Class<T> head, List<T> data, String sheetName) {
-        write(outputStream, head, data, sheetName, null);
     }
 
     public static <T> void write(OutputStream outputStream, Class<T> head, List<T> data, String sheetName,

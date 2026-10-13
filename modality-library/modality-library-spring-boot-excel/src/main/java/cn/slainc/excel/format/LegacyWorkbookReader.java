@@ -24,20 +24,12 @@ public final class LegacyWorkbookReader {
     private LegacyWorkbookReader() {
     }
 
-    public static <T> List<T> read(Path path, Class<T> head) {
-        return read(path, head, 0);
-    }
-
     public static <T> List<T> read(Path path, Class<T> head, int sheetNo) {
         try (InputStream inputStream = Files.newInputStream(path)) {
             return read(inputStream, head, sheetNo);
         } catch (IOException ex) {
             throw new IllegalStateException("读取 .xls 失败: " + path, ex);
         }
-    }
-
-    public static <T> List<T> read(InputStream inputStream, Class<T> head) {
-        return read(inputStream, head, 0);
     }
 
     public static <T> List<T> read(InputStream inputStream, Class<T> head, int sheetNo) {
