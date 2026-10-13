@@ -11,7 +11,7 @@ public class SessionProperties {
 
     private long idleTimeoutSeconds = 0;
 
-    private long maxLifetimeSeconds = 2592000;
+    private long maxLifetimeSeconds = 7200;
 
     private int maxScan = 10000;
 

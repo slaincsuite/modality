@@ -7,8 +7,10 @@ import cn.slainc.session.config.SessionProperties;
 import cn.slainc.session.extend.SessionExtender;
 import cn.slainc.session.extend.SessionRenewalService;
 import cn.slainc.session.online.OnlineUserService;
+import cn.slainc.session.query.RedisSessionTokenBatchReader;
 import cn.slainc.session.query.SessionQueryService;
 import cn.slainc.session.query.SessionScanner;
+import cn.slainc.session.query.SessionTokenBatchReader;
 import cn.slainc.session.stats.SessionStatsListener;
 import cn.slainc.session.stats.SessionStatsService;
 import cn.slainc.session.timeout.SessionTimeoutPolicy;
@@ -19,6 +21,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 @AutoConfiguration
 @AutoConfigureAfter(name = "cn.slainc.security.autoconfigure.SecurityAutoConfiguration")
@@ -35,9 +38,18 @@ public class SessionAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(SessionTokenBatchReader.class)
+    @ConditionalOnProperty(prefix = "modality.session", name = "batch-reader.enabled", matchIfMissing = true)
+    public SessionTokenBatchReader sessionTokenBatchReader(ObjectProvider<StringRedisTemplate> stringRedisTemplate) {
+        StringRedisTemplate template = stringRedisTemplate.getIfAvailable();
+        return template == null ? null : new RedisSessionTokenBatchReader(template);
+    }
+
+    @Bean
     @ConditionalOnMissingBean(SessionScanner.class)
-    public SessionScanner sessionScanner(SessionConfigReader config, SecurityConfigReader securityConfig) {
-        return new SessionScanner(config, securityConfig);
+    public SessionScanner sessionScanner(SessionConfigReader config, SecurityConfigReader securityConfig,
+                                         ObjectProvider<SessionTokenBatchReader> batchReader) {
+        return new SessionScanner(config, securityConfig, batchReader.getIfAvailable());
     }
 
     @Bean
