@@ -117,6 +117,38 @@ class ExportCenterTest {
         assertThrows(IllegalArgumentException.class, () -> center.execute("不存在的任务"));
     }
 
+    @Test
+    void succeededExportLeavesOnlyFinalWorkbook() throws Exception {
+        Path directory = tempDir.resolve("parts");
+        ExportCenter center = new ExportCenter(new InMemoryExportTaskStore(), directory, 100);
+        ExportTask task = center.submit(ExportSource.of(UserRow.class, "分片清理", provider(TOTAL)));
+
+        ExportTask finished = center.execute(task.getTaskId());
+
+        assertEquals(ExportTaskStatus.SUCCEEDED, finished.getStatus());
+        try (var stream = Files.list(directory)) {
+            assertEquals(List.of(task.getFileName()), stream.map(path -> path.getFileName().toString()).toList());
+        }
+    }
+
+    @Test
+    void resumesFromPartsWhenTargetFileMissing() throws Exception {
+        InMemoryExportTaskStore store = new InMemoryExportTaskStore();
+        Path directory = tempDir.resolve("crash");
+        ExportCenter center = new ExportCenter(store, directory, 100);
+        ExportTask submitted = center.submit(ExportSource.of(UserRow.class, "崩溃恢复", failingProvider(TOTAL, 200)));
+        center.execute(submitted.getTaskId());
+
+        Files.deleteIfExists(Path.of(submitted.getFilePath()));
+        ExportCenter restarted = new ExportCenter(store, directory, 100);
+        ExportTask resumed = restarted.resume(submitted.getTaskId(),
+                ExportSource.of(UserRow.class, "崩溃恢复", provider(TOTAL)));
+
+        assertEquals(ExportTaskStatus.SUCCEEDED, resumed.getStatus());
+        assertEquals(TOTAL, resumed.getProcessedRows());
+        assertEquals(TOTAL, ExcelUtils.read(restarted.download(submitted.getTaskId()), UserRow.class).size());
+    }
+
     private ExportDataProvider<UserRow> provider(int total) {
         return new ExportDataProvider<>() {
 

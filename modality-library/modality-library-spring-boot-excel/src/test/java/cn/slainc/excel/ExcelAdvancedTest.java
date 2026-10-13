@@ -134,7 +134,7 @@ class ExcelAdvancedTest {
         ExcelUtils.write(source, UserRow.class,
                 List.of(new UserRow("张三", 20, UserStatus.ACTIVE), new UserRow(null, -1, UserStatus.LOCKED)), "用户");
         ImportResult<UserRow> result = ExcelUtils.read(source, UserRow.class,
-                ReadOptions.defaults().withValidate(true), validator);
+                ReadOptions.defaults(), validator);
         assertEquals(2, result.getErrorCount());
 
         Path report = tempDir.resolve("errors.xlsx");

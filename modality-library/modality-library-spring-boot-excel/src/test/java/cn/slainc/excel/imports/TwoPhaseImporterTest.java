@@ -45,7 +45,7 @@ class TwoPhaseImporterTest {
         TwoPhaseImporter importer = importer(Duration.ofMinutes(5), log);
 
         ImportSession<UserRow> session = importer.preview(file, UserRow.class, 2,
-                ReadOptions.defaults().withValidate(true));
+                ReadOptions.defaults());
         assertEquals(2, session.getPreviewCount());
         assertEquals("张三", session.getPreviewRows().get(0).getName());
         assertTrue(session.getPreviewErrors().isEmpty());

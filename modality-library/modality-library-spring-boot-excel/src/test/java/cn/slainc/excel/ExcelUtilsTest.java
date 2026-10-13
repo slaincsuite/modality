@@ -88,7 +88,7 @@ class ExcelUtilsTest {
                 new UserRow("李四", -5, UserStatus.ACTIVE)), "用户");
 
         ImportResult<UserRow> result = ExcelUtils.read(file, UserRow.class,
-                ReadOptions.defaults().withValidate(true), validator);
+                ReadOptions.defaults(), validator);
 
         assertEquals(3, result.getTotalRows());
         assertEquals(1, result.getSuccessCount());
@@ -108,7 +108,7 @@ class ExcelUtilsTest {
                 new UserRow("李四", 30, UserStatus.ACTIVE)), "用户");
 
         ImportResult<UserRow> result = ExcelUtils.read(file, UserRow.class,
-                ReadOptions.defaults().withValidate(true).withStopOnError(true), validator);
+                ReadOptions.defaults().withStopOnError(true), validator);
 
         assertEquals(1, result.getErrorCount());
         assertEquals(0, result.getSuccessCount());

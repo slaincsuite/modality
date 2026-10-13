@@ -103,6 +103,28 @@ class CsvUtilsTest {
     }
 
     @Test
+    void neutralizesFormulaInjection() {
+        assertEquals("'=1+1", CsvUtils.escape("=1+1", ','));
+        assertEquals("'+1", CsvUtils.escape("+1", ','));
+        assertEquals("'-1", CsvUtils.escape("-1", ','));
+        assertEquals("'@SUM(A1)", CsvUtils.escape("@SUM(A1)", ','));
+        assertEquals("'\t值", CsvUtils.escape("\t值", ','));
+        assertEquals("值", CsvUtils.escape("值", ','));
+        assertEquals("", CsvUtils.escape(null, ','));
+    }
+
+    @Test
+    void formulaInjectionNeutralizedOnWrite() {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        CsvUtils.write(output, List.of("名称", "数量"),
+                List.of(List.of("=cmd|'/c calc'!A1", "-42")));
+
+        List<List<String>> rows = CsvUtils.read(new ByteArrayInputStream(output.toByteArray()));
+        assertEquals("'=cmd|'/c calc'!A1", rows.get(1).get(0));
+        assertEquals("'-42", rows.get(1).get(1));
+    }
+
+    @Test
     void handlesEmptyAndNullInput() {
         assertTrue(CsvUtils.parse("", ',').isEmpty());
         assertTrue(CsvUtils.parse(null, ',').isEmpty());

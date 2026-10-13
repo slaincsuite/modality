@@ -77,9 +77,30 @@ class JdbcExportTaskStoreTest {
         assertEquals(100, resumed.getProcessedRows());
     }
 
+    @Test
+    void nameContainsTreatsSqlWildcardsLiterally() {
+        JdbcTemplate jdbcTemplate = jdbcTemplate("export_center_like");
+        JdbcExportTaskStore store = new JdbcExportTaskStore(jdbcTemplate);
+        ExportCenter center = new ExportCenter(store, tempDir.resolve("jdbc-like"), 50);
+        center.submit(ExportSource.of(UserRow.class, "报表_2026", provider(1)));
+        center.submit(ExportSource.of(UserRow.class, "报表X2026", provider(1)));
+        center.submit(ExportSource.of(UserRow.class, "完成率100%", provider(1)));
+
+        assertEquals(1, store.list(ExportTaskQuery.all().withNameContains("报表_2026")).size());
+        assertEquals(1, store.list(ExportTaskQuery.all().withNameContains("报表X2026")).size());
+        assertEquals(1, store.list(ExportTaskQuery.all().withNameContains("100%")).size());
+        assertEquals(0, store.list(ExportTaskQuery.all().withNameContains("报表_2027")).size());
+        assertEquals("a!!!%b!_c", JdbcExportTaskStore.escapeLike("a!%b_c"));
+        assertEquals("%" + "报!%表" + "%", "%" + JdbcExportTaskStore.escapeLike("报%表") + "%");
+    }
+
     private JdbcTemplate jdbcTemplate() {
+        return jdbcTemplate("export_center");
+    }
+
+    private JdbcTemplate jdbcTemplate(String database) {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
-                "jdbc:h2:mem:export_center;MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+                "jdbc:h2:mem:" + database + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
         return new JdbcTemplate(dataSource);
     }
 
