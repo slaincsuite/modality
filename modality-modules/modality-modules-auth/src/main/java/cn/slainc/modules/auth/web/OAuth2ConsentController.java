@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 // 授权确认页由 /oauth2/authorize 返回的 ConfirmView JSON 承担；这里补齐授权记录的自助查询与撤销
+@Tag(name = "OAuth2 授权确认", description = "授权页确认与拒绝")
 @RestController
 @RequestMapping("/auth/oauth2")
 public class OAuth2ConsentController {

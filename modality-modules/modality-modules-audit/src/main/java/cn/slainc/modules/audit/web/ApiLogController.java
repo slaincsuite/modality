@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 
+@Tag(name = "API 日志", description = "接口调用流水查询")
 @RestController
 @RequestMapping("/audit/api-logs")
 public class ApiLogController {

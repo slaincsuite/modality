@@ -6,8 +6,10 @@ import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 
+@Tag(name = "审计维护", description = "审计数据清理与维护")
 @RestController
 @RequestMapping("/audit/maintenance")
 public class AuditMaintenanceController {

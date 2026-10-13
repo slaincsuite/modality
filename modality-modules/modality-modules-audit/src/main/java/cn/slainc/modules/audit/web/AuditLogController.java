@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 
+@Tag(name = "审计日志", description = "审计事件查询与导出")
 @RestController
 @RequestMapping("/audit/logs")
 public class AuditLogController {

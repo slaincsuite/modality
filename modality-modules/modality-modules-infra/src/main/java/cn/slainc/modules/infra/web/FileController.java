@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "文件存储", description = "文件上传下载与签名地址")
 @RestController
 @RequestMapping("/infra/file")
 public class FileController {

@@ -18,8 +18,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 // 验证码端点挂在库预留的 /captcha/** 白名单下，匿名可达：生成与校验自带一次性凭证语义
+@Tag(name = "验证码", description = "图形验证码生成与校验")
 @RestController
 @RequestMapping("/captcha")
 public class CaptchaController {

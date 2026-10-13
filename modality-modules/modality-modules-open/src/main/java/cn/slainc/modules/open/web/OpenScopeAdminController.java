@@ -24,7 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "授权范围管理", description = "scope 定义维护")
 @RestController
 @RequestMapping("/open/admin/scopes")
 public class OpenScopeAdminController {

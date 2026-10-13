@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 // 用户视角授权管理：本人授权记录与一键解约（本人凭据端点）
+@Tag(name = "我的授权", description = "用户视角授权查看与撤销")
 @RestController
 @RequestMapping("/open/my/consents")
 public class OpenUserConsentController {

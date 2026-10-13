@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "策略测试用例", description = "策略测试用例管理")
 @RestController
 @RequestMapping("/policy/test-cases")
 public class PolicyTestCaseController {

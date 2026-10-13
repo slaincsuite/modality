@@ -4,7 +4,9 @@ import cn.slainc.oauth2.web.Oauth2ServerDelegate;
 import cn.slainc.web.result.NoWrap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "OAuth2 协议", description = "令牌签发与授权码协议端点")
 @RestController
 public class OAuth2ProtocolController {
 

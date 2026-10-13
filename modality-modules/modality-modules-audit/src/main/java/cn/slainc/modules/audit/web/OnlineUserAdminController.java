@@ -32,8 +32,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 
+@Tag(name = "在线用户管理", description = "在线会话查询与强制下线")
 @RestController
 @RequestMapping("/audit/online")
 public class OnlineUserAdminController {

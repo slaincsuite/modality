@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "策略模拟", description = "策略命中模拟评估")
 @RestController
 @RequestMapping("/policy/simulate")
 public class PolicySimulateController {

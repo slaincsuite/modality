@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "OIDC 用户信息", description = "OIDC userinfo 端点")
 @RestController
 public class OidcUserInfoController {
 

@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 // 二次认证：敏感操作前重新校验密码，通过后按服务名开放一段时间的安全窗口
+@Tag(name = "安全验证", description = "敏感操作前的二次身份校验")
 @RestController
 @RequestMapping("/auth/safe")
 public class SafeAuthController {

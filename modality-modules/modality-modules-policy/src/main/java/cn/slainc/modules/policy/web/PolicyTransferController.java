@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "策略移交", description = "策略责任移交处理")
 @RestController
 @RequestMapping("/policy/transfer")
 public class PolicyTransferController {

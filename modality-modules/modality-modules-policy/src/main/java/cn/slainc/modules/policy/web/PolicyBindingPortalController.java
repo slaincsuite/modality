@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "策略绑定", description = "主体与策略绑定关系管理")
 @RestController
 @RequestMapping("/policy/bindings")
 public class PolicyBindingPortalController {

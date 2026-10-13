@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "账号注销", description = "账号注销申请与处理")
 @RestController
 @RequestMapping("/auth/account")
 public class AccountClosureController {

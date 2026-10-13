@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "应用管理", description = "开放平台应用与凭证管理")
 @RestController
 @RequestMapping("/open/admin/apps")
 public class OpenAppAdminController {

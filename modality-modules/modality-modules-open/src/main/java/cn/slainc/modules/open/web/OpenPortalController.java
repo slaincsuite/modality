@@ -16,8 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 // 开发者门户：本人凭据端点（登录即可用，无管理权限码）
+@Tag(name = "开发者门户", description = "应用接入自助查询")
 @RestController
 @RequestMapping("/open/portal")
 public class OpenPortalController {

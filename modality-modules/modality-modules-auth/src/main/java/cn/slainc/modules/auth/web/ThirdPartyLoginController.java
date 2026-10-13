@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "第三方登录", description = "第三方平台登录与回调")
 @RestController
 @RequestMapping("/auth/third")
 public class ThirdPartyLoginController {

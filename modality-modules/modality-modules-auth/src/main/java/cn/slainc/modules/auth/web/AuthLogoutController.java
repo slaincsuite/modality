@@ -8,7 +8,9 @@ import cn.slainc.core.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "注销", description = "退出登录与令牌作废")
 @RestController
 public class AuthLogoutController {
 
