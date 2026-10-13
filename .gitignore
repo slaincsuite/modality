@@ -49,3 +49,4 @@ settings-gradle.lockfile
 .env
 .env.local
 docker-compose.override.yml
+.DS_Store
