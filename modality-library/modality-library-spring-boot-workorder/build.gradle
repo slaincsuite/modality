@@ -1,0 +1,10 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = '工单引擎'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    testRuntimeOnly libs.h2
+}
