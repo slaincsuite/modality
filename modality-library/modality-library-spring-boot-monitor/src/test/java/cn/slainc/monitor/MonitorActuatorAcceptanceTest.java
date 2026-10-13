@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "spring.datasource.hikari.pool-name=acceptance-hikari",
                 "spring.data.redis.host=127.0.0.1",
                 "spring.data.redis.port=6379",
-                "spring.data.redis.password=omni-redis-pass",
+                "spring.data.redis.password=${MODALITY_REDIS_PASSWORD:}",
                 "modality.monitor.system.cache-millis=1000",
                 "modality.monitor.redis.cache-millis=1000"})
 class MonitorActuatorAcceptanceTest {

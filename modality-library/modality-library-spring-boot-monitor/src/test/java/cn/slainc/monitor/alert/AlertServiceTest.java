@@ -207,6 +207,42 @@ class AlertServiceTest {
     }
 
     @Test
+    @DisplayName("通知全部失败时回滚抑制窗口，下一轮越界必须重试而不是被静默丢弃")
+    void shouldRetryAfterFailedDispatch() {
+        java.util.concurrent.atomic.AtomicInteger triggerAttempts = new java.util.concurrent.atomic.AtomicInteger();
+        AlertNotifier failing = new AlertNotifier() {
+            @Override
+            public String name() {
+                return "flaky-webhook";
+            }
+
+            @Override
+            public void send(AlertEvent event) {
+                if (event.type() == AlertType.TRIGGER) {
+                    triggerAttempts.incrementAndGet();
+                }
+                throw new IllegalStateException("模拟 webhook 抖动");
+            }
+        };
+        AlertService flaky = new AlertService(ruleProvider, metric -> value, new AlertEvaluator(),
+                new AlertSuppressor(), silenceRegistry,
+                new AlertDispatcher(new StaticAlertNotifierSource(List.of(failing)),
+                        MonitorTestSupport.metricsTemplate(registry)),
+                properties, MonitorTestSupport.metricsTemplate(registry),
+                Clock.fixed(java.time.Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+
+        flaky.evaluateOnce(1_000L);
+        flaky.evaluateOnce(11_000L);
+        assertThat(triggerAttempts.get()).isEqualTo(1);
+        value = 0.01d;
+        flaky.evaluateOnce(12_000L);
+        value = 0.95d;
+        flaky.evaluateOnce(13_000L);
+        flaky.evaluateOnce(23_000L);
+        assertThat(triggerAttempts.get()).as("首次发送失败后不得占用整个抑制窗口").isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("业务指标门面可用于告警指标源")
     void shouldExposeBusinessErrorRate() {
         MetricsTemplate template = MonitorTestSupport.metricsTemplate(registry);

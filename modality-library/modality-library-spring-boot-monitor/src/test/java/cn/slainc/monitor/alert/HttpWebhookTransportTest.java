@@ -53,7 +53,7 @@ class HttpWebhookTransportTest {
     @Test
     @DisplayName("真实 HTTP 推送：请求体、Content-Type 与自定义头都正确")
     void shouldPostJsonBody() {
-        HttpWebhookTransport transport = new HttpWebhookTransport(Duration.ofSeconds(2), Duration.ofSeconds(2));
+        HttpWebhookTransport transport = new HttpWebhookTransport(Duration.ofSeconds(2), Duration.ofSeconds(2), true);
         String body = "{\"msgtype\":\"markdown\"}";
         String response = transport.post(url(), body, Map.of("X-Trace", "trace-1"));
         assertThat(receivedBody.get()).isEqualTo(body);
@@ -67,12 +67,21 @@ class HttpWebhookTransportTest {
     void shouldFailOnHttpError() {
         status = 500;
         response = "boom";
-        HttpWebhookTransport transport = new HttpWebhookTransport(Duration.ofSeconds(2), Duration.ofSeconds(2));
+        HttpWebhookTransport transport = new HttpWebhookTransport(Duration.ofSeconds(2), Duration.ofSeconds(2), true);
         assertThatThrownBy(() -> transport.post(url(), "{}", Map.of()))
                 .isInstanceOf(RuntimeException.class);
     }
 
     private String url() {
         return "http://127.0.0.1:" + server.getAddress().getPort() + "/webhook";
+    }
+
+    @Test
+    @DisplayName("默认拒绝环回地址，不允许本机回调绕过校验")
+    void shouldRejectLoopbackByDefault() {
+        HttpWebhookTransport transport = new HttpWebhookTransport(Duration.ofSeconds(2), Duration.ofSeconds(2));
+        assertThatThrownBy(() -> transport.post(url(), "{}", Map.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("内网");
     }
 }
