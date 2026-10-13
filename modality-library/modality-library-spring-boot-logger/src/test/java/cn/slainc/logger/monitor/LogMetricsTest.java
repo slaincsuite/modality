@@ -103,6 +103,29 @@ class LogMetricsTest {
     }
 
     @Test
+    void windowSnapshotStopsCountingAfterWindowPasses() throws Exception {
+        LoggerProperties.Monitor monitor = new LoggerProperties().getMonitor();
+        monitor.setMinSampleCount(2L);
+        monitor.setErrorRateThreshold(0.5d);
+        monitor.setErrorCountThreshold(2L);
+        monitor.setAlertIntervalSeconds(0L);
+        monitor.setWindowSeconds(1L);
+        InMemoryLogMetrics metrics = new InMemoryLogMetrics();
+        List<LogAlert> alerts = new ArrayList<>();
+        LogAlertDispatcher dispatcher = new LogAlertDispatcher(monitor, metrics, List.of(alerts::add));
+
+        metrics.record("INFO", "a", false);
+        metrics.record("ERROR", "a", true);
+        assertEquals(1, dispatcher.evaluate().size(), "窗口内越限必须告警");
+        assertTrue(metrics.windowSnapshot(60_000L).errorCount() >= 1L);
+
+        Thread.sleep(2_100L);
+        assertEquals(0L, metrics.windowSnapshot(1_000L).total(), "窗口外不再计入");
+        assertEquals(0, dispatcher.evaluate().size(), "越限历史不得让告警永久重复");
+        assertEquals(2L, metrics.snapshot().total(), "累计口径保持全量");
+    }
+
+    @Test
     void micrometerBinderRegistersCounters() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
         MicrometerLogMetrics metrics = new MicrometerLogMetrics(registry);
