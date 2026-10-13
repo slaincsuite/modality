@@ -20,7 +20,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.slainc.logger.audit.AuditLog;
+import cn.slainc.logger.audit.AuditCategory;
+import cn.slainc.logger.audit.AuditOperation;
 
+@Tag(name = "系统注册", description = "接入系统与模块注册维护")
 @RestController
 @RequestMapping("/upms/system")
 public class SystemRegistryController {
@@ -33,6 +38,8 @@ public class SystemRegistryController {
 
     @PostMapping
     @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_CREATE)
+    @AuditLog(value = "注册系统", operation = AuditOperation.CREATE, category = AuditCategory.SYSTEM,
+            module = "upms")
     public SystemRegistryRecord create(@RequestBody SystemRequest request) {
         return systemRegistryService.create(request.code(), request.name(), request.moduleCode(),
                 request.visibility(), request.groupName(), request.icon(), request.url(), request.sort());
@@ -40,6 +47,8 @@ public class SystemRegistryController {
 
     @PutMapping("/{id}")
     @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_UPDATE)
+    @AuditLog(value = "修改系统", operation = AuditOperation.UPDATE, category = AuditCategory.SYSTEM,
+            module = "upms")
     public SystemRegistryRecord update(@PathVariable Long id, @RequestBody SystemRequest request) {
         return systemRegistryService.update(id, request.name(), request.groupName(), request.icon(), request.url(),
                 request.sort(), request.status());
@@ -47,18 +56,24 @@ public class SystemRegistryController {
 
     @DeleteMapping("/{id}")
     @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_DELETE)
+    @AuditLog(value = "删除系统", operation = AuditOperation.DELETE, category = AuditCategory.SYSTEM,
+            module = "upms")
     public void delete(@PathVariable Long id) {
         systemRegistryService.delete(id);
     }
 
     @PutMapping("/{id}/visibility")
     @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_VISIBILITY)
+    @AuditLog(value = "修改系统可见性", operation = AuditOperation.UPDATE, category = AuditCategory.SYSTEM,
+            module = "upms")
     public SystemRegistryRecord changeVisibility(@PathVariable Long id, @RequestBody VisibilityRequest request) {
         return systemRegistryService.changeVisibility(id, request.visibility());
     }
 
     @PutMapping("/{id}/status")
     @RequirePermission(value = LoginType.PLATFORM_ADMIN, permissions = UpmsKeys.PERMISSION_UPMS_SYSTEM_UPDATE)
+    @AuditLog(value = "修改系统状态", operation = AuditOperation.UPDATE, category = AuditCategory.SYSTEM,
+            module = "upms")
     public SystemRegistryRecord changeStatus(@PathVariable Long id, @RequestBody StatusRequest request) {
         return systemRegistryService.update(id, null, null, null, null, null, request.status());
     }

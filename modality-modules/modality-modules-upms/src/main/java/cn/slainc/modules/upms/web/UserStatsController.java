@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "用户统计", description = "用户规模与状态统计查询")
 @RestController
 @RequestMapping("/upms/stats")
 public class UserStatsController {

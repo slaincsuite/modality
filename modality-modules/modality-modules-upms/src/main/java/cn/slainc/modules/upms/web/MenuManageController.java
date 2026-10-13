@@ -18,7 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashSet;
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.slainc.logger.audit.AuditLog;
+import cn.slainc.logger.audit.AuditCategory;
+import cn.slainc.logger.audit.AuditOperation;
 
+@Tag(name = "菜单管理", description = "菜单树与页面资源维护")
 @RestController
 @RequestMapping("/upms/menu")
 public class MenuManageController {
@@ -31,6 +36,8 @@ public class MenuManageController {
 
     @PostMapping
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_CREATE)
+    @AuditLog(value = "创建菜单", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "upms")
     public MenuRecord create(@RequestBody MenuRequest request) {
         return menuService.create(request.name(), request.parentId(), request.type(), request.path(),
                 request.component(), request.icon(), request.permissionCode(), request.visible(), request.sort());
@@ -38,6 +45,8 @@ public class MenuManageController {
 
     @PutMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_UPDATE)
+    @AuditLog(value = "修改菜单", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public MenuRecord update(@PathVariable Long id, @RequestBody MenuRequest request) {
         return menuService.update(id, request.name(), request.parentId(), request.type(), request.path(),
                 request.component(), request.icon(), request.permissionCode(), request.visible(), request.sort(),
@@ -46,6 +55,8 @@ public class MenuManageController {
 
     @DeleteMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_DELETE)
+    @AuditLog(value = "删除菜单", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "upms")
     public void delete(@PathVariable Long id) {
         menuService.delete(id);
     }

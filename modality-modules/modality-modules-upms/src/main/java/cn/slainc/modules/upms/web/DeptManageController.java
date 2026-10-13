@@ -17,7 +17,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.slainc.logger.audit.AuditLog;
+import cn.slainc.logger.audit.AuditCategory;
+import cn.slainc.logger.audit.AuditOperation;
 
+@Tag(name = "部门管理", description = "部门树维护")
 @RestController
 @RequestMapping("/upms/dept")
 public class DeptManageController {
@@ -30,12 +35,16 @@ public class DeptManageController {
 
     @PostMapping
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_DEPT_CREATE)
+    @AuditLog(value = "创建部门", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "upms")
     public DeptRecord create(@RequestBody DeptRequest request) {
         return deptService.create(request.name(), request.parentId(), request.leaderUserId(), request.sort());
     }
 
     @PutMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_DEPT_UPDATE)
+    @AuditLog(value = "修改部门", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public DeptRecord update(@PathVariable Long id, @RequestBody DeptRequest request) {
         return deptService.update(id, request.name(), request.parentId(), request.leaderUserId(), request.sort(),
                 request.status());
@@ -43,6 +52,8 @@ public class DeptManageController {
 
     @DeleteMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_DEPT_DELETE)
+    @AuditLog(value = "删除部门", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "upms")
     public void delete(@PathVariable Long id) {
         deptService.delete(id);
     }

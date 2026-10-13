@@ -33,7 +33,12 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.slainc.logger.audit.AuditLog;
+import cn.slainc.logger.audit.AuditCategory;
+import cn.slainc.logger.audit.AuditOperation;
 
+@Tag(name = "用户管理", description = "用户的创建、查询、状态与生命周期管理")
 @RestController
 @RequestMapping("/upms/user")
 public class UserManageController {
@@ -54,6 +59,8 @@ public class UserManageController {
 
     @PostMapping
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_CREATE)
+    @AuditLog(value = "创建用户", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "upms")
     public UserRecord create(@RequestBody UserCreateRequest request) {
         LoginType type = request.loginType() == null || request.loginType().isBlank()
                 ? LoginType.TENANT_USER : LoginType.of(request.loginType());
@@ -66,6 +73,8 @@ public class UserManageController {
 
     @PutMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_UPDATE)
+    @AuditLog(value = "修改用户", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public UserRecord update(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         return userService.update(id, request.nickname(), request.email(), request.phone(), request.deptId(),
                 request.avatarUrl(), request.tags(), request.extJson(), request.allowedIps(),
@@ -106,12 +115,16 @@ public class UserManageController {
 
     @DeleteMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DELETE)
+    @AuditLog(value = "删除用户", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "upms")
     public void delete(@PathVariable Long id) {
         userService.delete(id);
     }
 
     @PostMapping("/batch-delete")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DELETE)
+    @AuditLog(value = "批量删除用户", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "upms")
     public Map<String, Object> batchDelete(@RequestBody List<Long> ids) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("deleted", userService.batchDelete(ids));
@@ -120,6 +133,8 @@ public class UserManageController {
 
     @PostMapping("/batch-disable")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DISABLE)
+    @AuditLog(value = "批量停用用户", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public Map<String, Object> batchDisable(@RequestBody List<Long> ids) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("disabled", userService.batchDisable(ids));
@@ -128,18 +143,24 @@ public class UserManageController {
 
     @PutMapping("/{id}/status")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_DISABLE)
+    @AuditLog(value = "修改用户状态", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public void changeStatus(@PathVariable Long id, @RequestParam String status) {
         userService.changeStatus(id, status);
     }
 
     @PutMapping("/{id}/password/reset")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_RESET_PASSWORD)
+    @AuditLog(value = "重置用户密码", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "upms", recordParams = false)
     public void resetPassword(@PathVariable Long id, @RequestBody ResetPasswordRequest request) {
         passwordService.resetByAdmin(id, request.newPassword());
     }
 
     @PutMapping("/password/change")
     @cn.slainc.security.annotation.RequireLogin
+    @AuditLog(value = "修改个人密码", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "upms", recordParams = false)
     public void changePassword(@RequestBody ChangePasswordRequest request) {
         LoginType type = UserContext.loginType() == null ? LoginType.TENANT_USER : UserContext.loginType();
         passwordService.changeBySelf(UserContext.userId(), type, request.oldPassword(), request.newPassword());
@@ -147,18 +168,24 @@ public class UserManageController {
 
     @PostMapping("/{id}/roles")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_ASSIGN_ROLE)
+    @AuditLog(value = "分配用户角色", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "upms")
     public void assignRoles(@PathVariable Long id, @RequestBody RoleAssignRequest request) {
         userService.assignRoles(id, request.roleIds());
     }
 
     @PostMapping("/{id}/merge/{targetId}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_MERGE)
+    @AuditLog(value = "合并用户", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public void merge(@PathVariable Long id, @PathVariable Long targetId) {
         userService.merge(id, targetId);
     }
 
     @PutMapping("/{id}/avatar")
     @cn.slainc.security.annotation.RequireLogin
+    @AuditLog(value = "修改用户头像", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public void setAvatar(@PathVariable Long id, @RequestBody AvatarRequest request) {
         boolean self = id.equals(UserContext.userId());
         if (!self && !UserContext.isSuperAdmin() && !UserContext.hasPermission(UpmsKeys.PERMISSION_UPMS_USER_UPDATE)) {
@@ -187,6 +214,8 @@ public class UserManageController {
 
     @PostMapping("/import")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_IMPORT)
+    @AuditLog(value = "导入用户", operation = AuditOperation.IMPORT, category = AuditCategory.DATA,
+            module = "upms")
     public Map<String, Object> importUsers(@RequestParam("file") MultipartFile file,
                                            @RequestParam(required = false) Long tenantId) throws IOException {
         return userExcelService.importUsers(file.getInputStream(), tenantId, UserContext.username());

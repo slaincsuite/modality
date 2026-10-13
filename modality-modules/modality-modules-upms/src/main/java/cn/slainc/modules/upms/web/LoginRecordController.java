@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "登录记录", description = "登录流水查询")
 @RestController
 @RequestMapping("/upms/login-record")
 public class LoginRecordController {

@@ -21,7 +21,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.slainc.logger.audit.AuditLog;
+import cn.slainc.logger.audit.AuditCategory;
+import cn.slainc.logger.audit.AuditOperation;
 
+@Tag(name = "角色管理", description = "角色的创建、授权与分配")
 @RestController
 @RequestMapping("/upms/role")
 public class RoleManageController {
@@ -34,6 +39,8 @@ public class RoleManageController {
 
     @PostMapping
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_CREATE)
+    @AuditLog(value = "创建角色", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "upms")
     public RoleRecord create(@RequestBody RoleCreateRequest request) {
         return roleService.create(request.code(), request.name(), request.parentId(), request.dataScope(),
                 request.sort(), request.tags(), request.remark());
@@ -41,6 +48,8 @@ public class RoleManageController {
 
     @PutMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_UPDATE)
+    @AuditLog(value = "修改角色", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
     public RoleRecord update(@PathVariable Long id, @RequestBody RoleUpdateRequest request) {
         return roleService.update(id, request.name(), request.parentId(), request.dataScope(), request.sort(),
                 request.status(), request.tags(), request.remark());
@@ -48,6 +57,8 @@ public class RoleManageController {
 
     @DeleteMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_DELETE)
+    @AuditLog(value = "删除角色", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "upms")
     public void delete(@PathVariable Long id) {
         roleService.delete(id);
     }
@@ -74,6 +85,8 @@ public class RoleManageController {
 
     @PostMapping("/{id}/copy")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_CREATE)
+    @AuditLog(value = "复制角色", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "upms")
     public RoleRecord copy(@PathVariable Long id, @RequestParam(required = false) String newCode,
                            @RequestParam(required = false) String newName) {
         return roleService.copy(id, newCode, newName);
@@ -81,6 +94,8 @@ public class RoleManageController {
 
     @PutMapping("/{id}/permissions")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_ASSIGN_PERMISSION)
+    @AuditLog(value = "授权角色权限", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "upms")
     public void assignPermissions(@PathVariable Long id, @RequestBody RolePermissionRequest request) {
         roleService.assignPermissions(id, request.permissionIds());
     }
@@ -93,6 +108,8 @@ public class RoleManageController {
 
     @PutMapping("/{id}/users")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_ASSIGN_USER)
+    @AuditLog(value = "分配角色用户", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "upms")
     public void assignUsers(@PathVariable Long id, @RequestBody RoleUsersRequest request) {
         roleService.assignUsers(id, request.userIds());
     }
@@ -105,6 +122,8 @@ public class RoleManageController {
 
     @PutMapping("/{id}/data-scope")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_DATA_SCOPE)
+    @AuditLog(value = "配置角色数据范围", operation = AuditOperation.UPDATE, category = AuditCategory.PERMISSION,
+            module = "upms")
     public void setDataScope(@PathVariable Long id, @RequestBody DataScopeRequest request) {
         roleService.setDataScope(id, request.dataScope(), request.deptIds());
     }

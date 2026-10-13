@@ -23,7 +23,12 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import cn.slainc.logger.audit.AuditLog;
+import cn.slainc.logger.audit.AuditCategory;
+import cn.slainc.logger.audit.AuditOperation;
 
+@Tag(name = "权限管理", description = "权限码与权限点维护")
 @RestController
 @RequestMapping("/upms/permission")
 public class PermissionManageController {
@@ -40,6 +45,8 @@ public class PermissionManageController {
 
     @PostMapping
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_CREATE)
+    @AuditLog(value = "创建权限", operation = AuditOperation.CREATE, category = AuditCategory.PERMISSION,
+            module = "upms")
     public PermissionRecord create(@RequestBody PermissionRequest request) {
         return permissionService.create(request.code(), request.name(), request.type(), request.parentId(),
                 request.sort(), request.remark());
@@ -47,6 +54,8 @@ public class PermissionManageController {
 
     @PutMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_UPDATE)
+    @AuditLog(value = "修改权限", operation = AuditOperation.UPDATE, category = AuditCategory.PERMISSION,
+            module = "upms")
     public PermissionRecord update(@PathVariable Long id, @RequestBody PermissionRequest request) {
         return permissionService.update(id, request.name(), request.type(), request.parentId(), request.sort(),
                 request.status(), request.remark());
@@ -54,6 +63,8 @@ public class PermissionManageController {
 
     @DeleteMapping("/{id}")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_DELETE)
+    @AuditLog(value = "删除权限", operation = AuditOperation.DELETE, category = AuditCategory.PERMISSION,
+            module = "upms")
     public void delete(@PathVariable Long id) {
         permissionService.delete(id);
     }
@@ -80,6 +91,8 @@ public class PermissionManageController {
 
     @PostMapping("/import")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_IMPORT)
+    @AuditLog(value = "导入权限", operation = AuditOperation.IMPORT, category = AuditCategory.PERMISSION,
+            module = "upms")
     public Map<String, Object> importPermissions(@RequestParam("file") MultipartFile file) throws IOException {
         return permissionExcelService.importPermissions(file.getInputStream());
     }
