@@ -1,15 +1,8 @@
 package cn.slainc.policy.match;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 public final class WildcardMatcher {
-
-    private static final int PATTERN_CACHE_LIMIT = 2048;
-
-    private static final Map<String, Pattern> PATTERN_CACHE = new ConcurrentHashMap<>();
 
     private WildcardMatcher() {
     }
@@ -24,7 +17,31 @@ public final class WildcardMatcher {
         if (!pattern.contains("*")) {
             return pattern.equals(value);
         }
-        return compiled(pattern).matcher(value).matches();
+        // 线性通配匹配：多 * 模式下不会像正则回溯那样指数级退化
+        int patternIndex = 0;
+        int valueIndex = 0;
+        int starIndex = -1;
+        int starValueIndex = 0;
+        int patternLength = pattern.length();
+        int valueLength = value.length();
+        while (valueIndex < valueLength) {
+            if (patternIndex < patternLength && pattern.charAt(patternIndex) == '*') {
+                starIndex = patternIndex++;
+                starValueIndex = valueIndex;
+            } else if (patternIndex < patternLength && pattern.charAt(patternIndex) == value.charAt(valueIndex)) {
+                patternIndex++;
+                valueIndex++;
+            } else if (starIndex >= 0) {
+                patternIndex = starIndex + 1;
+                valueIndex = ++starValueIndex;
+            } else {
+                return false;
+            }
+        }
+        while (patternIndex < patternLength && pattern.charAt(patternIndex) == '*') {
+            patternIndex++;
+        }
+        return patternIndex == patternLength;
     }
 
     public static boolean matchAny(List<String> patterns, String value) {
@@ -49,32 +66,5 @@ public final class WildcardMatcher {
             }
         }
         return null;
-    }
-
-    private static Pattern compiled(String pattern) {
-        Pattern compiled = PATTERN_CACHE.get(pattern);
-        if (compiled != null) {
-            return compiled;
-        }
-        if (PATTERN_CACHE.size() >= PATTERN_CACHE_LIMIT) {
-            PATTERN_CACHE.clear();
-        }
-        StringBuilder regex = new StringBuilder(pattern.length() + 16);
-        for (char current : pattern.toCharArray()) {
-            if (current == '*') {
-                regex.append(".*");
-            } else if (isRegexMeta(current)) {
-                regex.append('\\').append(current);
-            } else {
-                regex.append(current);
-            }
-        }
-        compiled = Pattern.compile(regex.toString());
-        PATTERN_CACHE.put(pattern, compiled);
-        return compiled;
-    }
-
-    private static boolean isRegexMeta(char current) {
-        return ".^$+{[]|()?\\".indexOf(current) >= 0;
     }
 }

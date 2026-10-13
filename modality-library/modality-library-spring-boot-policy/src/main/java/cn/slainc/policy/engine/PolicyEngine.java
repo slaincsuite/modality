@@ -24,12 +24,15 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PolicyEngine {
 
     private static final Logger log = LoggerFactory.getLogger(PolicyEngine.class);
+
+    private static final Set<String> VOLATILE_ENV_KEYS = Set.of(PolicyRequest.KEY_CURRENT_TIME);
 
     private final PolicyStore store;
 
@@ -56,7 +59,8 @@ public class PolicyEngine {
         Snapshot current = snapshot();
         String cacheKey = null;
         PolicyProperties.DecisionCache cacheSetting = properties.getDecisionCache();
-        if (cacheSetting.isEnabled()) {
+        // 策略条件引用了时变维度（如当前时间）时放弃决策缓存，避免秒级指纹导致缓存全 miss 或缓存过期决策
+        if (cacheSetting.isEnabled() && current.volatileKeys().isEmpty()) {
             cacheKey = current.version() + "|" + fingerprint(request);
             CachedDecision cached = decisionCache.get(cacheKey);
             if (cached != null && !cached.expired(System.currentTimeMillis())) {
@@ -206,7 +210,8 @@ public class PolicyEngine {
                 }
                 throw exception;
             }
-            Snapshot fresh = new Snapshot(version, List.copyOf(loaded), System.currentTimeMillis());
+            Snapshot fresh = new Snapshot(version, List.copyOf(loaded), System.currentTimeMillis(),
+                    referencedVolatileKeys(loaded));
             snapshot = fresh;
             decisionCache.clear();
             return fresh;
@@ -224,7 +229,11 @@ public class PolicyEngine {
     private String fingerprint(PolicyRequest request) {
         Map<String, Object> ordered = new TreeMap<>();
         if (request.getEnv() != null) {
-            ordered.putAll(request.getEnv());
+            request.getEnv().forEach((key, value) -> {
+                if (!VOLATILE_ENV_KEYS.contains(key)) {
+                    ordered.put(key, value);
+                }
+            });
         }
         Map<String, Object> identity = new LinkedHashMap<>();
         identity.put("userId", request.getUserId());
@@ -241,6 +250,29 @@ public class PolicyEngine {
         return match.policyId() + "/" + (match.sid() == null ? match.actionPattern() : match.sid());
     }
 
+    private Set<String> referencedVolatileKeys(List<Policy> loaded) {
+        Set<String> keys = new LinkedHashSet<>();
+        for (Policy policy : loaded) {
+            if (!policy.enabled() || policy.getDocument() == null) {
+                continue;
+            }
+            for (var statement : policy.getDocument().getStatements()) {
+                Map<String, Map<String, List<String>>> condition = statement.getCondition();
+                if (condition == null) {
+                    continue;
+                }
+                for (Map<String, List<String>> entries : condition.values()) {
+                    for (String key : entries.keySet()) {
+                        if (VOLATILE_ENV_KEYS.contains(key)) {
+                            keys.add(key);
+                        }
+                    }
+                }
+            }
+        }
+        return Set.copyOf(keys);
+    }
+
     private record CachedDecision(PolicyDecision decision, long expireAt) {
 
         boolean expired(long now) {
@@ -248,6 +280,6 @@ public class PolicyEngine {
         }
     }
 
-    record Snapshot(String version, List<Policy> policies, long loadedAt) {
+    record Snapshot(String version, List<Policy> policies, long loadedAt, Set<String> volatileKeys) {
     }
 }

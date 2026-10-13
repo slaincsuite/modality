@@ -6,6 +6,7 @@ import cn.slainc.policy.model.Policy;
 import cn.slainc.policy.model.PolicyDocument;
 import cn.slainc.policy.model.PolicyStatus;
 import cn.slainc.policy.model.PolicySubjectType;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -64,13 +65,23 @@ public class JdbcPolicyStore implements PolicyStore {
             return find(policy.getId()).orElseThrow(() -> new BizException(ResultCode.DATA_NOT_FOUND,
                     "策略 " + policy.getId() + " 保存后读取失败"));
         }
-        jdbcTemplate.update("INSERT INTO " + policyTable
-                        + " (id, name, subject_type, subject_id, login_type, status, version, document, description, creator, created_at, updated_at)"
-                        + " VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)",
-                policy.getId(), policy.getName(), policy.getSubjectType().code(), policy.getSubjectId(),
-                policy.getLoginType(), policy.getStatus().code(), documentJson, policy.getDescription(),
-                policy.getCreator(), now, now);
+        insert(policy, documentJson, now);
         return find(policy.getId()).orElse(policy);
+    }
+
+    // exists() 与 INSERT 之间存在竞态窗口，唯一键冲突统一转成中文业务异常
+    void insert(Policy policy, String documentJson, long now) {
+        try {
+            jdbcTemplate.update("INSERT INTO " + policyTable
+                            + " (id, name, subject_type, subject_id, login_type, status, version, document, description, creator, created_at, updated_at)"
+                            + " VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)",
+                    policy.getId(), policy.getName(), policy.getSubjectType().code(), policy.getSubjectId(),
+                    policy.getLoginType(), policy.getStatus().code(), documentJson, policy.getDescription(),
+                    policy.getCreator(), now, now);
+        } catch (DuplicateKeyException exception) {
+            throw new BizException(ResultCode.CONFLICT,
+                    "策略 " + policy.getId() + " 已被他人创建，请刷新后重试");
+        }
     }
 
     @Override
