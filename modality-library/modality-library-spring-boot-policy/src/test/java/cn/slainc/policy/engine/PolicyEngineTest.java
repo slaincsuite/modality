@@ -204,6 +204,43 @@ class PolicyEngineTest {
     }
 
     @Test
+    void volatileCurrentTimeDoesNotChurnDecisionCache() throws Exception {
+        CountingStore countingStore = new CountingStore();
+        PolicyEngine cachedEngine = new PolicyEngine(countingStore, SingleProvider.empty(), properties);
+        countingStore.save(Policy.create("缓存", PolicySubjectType.GLOBAL, null, null,
+                PolicyDocument.of(statementOf(Effect.ALLOW, List.of("modality:user:*")))));
+        java.lang.reflect.Field field = PolicyEngine.class.getDeclaredField("decisionCache");
+        field.setAccessible(true);
+        Map<?, ?> cache = (Map<?, ?>) field.get(cachedEngine);
+
+        cachedEngine.evaluate(PolicyRequest.of("modality:user:get", "modality:user/1")
+                .env(PolicyRequest.KEY_CURRENT_TIME, "2026-01-01T00:00:00.001Z"));
+        int afterFirst = cache.size();
+        cachedEngine.evaluate(PolicyRequest.of("modality:user:get", "modality:user/1")
+                .env(PolicyRequest.KEY_CURRENT_TIME, "2026-01-01T00:00:00.999Z"));
+
+        assertEquals(1, afterFirst);
+        assertEquals(afterFirst, cache.size(), "时变字段不得参与决策缓存指纹");
+    }
+
+    @Test
+    void policiesUsingCurrentTimeSkipDecisionCache() throws Exception {
+        CountingStore countingStore = new CountingStore();
+        PolicyEngine cachedEngine = new PolicyEngine(countingStore, SingleProvider.empty(), properties);
+        countingStore.save(Policy.create("按时段", PolicySubjectType.GLOBAL, null, null, PolicyDocument.of(
+                statementOf(Effect.ALLOW, List.of("modality:user:*"), Map.of("date_less_than",
+                        Map.of(PolicyRequest.KEY_CURRENT_TIME, List.of("2099-01-01T00:00:00Z")))))));
+        java.lang.reflect.Field field = PolicyEngine.class.getDeclaredField("decisionCache");
+        field.setAccessible(true);
+        Map<?, ?> cache = (Map<?, ?>) field.get(cachedEngine);
+
+        assertTrue(cachedEngine.evaluate(PolicyRequest.of("modality:user:get", "modality:user/1")
+                .env(PolicyRequest.KEY_CURRENT_TIME, "2026-01-01T00:00:00Z")).allowed());
+
+        assertEquals(0, cache.size(), "条件引用时变维度时必须放弃缓存以保证判定正确");
+    }
+
+    @Test
     void configVersionChangeTriggersSnapshotRefresh() {
         createPolicy(PolicySubjectType.GLOBAL, null, Effect.ALLOW, List.of("modality:user:*"), List.of("*"), null);
         assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r")).allowed());
@@ -228,10 +265,16 @@ class PolicyEngineTest {
     }
 
     private PolicyStatement statementOf(Effect effect, List<String> actions) {
+        return statementOf(effect, actions, null);
+    }
+
+    private PolicyStatement statementOf(Effect effect, List<String> actions,
+                                        Map<String, Map<String, List<String>>> condition) {
         PolicyStatement statement = new PolicyStatement();
         statement.setEffect(effect);
         statement.setActions(actions);
         statement.setResources(List.of("*"));
+        statement.setCondition(condition);
         return statement;
     }
 

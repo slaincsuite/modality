@@ -94,6 +94,19 @@ class PolicyJdbcStoreTest {
     }
 
     @Test
+    void duplicateInsertIsTranslatedToChineseConflict() {
+        Policy created = adminService.create("重复策略", PolicySubjectType.GLOBAL, null, null,
+                document(Effect.ALLOW, List.of("modality:dup:*")), null, "甲");
+        Policy duplicate = policyStore.find(created.getId()).orElseThrow();
+
+        BizException failure = assertThrows(BizException.class,
+                () -> ((JdbcPolicyStore) policyStore).insert(duplicate, duplicate.getDocument().toJson(),
+                        System.currentTimeMillis()));
+
+        assertTrue(failure.getMessage().contains("已被他人创建"));
+    }
+
+    @Test
     void rollbackReadsHistoricalDocument() {
         Policy created = adminService.create("回滚策略", PolicySubjectType.GLOBAL, null, null,
                 document(Effect.DENY, List.of("modality:rollback:delete")), null, "甲");

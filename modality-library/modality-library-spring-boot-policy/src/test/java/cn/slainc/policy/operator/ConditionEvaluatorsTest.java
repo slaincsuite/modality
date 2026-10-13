@@ -34,6 +34,14 @@ class ConditionEvaluatorsTest {
     }
 
     @Test
+    void stringLikeTreatsSqlWildcardsLiterally() {
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.STRING_LIKE, "dept_%", List.of("dept_%")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.STRING_LIKE, "dept-07", List.of("dept_%")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.STRING_LIKE, "deptA", List.of("dept_")));
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.STRING_LIKE, "100%", List.of("*%")));
+    }
+
+    @Test
     void numericComparisons() {
         assertTrue(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_EQUAL, 100, List.of("100")));
         assertTrue(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_EQUAL, "100.00", List.of("100")));

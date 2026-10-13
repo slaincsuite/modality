@@ -59,6 +59,16 @@ class WildcardMatcherTest {
     }
 
     @Test
+    void manyWildcardsDoNotBacktrackExponentially() {
+        String pattern = "*a*a*a*a*a*a*a*a*a*a*b";
+        String value = "a".repeat(400);
+        long start = System.nanoTime();
+        assertFalse(WildcardMatcher.match(pattern, value));
+        long millis = (System.nanoTime() - start) / 1_000_000L;
+        assertTrue(millis < 1_000L, "多 * 模式必须线性匹配，实际耗时 " + millis + " 毫秒");
+    }
+
+    @Test
     void nullValuesNeverMatch() {
         assertFalse(WildcardMatcher.match(null, "x"));
         assertFalse(WildcardMatcher.match("x", null));
