@@ -6,6 +6,10 @@ public interface LogMetrics {
 
     LogMetricsSnapshot snapshot();
 
+    default LogMetricsSnapshot windowSnapshot(long windowMillis) {
+        return snapshot();
+    }
+
     default void reset() {
     }
 }

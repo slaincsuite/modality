@@ -37,7 +37,7 @@ public class LogAlertDispatcher {
         if (!properties.isEnabled()) {
             return List.of();
         }
-        LogMetricsSnapshot snapshot = metrics.snapshot();
+        LogMetricsSnapshot snapshot = metrics.windowSnapshot(Math.max(properties.getWindowSeconds(), 1L) * 1000L);
         List<LogAlert> alerts = new ArrayList<>(2);
         if (snapshot.total() >= properties.getMinSampleCount()
                 && snapshot.errorRate() >= properties.getErrorRateThreshold()) {
