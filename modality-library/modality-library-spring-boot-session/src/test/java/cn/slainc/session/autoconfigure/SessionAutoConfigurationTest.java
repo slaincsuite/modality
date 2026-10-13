@@ -312,7 +312,7 @@ class SessionAutoConfigurationTest {
         runner.run(context -> {
             SessionConfigReader reader = context.getBean(SessionConfigReader.class);
             assertThat(reader.maxScan()).isEqualTo(10000);
-            assertThat(reader.maxLifetimeSeconds()).isEqualTo(2592000L);
+            assertThat(reader.maxLifetimeSeconds()).isEqualTo(7200L);
             assertThat(reader.maskToken()).isTrue();
             assertThat(reader.cleanupIntervalMinutes()).isEqualTo(30);
             assertThat(reader.maxSessionsPerUser()).isZero();
