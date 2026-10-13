@@ -1,9 +1,13 @@
 package cn.slainc.modules.open.store;
 
+import cn.slainc.core.exception.BizException;
+import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.openapi.model.App;
+import cn.slainc.openapi.model.AppStatus;
 import cn.slainc.openapi.spi.AppStore;
 import cn.slainc.utils.json.JsonUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.ResultSet;
@@ -34,15 +38,32 @@ public class JdbcAppStore implements AppStore {
                     System.currentTimeMillis(), app.getAppId());
             return app;
         }
-        jdbcTemplate.update("INSERT INTO " + OpenKeys.APP_TABLE
-                        + " (app_id, name, description, logo, category, contact, tags, app_type, status, owner_id,"
-                        + " redirect_uris, scopes, deleted, created_at, updated_at)"
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
-                app.getAppId(), app.getName(), app.getDescription(), app.getLogo(), app.getCategory(),
-                app.getContact(), JsonUtils.toJson(app.getTags()), app.getAppType().name(), app.getStatus().name(),
-                app.getOwnerId(), JsonUtils.toJson(app.getRedirectUris()), JsonUtils.toJson(app.getScopes()),
-                app.getCreatedAt(), app.getUpdatedAt());
+        insert(app);
         return app;
+    }
+
+    @Override
+    public boolean compareAndSetStatus(App app, AppStatus expectedStatus) {
+        int updated = jdbcTemplate.update("UPDATE " + OpenKeys.APP_TABLE + " SET status = ?, updated_at = ?"
+                        + " WHERE app_id = ? AND status = ? AND deleted = 0",
+                app.getStatus().name(), System.currentTimeMillis(), app.getAppId(), expectedStatus.name());
+        return updated > 0;
+    }
+
+    // COUNT 判定与 INSERT 之间存在竞态窗口，唯一键冲突统一转成中文业务异常
+    void insert(App app) {
+        try {
+            jdbcTemplate.update("INSERT INTO " + OpenKeys.APP_TABLE
+                            + " (app_id, name, description, logo, category, contact, tags, app_type, status, owner_id,"
+                            + " redirect_uris, scopes, deleted, created_at, updated_at)"
+                            + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)",
+                    app.getAppId(), app.getName(), app.getDescription(), app.getLogo(), app.getCategory(),
+                    app.getContact(), JsonUtils.toJson(app.getTags()), app.getAppType().name(),
+                    app.getStatus().name(), app.getOwnerId(), JsonUtils.toJson(app.getRedirectUris()),
+                    JsonUtils.toJson(app.getScopes()), app.getCreatedAt(), app.getUpdatedAt());
+        } catch (DuplicateKeyException exception) {
+            throw new BizException(ResultCode.DATA_DUPLICATE, "应用 " + app.getAppId() + " 已存在");
+        }
     }
 
     @Override

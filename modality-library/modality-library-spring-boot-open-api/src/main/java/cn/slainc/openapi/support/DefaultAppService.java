@@ -46,14 +46,29 @@ public class DefaultAppService implements AppService {
             throw new BizException(ResultCode.DATA_STATE_INVALID,
                     "应用当前状态「" + existing.getStatus().label() + "」不允许编辑，仅草稿与已下线状态可修改");
         }
-        existing.setName(app.getName() == null || app.getName().isBlank() ? existing.getName() : app.getName());
-        existing.setDescription(app.getDescription());
-        existing.setLogo(app.getLogo());
-        existing.setCategory(app.getCategory());
-        existing.setContact(app.getContact());
-        existing.setTags(app.getTags());
-        existing.setRedirectUris(app.getRedirectUris());
-        existing.setScopes(app.getScopes());
+        // 部分更新语义：未提交（null/空白/空集合）的字段保持原值，避免一次只改名称就把应用资料清空
+        existing.setName(hasText(app.getName()) ? app.getName() : existing.getName());
+        if (hasText(app.getDescription())) {
+            existing.setDescription(app.getDescription());
+        }
+        if (hasText(app.getLogo())) {
+            existing.setLogo(app.getLogo());
+        }
+        if (hasText(app.getCategory())) {
+            existing.setCategory(app.getCategory());
+        }
+        if (hasText(app.getContact())) {
+            existing.setContact(app.getContact());
+        }
+        if (hasItems(app.getTags())) {
+            existing.setTags(app.getTags());
+        }
+        if (hasItems(app.getRedirectUris())) {
+            existing.setRedirectUris(app.getRedirectUris());
+        }
+        if (hasItems(app.getScopes())) {
+            existing.setScopes(app.getScopes());
+        }
         existing.setUpdatedAt(System.currentTimeMillis());
         return store.save(existing);
     }
@@ -81,8 +96,13 @@ public class DefaultAppService implements AppService {
     @Override
     public App transition(String appId, AppAction action) {
         App app = require(appId);
+        AppStatus expected = app.getStatus();
         app.transition(action);
-        App saved = store.save(app);
+        if (!store.compareAndSetStatus(app, expected)) {
+            throw new BizException(ResultCode.CONFLICT, "应用 " + appId + " 的状态已被其他请求变更，请刷新后重试");
+        }
+        App saved = store.find(appId).orElse(app);
+        // 事件必须在状态 CAS 成功之后发出，落败方不得发出审批通过事件
         if (action == AppAction.APPROVE) {
             publish(new AppApprovedEvent(saved.getAppId(), saved.getName(), saved.getOwnerId(),
                     System.currentTimeMillis()));
@@ -98,6 +118,14 @@ public class DefaultAppService implements AppService {
     private App require(String appId) {
         Optional<App> found = store.find(appId);
         return found.orElseThrow(() -> new BizException(ResultCode.DATA_NOT_FOUND, "应用 " + appId + " 不存在"));
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private static boolean hasItems(java.util.List<String> value) {
+        return value != null && !value.isEmpty();
     }
 
     private void publish(Object event) {
