@@ -1,0 +1,91 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: modality-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-modality}
+      MYSQL_USER: ${MYSQL_USER:-modality}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?请在 .env 中设置 MYSQL_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - modality
+
+  redis:
+    image: redis:7.4
+    container_name: modality-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --requirepass
+      - ${MODALITY_REDIS_PASSWORD:?请在 .env 中设置 MODALITY_REDIS_PASSWORD}
+      - --appendonly
+      - "yes"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a $$MODALITY_REDIS_PASSWORD ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    environment:
+      MODALITY_REDIS_PASSWORD: ${MODALITY_REDIS_PASSWORD:?请在 .env 中设置 MODALITY_REDIS_PASSWORD}
+    networks:
+      - modality
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${MODALITY_IMAGE:-modality:latest}
+    container_name: modality-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${MODALITY_PORT:-8080}:8080"
+    environment:
+      TZ: ${MODALITY_TIME_ZONE:-Asia/Shanghai}
+      SPRING_DATASOURCE_DYNAMIC_PRIMARY: master
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-modality}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: ${MYSQL_USER:-modality}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: ${MYSQL_PASSWORD:?请在 .env 中设置 MYSQL_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_DATABASE: "0"
+      SPRING_DATA_REDIS_PASSWORD: ${MODALITY_REDIS_PASSWORD:?请在 .env 中设置 MODALITY_REDIS_PASSWORD}
+      MODALITY_REDIS_PASSWORD: ${MODALITY_REDIS_PASSWORD:?请在 .env 中设置 MODALITY_REDIS_PASSWORD}
+      MODALITY_TIME_ZONE: ${MODALITY_TIME_ZONE:-Asia/Shanghai}
+      MODALITY_TENANT_STATUS_CHECK_MISSING_TENANT_POLICY: ${MODALITY_TENANT_STATUS_CHECK_MISSING_TENANT_POLICY:-ALLOW}
+      MODALITY_SECURITY_COOKIE_SECURE: ${MODALITY_SECURITY_COOKIE_SECURE:-false}
+      MODALITY_CORS_ALLOWED_ORIGINS: ${MODALITY_CORS_ALLOWED_ORIGINS:-}
+      MODALITY_SSO_SERVER_SECRET_KEY: ${MODALITY_SSO_SERVER_SECRET_KEY:-}
+    volumes:
+      - app-logs:/app/logs
+    networks:
+      - modality
+
+volumes:
+  mysql-data:
+  redis-data:
+  app-logs:
+
+networks:
+  modality:
+    driver: bridge
