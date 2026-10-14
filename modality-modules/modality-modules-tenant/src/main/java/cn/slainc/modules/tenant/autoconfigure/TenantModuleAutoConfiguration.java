@@ -1,6 +1,6 @@
 package cn.slainc.modules.tenant.autoconfigure;
 
-import cn.slainc.modules.tenant.excel.TenantExcelService;
+import cn.slainc.modules.tenant.excel.TenantExportService;
 import cn.slainc.modules.tenant.service.TenantManageService;
 import cn.slainc.modules.tenant.web.TenantLifecycleController;
 import cn.slainc.modules.tenant.web.TenantManageController;
@@ -43,7 +43,7 @@ public class TenantModuleAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public TenantExcelService tenantExcelService() {
-        return new TenantExcelService();
+    public TenantExportService tenantExportService(TenantManageService tenantManageService) {
+        return new TenantExportService(tenantManageService);
     }
 }
