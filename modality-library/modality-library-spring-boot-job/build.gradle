@@ -1,0 +1,18 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = '分布式定时任务内核'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-redis')
+
+    implementation libs.jackson.databind
+    implementation libs.spring.boot.starter.quartz
+    implementation libs.resilience4j.retry
+    implementation libs.spring.tx
+
+    testImplementation libs.h2
+    testImplementation libs.spring.boot.starter.jdbc
+}

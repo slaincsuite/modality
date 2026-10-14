@@ -1,0 +1,13 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = '字段级变更审计'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
+    api libs.jackson.databind
+
+    implementation libs.javers.core
+}

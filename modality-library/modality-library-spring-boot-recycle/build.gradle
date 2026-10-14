@@ -1,0 +1,11 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = '通用回收站'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
+    api libs.jackson.databind
+}

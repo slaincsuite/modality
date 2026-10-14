@@ -1,0 +1,17 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = 'Webhook 事件投递'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
+    api project(':modality-library:modality-library-spring-boot-redis')
+
+    implementation libs.resilience4j.retry
+
+    compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    testImplementation libs.springdoc.openapi.starter.webmvc.ui
+}

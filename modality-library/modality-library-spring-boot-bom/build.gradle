@@ -72,6 +72,11 @@ def thirdPartyAliases = [
         'jakarta-validation-api',
         'jakarta-transaction-api',
         'commons-io',
+        'lucene-core',
+        'lucene-analysis-common',
+        'lucene-queryparser',
+        'lucene-highlighter',
+        'javers-core',
 ]
 
 dependencies {

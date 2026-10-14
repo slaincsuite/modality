@@ -1,0 +1,12 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = '多因素二次验证'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-core')
+    api project(':modality-library:modality-library-spring-boot-redis')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-crypto')
+}

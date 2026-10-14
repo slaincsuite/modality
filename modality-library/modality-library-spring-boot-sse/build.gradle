@@ -1,0 +1,15 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = 'SSE 服务端推送'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-redis')
+
+    implementation libs.caffeine
+
+    compileOnly libs.spring.boot.starter.actuator
+    testImplementation libs.spring.boot.starter.actuator
+}
