@@ -1,8 +1,14 @@
 package cn.slainc.modules.tenant.autoconfigure;
 
+import cn.slainc.modules.tenant.mapper.TenantPlanMapper;
+import cn.slainc.modules.tenant.mapper.TenantPlanMenuMapper;
+import cn.slainc.modules.tenant.plan.TenantPlanAdapter;
 import cn.slainc.modules.tenant.service.TenantManageService;
+import cn.slainc.modules.tenant.service.TenantPlanService;
 import cn.slainc.modules.tenant.web.TenantLifecycleController;
 import cn.slainc.modules.tenant.web.TenantManageController;
+import cn.slainc.modules.tenant.web.TenantPlanBindController;
+import cn.slainc.modules.tenant.web.TenantPlanController;
 import cn.slainc.modules.tenant.web.TenantQueryController;
 import cn.slainc.modules.tenant.web.TenantQuotaController;
 import cn.slainc.modules.tenant.web.TenantStatsController;
@@ -27,7 +33,8 @@ import org.springframework.context.annotation.Import;
         matchIfMissing = true)
 @EnableConfigurationProperties(TenantModuleProperties.class)
 @Import({TenantManageController.class, TenantLifecycleController.class, TenantQueryController.class,
-        TenantQuotaController.class, TenantStatsController.class})
+        TenantQuotaController.class, TenantStatsController.class, TenantPlanController.class,
+        TenantPlanBindController.class})
 public class TenantModuleAutoConfiguration {
 
     @Bean
@@ -38,5 +45,26 @@ public class TenantModuleAutoConfiguration {
                                                    TenantQuotaService quotaService,
                                                    ObjectProvider<DynamicConfigService> configServiceProvider) {
         return new TenantManageService(tenantMapper, lifecycleService, tenantService, quotaService, configServiceProvider);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(TenantPlanAdapter.class)
+    public TenantPlanAdapter tenantPlanAdapter(ObjectProvider<TenantMapper> tenantMapperProvider,
+                                               ObjectProvider<TenantPlanMapper> planMapperProvider,
+                                               ObjectProvider<TenantPlanMenuMapper> planMenuMapperProvider,
+                                               ObjectProvider<DynamicConfigService> configServiceProvider,
+                                               TenantModuleProperties properties) {
+        return new TenantPlanAdapter(tenantMapperProvider, planMapperProvider, planMenuMapperProvider,
+                configServiceProvider, properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TenantPlanService tenantPlanService(TenantPlanMapper planMapper, TenantPlanMenuMapper planMenuMapper,
+                                               ObjectProvider<TenantMapper> tenantMapperProvider,
+                                               ObjectProvider<TenantService> tenantServiceProvider,
+                                               ObjectProvider<TenantPlanAdapter> adapterProvider) {
+        return new TenantPlanService(planMapper, planMenuMapper, tenantMapperProvider, tenantServiceProvider,
+                adapterProvider);
     }
 }

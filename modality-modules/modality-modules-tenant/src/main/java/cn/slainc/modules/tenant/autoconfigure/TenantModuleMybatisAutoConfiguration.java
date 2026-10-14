@@ -2,6 +2,7 @@ package cn.slainc.modules.tenant.autoconfigure;
 
 import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.annotation.MapperScan;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -24,6 +25,7 @@ public class TenantModuleMybatisAutoConfiguration {
     @Configuration(proxyBeanMethods = false)
     @ConditionalOnClass({SqlSessionFactory.class, MapperFactoryBean.class})
     @ConditionalOnBean(SqlSessionFactory.class)
+    @MapperScan("cn.slainc.modules.tenant.mapper")
     static class TenantSchemaConfiguration {
 
         @Bean
