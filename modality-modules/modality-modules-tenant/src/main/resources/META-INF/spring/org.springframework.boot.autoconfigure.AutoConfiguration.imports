@@ -1,0 +1,2 @@
+cn.slainc.modules.tenant.autoconfigure.TenantModuleAutoConfiguration
+cn.slainc.modules.tenant.autoconfigure.TenantModuleMybatisAutoConfiguration

@@ -1,0 +1,15 @@
+plugins {
+    id 'modality.spring-library-conventions'
+}
+
+description = '租户中心'
+
+dependencies {
+    api project(':modality-library:modality-library-spring-boot-web')
+    api project(':modality-library:modality-library-spring-boot-security')
+    api project(':modality-library:modality-library-spring-boot-mybatis')
+    api project(':modality-library:modality-library-spring-boot-tenant')
+    implementation project(':modality-library:modality-library-spring-boot-redis')
+    compileOnly libs.springdoc.openapi.starter.webmvc.ui
+    testRuntimeOnly libs.h2
+}

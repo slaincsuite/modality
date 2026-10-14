@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS t_tenant (
+    id BIGINT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    tenant_code VARCHAR(64) NOT NULL,
+    tenant_name VARCHAR(64) NOT NULL,
+    contact_name VARCHAR(64),
+    contact_phone VARCHAR(32),
+    contact_email VARCHAR(128),
+    expire_at DATETIME,
+    status VARCHAR(32) NOT NULL DEFAULT 'TRIAL',
+    isolation_strategy VARCHAR(32) NOT NULL DEFAULT 'ROW',
+    schema_name VARCHAR(64),
+    datasource_name VARCHAR(64),
+    package_id BIGINT,
+    remark VARCHAR(255),
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by VARCHAR(64),
+    updated_by VARCHAR(64),
+    deleted TINYINT NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0
+);
