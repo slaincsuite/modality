@@ -50,3 +50,6 @@ settings-gradle.lockfile
 .env.local
 docker-compose.override.yml
 .DS_Store
+
+### 本地 Apifox 配置（不入库） ###
+.apifox
