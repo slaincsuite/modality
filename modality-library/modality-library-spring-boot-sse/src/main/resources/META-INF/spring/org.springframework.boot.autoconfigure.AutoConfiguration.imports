@@ -1,0 +1,3 @@
+cn.slainc.sse.autoconfigure.SseDynamicAutoConfiguration
+cn.slainc.sse.autoconfigure.SseAutoConfiguration
+cn.slainc.sse.autoconfigure.SseClusterAutoConfiguration
