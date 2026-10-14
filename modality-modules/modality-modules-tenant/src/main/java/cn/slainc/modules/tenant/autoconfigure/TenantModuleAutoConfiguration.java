@@ -2,7 +2,11 @@ package cn.slainc.modules.tenant.autoconfigure;
 
 import cn.slainc.modules.tenant.excel.TenantExcelService;
 import cn.slainc.modules.tenant.service.TenantManageService;
+import cn.slainc.modules.tenant.web.TenantLifecycleController;
 import cn.slainc.modules.tenant.web.TenantManageController;
+import cn.slainc.modules.tenant.web.TenantQueryController;
+import cn.slainc.modules.tenant.web.TenantQuotaController;
+import cn.slainc.modules.tenant.web.TenantStatsController;
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.tenant.lifecycle.TenantLifecycleService;
 import cn.slainc.tenant.mapper.TenantMapper;
@@ -23,7 +27,8 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnProperty(prefix = "modality.tenant-module", name = "enabled", havingValue = "true",
         matchIfMissing = true)
 @EnableConfigurationProperties(TenantModuleProperties.class)
-@Import(TenantManageController.class)
+@Import({TenantManageController.class, TenantLifecycleController.class, TenantQueryController.class,
+        TenantQuotaController.class, TenantStatsController.class})
 public class TenantModuleAutoConfiguration {
 
     @Bean
