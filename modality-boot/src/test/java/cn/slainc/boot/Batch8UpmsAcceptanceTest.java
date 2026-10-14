@@ -5,11 +5,11 @@ import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.upms.excel.UserExportRow;
 import cn.slainc.modules.upms.mapper.Batch8ScopeMapper;
-import cn.slainc.modules.upms.service.AccessControlService;
-import cn.slainc.modules.upms.service.PermissionService;
-import cn.slainc.modules.upms.service.RoleService;
-import cn.slainc.modules.upms.service.SystemRegistryService;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.upms.service.access.AccessControlService;
+import cn.slainc.modules.upms.service.permission.PermissionService;
+import cn.slainc.modules.upms.service.role.RoleService;
+import cn.slainc.modules.upms.service.registry.SystemRegistryService;
+import cn.slainc.modules.upms.service.user.UserService;
 import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.policy.engine.PolicyEngine;
@@ -76,7 +76,7 @@ class Batch8UpmsAcceptanceTest {
     private PolicyEngine policyEngine;
 
     @Autowired
-    private cn.slainc.modules.upms.service.DeptService deptService;
+    private cn.slainc.modules.upms.service.dept.DeptService deptService;
 
     // 本验收用 t_user 真实账号走完整登录链路，@Primary 压过 Batch4 基座的内存账号提供者（不影响其它验收默认行为）
     @org.springframework.boot.test.context.TestConfiguration(proxyBeanMethods = false)
