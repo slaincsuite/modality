@@ -1,12 +1,12 @@
 # modality
 
-> 面向企业多租户场景的 Spring Boot 基础平台：27 个可独立引用的自动配置库（含工单引擎）+ 8 个业务模块（含工单中心与租户中心）+ 1 个启动模块。
+> 面向企业多租户场景的 Spring Boot 基础平台：34 个可独立引用的自动配置库（含工单引擎）+ 9 个业务模块（含工单中心、租户中心与定时任务中心）+ 1 个启动模块。
 
 modality 把企业后台里反复要写的那一层沉淀成**可复用、可关闭、可覆盖**的库：多租户数据隔离、七套账号体系的认证鉴权、用户权限中心、OAuth2 / SSO / API Key / 签名协议、审计与策略引擎、文件存储、通知、动态配置、日志与监控。业务模块只负责端点与编排，库模块只提供能力与服务，二者用 SPI 解耦；启动模块负责聚合。
 
 - **运行环境**：JDK 21、MySQL 8.0+、Redis 6+
 - **技术栈**：Spring Boot 4.1.1 / Spring 7 / Jackson 3、Sa-Token 1.46.0、MyBatis-Plus 3.5.17、dynamic-datasource 4.5.0、Redisson 4.8.0
-- **构建**：Gradle 9.8.0（wrapper 锁定），全量构建与测试 2500+ 用例
+- **构建**：Gradle 9.8.0（wrapper 锁定），全量构建与测试 3100+ 用例
 - **许可证**：GPL-3.0
 
 ## 目录
@@ -29,6 +29,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 - **一致性校验**：鉴权完成后校验「请求声明的租户」与「登录会话租户」，不一致直接 403，客户端无法用请求头越权切租户
 - 支持行级 / Schema 级 / 独立数据库三种隔离策略，含租户生命周期（开通、试用、续期、冻结、注销）与配额；租户生命周期与配额查询端点由租户中心（`/tenant/**`，权限码 `tenant:manage:*`）提供
 - 平台级表（审计、动态配置、数据源等）通过白名单合并机制统一登记，合并后自动刷新拦截器
+- **租户套餐**：额度（用户数 / 存储 / 单文件 / 导出条数 / 并发导出 / 限流）、日志保留天数、功能开关、数据权限范围的模板化管理；绑定即生效（60 秒进程内缓存），未配维度回落全局默认（支持动态配置覆盖）
 
 ### 认证与安全
 
@@ -39,10 +40,11 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 - 口令存储：BCrypt（cost 10）；字段级加密支持 SM4 / AES，等值查询自动加密参数
 - 传输与响应：默认 CSP、`X-Content-Type-Options: nosniff`、兜底异常不回显原始 message、CORS 默认空白名单
 - 弱算法（DES / ECB）默认禁用，需显式开启才能使用
+- **MFA / TOTP 二次验证**：RFC 6238 动态口令（自研实现无第三方依赖）、恢复码、失败锁定；开启后登录返回挑战而不是令牌，`POST /auth/mfa/verify` 换取正式登录态，仅对四类用户账号体系生效
 
 ### 用户权限中心（UPMS）
 
-用户、角色、权限、部门、用户组、菜单、数据权限、访问授权、系统注册表、操作日志、登录记录、用户统计；树形结构带成环校验，关联写全部在事务内，软删自动释放用户名唯一约束。
+用户、角色、权限、部门、用户组、菜单、数据权限、访问授权、系统注册表、操作日志、登录记录、用户统计；树形结构带成环校验，关联写全部在事务内，软删自动释放用户名唯一约束。账号自助数据：我的收藏、最近访问、热门菜单推荐（按最近 30 天访问次数，默认 8 条），均只作用于当前登录账号。
 
 ### 开放平台与协议
 
@@ -68,6 +70,8 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 - 审计中心：登录日志、操作日志、API 访问日志、策略评估日志，统计全部 SQL 聚合下推，导出限流限长
 - 策略引擎：基于属性的访问控制，deny 优先、无 allow 即默认拒；支持仿真推演、版本管理、导入导出、测试用例
 - 告警与通知：站内信 + Webhook（钉钉 / 飞书 / 企业微信 / 自定义），Webhook 地址做 SSRF 校验，失败退避重试
+- **字段级变更审计**：`@ChangeAudited(type, id=SpEL)` 切面采集 before/after，JaVers 逐字段差异（内置回退引擎）、敏感字段自动掩码、事务提交后异步落库（`ChangeRecorder` SPI）
+- **定时任务中心**：Quartz 内核（cron / misfire / 重试退避）+ 任务定义、手动触发、执行日志、节点注册管理端点；分布式锁用平台 Redisson，集群存储表自动建表
 
 ### 基础设施
 
@@ -76,6 +80,10 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 - 缓存：两级缓存（L1 本地 + L2 Redis），按调用方 TTL 生效，支持跨节点失效广播
 - 日志：控制台查询、级别热调整、按大小与窗口下载；SQL 慢日志异步采集且保留 traceId
 - 监控：JVM / 系统 / 数据源 / Redis / 会话指标，Actuator 自定义端点
+- **SSE 推送**：连接注册、心跳、断线事件重放（Last-Event-ID）、Redis 集群广播；认证器可插拔
+- **搜索引擎**：Lucene 内嵌倒排索引、中文二元分词、BM25 打分、短语 / 排除语法、命中高亮；文档源走 Mapper 复用租户行级过滤，支持重建索引与按账号的搜索历史
+- **通用回收站**：删除前写 JSON 快照，支持恢复与彻底删除、过期自动清理；可回收类型注册表 + 存储 SPI（infra 提供 JDBC 落库与公告回收示范）
+- **Webhook 事件订阅**：开放平台订阅管理 + HMAC-SHA256 签名投递（`X-Modality-Signature`）、指数退避重试、投递记录与手动重投、多节点 Redisson 锁去重
 
 ### 工程化
 
@@ -85,20 +93,20 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 
 ## 模块清单
 
-### 库模块（26）
+### 库模块（33）
 
 | 分层 | 模块 |
 | --- | --- |
 | 基础 | `utils`、`crypto`、`core`、`web`、`excel` |
 | 数据 | `datasource`、`mybatis`、`redis`、`tenant` |
-| 能力 | `idempotent`、`storage`、`logger`、`monitor`、`sensitive` |
-| 安全与协议 | `security`、`jwt`、`oauth2`、`sso`、`api-key`、`captcha`、`sign`、`session` |
-| 领域 | `open-api`、`policy`、`thirdauth`、`workorder` |
+| 能力 | `idempotent`、`storage`、`logger`、`monitor`、`sensitive`、`recycle`、`search`、`sse` |
+| 安全与协议 | `security`、`jwt`、`oauth2`、`sso`、`api-key`、`captcha`、`sign`、`session`、`mfa` |
+| 领域 | `open-api`、`policy`、`thirdauth`、`workorder`、`webhook`、`job`、`change-audit` |
 | 平台 | `bom` |
 
 ### 业务模块（8）
 
-`upms`（用户权限）、`auth`（认证中心）、`open`（开放平台）、`audit`（审计中心）、`policy`（策略管理中心）、`infra`（基础设施中心）、`workorder`（工单中心）、`tenant`（租户中心）
+`upms`（用户权限）、`auth`（认证中心）、`open`（开放平台）、`audit`（审计中心）、`policy`（策略管理中心）、`infra`（基础设施中心）、`workorder`（工单中心）、`tenant`（租户中心）、`job`（定时任务中心）
 
 ### 启动模块（1）
 
@@ -485,6 +493,8 @@ modality.security.session.active-timeout=1800
 | `modality.web.*` | Web 通用：跨域、安全响应头、请求限流、异步、静态资源、接口文档 |
 | `modality.monitor.*` / `modality.logger.*` / `modality.audit.*` | 监控、日志、审计 |
 | `modality.workorder-engine.*` / `modality.workorder.*` | 工单引擎与工单中心：开关、编号规则、模板、SLA、通知 |
+| `modality.mfa.*` / `modality.sse.*` / `modality.search.*` / `modality.recycle.*` | 二次验证、SSE 推送、搜索引擎、通用回收站 |
+| `modality.webhook.*` / `modality.job.*` / `modality.change-audit.*` | Webhook 投递、定时任务内核、字段级变更审计 |
 
 完整清单可直接查看各库 `autoconfigure` 包下的 `*Properties` 类，或启动后访问 `/actuator/configprops`（需先放开该端点）。
 

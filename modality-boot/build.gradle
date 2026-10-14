@@ -53,6 +53,15 @@ dependencies {
     implementation project(':modality-modules:modality-modules-workorder')
     implementation project(':modality-modules:modality-modules-tenant')
 
+    implementation project(':modality-library:modality-library-spring-boot-mfa')
+    implementation project(':modality-library:modality-library-spring-boot-sse')
+    implementation project(':modality-library:modality-library-spring-boot-recycle')
+    implementation project(':modality-library:modality-library-spring-boot-search')
+    implementation project(':modality-library:modality-library-spring-boot-webhook')
+    implementation project(':modality-library:modality-library-spring-boot-job')
+    implementation project(':modality-library:modality-library-spring-boot-change-audit')
+    implementation project(':modality-modules:modality-modules-job')
+
     testImplementation libs.archunit.junit5
 
     developmentOnly platform(project(':modality-library:modality-library-spring-boot-bom'))
@@ -63,4 +72,8 @@ dependencies {
     runtimeOnly libs.springdoc.openapi.starter.webmvc.ui
     runtimeOnly libs.spring.boot.starter.actuator
     runtimeOnly libs.micrometer.registry.prometheus
+    runtimeOnly libs.lucene.core
+    runtimeOnly libs.lucene.analysis.common
+    runtimeOnly libs.lucene.queryparser
+    runtimeOnly libs.lucene.highlighter
 }
