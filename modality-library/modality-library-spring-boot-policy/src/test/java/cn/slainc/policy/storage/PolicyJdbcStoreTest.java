@@ -1,7 +1,7 @@
 package cn.slainc.policy.storage;
 
 import cn.slainc.core.exception.BizException;
-import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.config.PolicyProperties;
 import cn.slainc.policy.engine.PolicyEngine;
 import cn.slainc.policy.domain.Effect;

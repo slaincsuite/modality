@@ -1,7 +1,7 @@
 package cn.slainc.sse.cluster;
 
 import cn.slainc.redis.pubsub.RedisPubSubService;
-import cn.slainc.sse.api.SseService;
+import cn.slainc.sse.spi.SseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;

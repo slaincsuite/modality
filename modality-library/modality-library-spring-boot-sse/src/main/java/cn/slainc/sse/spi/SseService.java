@@ -1,4 +1,4 @@
-package cn.slainc.sse.api;
+package cn.slainc.sse.spi;
 
 import cn.slainc.sse.handshake.SseHandshake;
 import cn.slainc.sse.support.SseEvent;

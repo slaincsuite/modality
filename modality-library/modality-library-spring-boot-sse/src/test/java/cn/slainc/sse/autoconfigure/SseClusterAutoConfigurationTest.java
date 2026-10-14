@@ -1,7 +1,7 @@
 package cn.slainc.sse.autoconfigure;
 
 import cn.slainc.redis.pubsub.RedisPubSubService;
-import cn.slainc.sse.api.SseService;
+import cn.slainc.sse.spi.SseService;
 import cn.slainc.sse.cluster.RedisSseEventRelay;
 import cn.slainc.sse.cluster.SseClusterSubscriber;
 import cn.slainc.sse.cluster.SseEventRelay;

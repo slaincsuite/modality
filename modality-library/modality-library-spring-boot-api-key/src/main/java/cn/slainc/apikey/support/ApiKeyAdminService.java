@@ -1,4 +1,4 @@
-package cn.slainc.apikey.admin;
+package cn.slainc.apikey.support;
 
 import cn.dev33.satoken.apikey.exception.ApiKeyException;
 import cn.dev33.satoken.apikey.model.ApiKeyModel;

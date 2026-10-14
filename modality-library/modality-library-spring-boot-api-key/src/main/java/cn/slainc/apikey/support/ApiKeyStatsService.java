@@ -1,4 +1,4 @@
-package cn.slainc.apikey.admin;
+package cn.slainc.apikey.support;
 
 import cn.slainc.apikey.guard.ApiKeyStatsKeys;
 import cn.slainc.apikey.guard.ApiKeyStatsRecorder;

@@ -1,6 +1,6 @@
 package cn.slainc.openapi.autoconfigure;
 
-import cn.slainc.apikey.admin.ApiKeyAdminService;
+import cn.slainc.apikey.support.ApiKeyAdminService;
 import cn.slainc.oauth2.client.ClientAdminService;
 import cn.slainc.openapi.bridge.ApiKeyCredentialProvisioner;
 import cn.slainc.openapi.bridge.GeneratedCredentialProvisioner;

@@ -1,4 +1,4 @@
-package cn.slainc.mfa.api;
+package cn.slainc.mfa.spi;
 
 import cn.slainc.mfa.challenge.MfaChallenge;
 

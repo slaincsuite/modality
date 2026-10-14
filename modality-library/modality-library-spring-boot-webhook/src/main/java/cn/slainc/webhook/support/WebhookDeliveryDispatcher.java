@@ -1,7 +1,7 @@
 package cn.slainc.webhook.support;
 
 import cn.slainc.utils.string.StringUtils;
-import cn.slainc.webhook.api.WebhookSender;
+import cn.slainc.webhook.spi.WebhookSender;
 import cn.slainc.webhook.config.WebhookProperties;
 import cn.slainc.webhook.sender.WebhookSendRequest;
 import cn.slainc.webhook.sender.WebhookSendResult;

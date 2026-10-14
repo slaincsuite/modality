@@ -2,7 +2,7 @@ package cn.slainc.webhook.autoconfigure;
 
 import cn.slainc.core.config.DynamicConfig;
 import cn.slainc.core.config.DynamicConfigService;
-import cn.slainc.webhook.api.WebhookSender;
+import cn.slainc.webhook.spi.WebhookSender;
 import cn.slainc.webhook.config.DynamicWebhookProperties;
 import cn.slainc.webhook.config.WebhookProperties;
 import cn.slainc.webhook.spi.WebhookDeliveryCommand;

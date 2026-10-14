@@ -3,7 +3,7 @@ package cn.slainc.mfa.support;
 import cn.slainc.core.context.UserContext;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.mfa.api.MfaChallengeStore;
+import cn.slainc.mfa.spi.MfaChallengeStore;
 import cn.slainc.mfa.authentication.SecondFactorGate;
 import cn.slainc.mfa.challenge.MfaChallenge;
 import cn.slainc.mfa.config.MfaConfigReader;

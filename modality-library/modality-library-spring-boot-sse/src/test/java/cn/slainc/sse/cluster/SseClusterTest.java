@@ -1,7 +1,7 @@
 package cn.slainc.sse.cluster;
 
 import cn.slainc.redis.pubsub.RedisPubSubService;
-import cn.slainc.sse.api.SseService;
+import cn.slainc.sse.spi.SseService;
 import cn.slainc.sse.support.SseEvent;
 import cn.slainc.utils.json.JsonUtils;
 import org.junit.jupiter.api.Test;

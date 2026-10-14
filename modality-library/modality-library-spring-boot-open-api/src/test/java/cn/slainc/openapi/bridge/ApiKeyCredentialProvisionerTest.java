@@ -1,7 +1,7 @@
 package cn.slainc.openapi.bridge;
 
 import cn.dev33.satoken.apikey.model.ApiKeyModel;
-import cn.slainc.apikey.admin.ApiKeyAdminService;
+import cn.slainc.apikey.support.ApiKeyAdminService;
 import cn.slainc.openapi.SingleProvider;
 import cn.slainc.openapi.domain.App;
 import cn.slainc.openapi.domain.AppCredential;

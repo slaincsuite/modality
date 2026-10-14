@@ -1,4 +1,4 @@
-package cn.slainc.changeaudit.api;
+package cn.slainc.changeaudit.spi;
 
 import cn.slainc.changeaudit.support.FieldChange;
 

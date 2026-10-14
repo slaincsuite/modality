@@ -2,9 +2,9 @@ package cn.slainc.search.support;
 
 import cn.slainc.core.result.PageResult;
 import cn.slainc.search.analyzer.SearchAnalyzer;
-import cn.slainc.search.api.SearchHit;
-import cn.slainc.search.api.SearchQuery;
-import cn.slainc.search.api.SearchStats;
+import cn.slainc.search.spi.SearchHit;
+import cn.slainc.search.spi.SearchQuery;
+import cn.slainc.search.spi.SearchStats;
 import cn.slainc.search.config.SearchProperties;
 import cn.slainc.search.index.LuceneIndexStore;
 import cn.slainc.search.index.SearchIndexer;

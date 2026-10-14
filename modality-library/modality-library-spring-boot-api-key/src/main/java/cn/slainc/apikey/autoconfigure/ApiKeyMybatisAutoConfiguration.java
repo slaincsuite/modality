@@ -5,7 +5,7 @@ import cn.slainc.apikey.ApiKeyRecord;
 import cn.slainc.apikey.config.ApiKeyProperties;
 import cn.slainc.apikey.loader.JdbcApiKeyDataLoader;
 import cn.slainc.apikey.loader.ApiKeyMapper;
-import cn.slainc.apikey.admin.ApiKeyAdminService;
+import cn.slainc.apikey.support.ApiKeyAdminService;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
 import org.apache.ibatis.session.SqlSessionFactory;

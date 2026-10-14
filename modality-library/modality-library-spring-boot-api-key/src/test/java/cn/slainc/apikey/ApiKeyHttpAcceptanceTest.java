@@ -1,8 +1,8 @@
 package cn.slainc.apikey;
 
 import cn.dev33.satoken.apikey.model.ApiKeyModel;
-import cn.slainc.apikey.admin.ApiKeyAdminService;
-import cn.slainc.apikey.admin.ApiKeyStatsService;
+import cn.slainc.apikey.support.ApiKeyAdminService;
+import cn.slainc.apikey.support.ApiKeyStatsService;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

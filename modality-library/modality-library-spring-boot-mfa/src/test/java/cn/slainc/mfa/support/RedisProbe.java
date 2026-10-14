@@ -46,7 +46,7 @@ final class RedisProbe {
     static StringRedisTemplate newStringRedisTemplate() {
         RedisStandaloneConfiguration server = new RedisStandaloneConfiguration(HOST, PORT);
         server.setPassword(RedisPassword.of(PASSWORD));
-        server.setDatabase(1);
+        server.setDatabase(5);
         LettuceClientConfiguration client = LettuceClientConfiguration.builder()
                 .commandTimeout(Duration.ofSeconds(5))
                 .build();

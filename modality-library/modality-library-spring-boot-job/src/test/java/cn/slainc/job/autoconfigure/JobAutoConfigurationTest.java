@@ -1,6 +1,6 @@
 package cn.slainc.job.autoconfigure;
 
-import cn.slainc.job.api.JobScheduler;
+import cn.slainc.job.spi.JobScheduler;
 import cn.slainc.job.support.JobSchedulerImpl;
 import cn.slainc.job.support.QuartzBootstrap;
 import cn.slainc.job.support.QuartzStoreCustomizer;

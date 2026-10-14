@@ -1,4 +1,4 @@
-package cn.slainc.apikey.admin;
+package cn.slainc.apikey.support;
 
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.slainc.apikey.ApiKeyRecord;

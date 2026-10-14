@@ -4,7 +4,7 @@ import cn.dev33.satoken.apikey.model.ApiKeyModel;
 import cn.slainc.apikey.config.ApiKeyProperties;
 import cn.slainc.apikey.loader.JdbcApiKeyDataLoader;
 import cn.slainc.apikey.loader.ApiKeyMapper;
-import cn.slainc.apikey.admin.ApiKeyAdminService;
+import cn.slainc.apikey.support.ApiKeyAdminService;
 import cn.slainc.apikey.template.GuardedApiKeyTemplate;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.junit.jupiter.api.Test;

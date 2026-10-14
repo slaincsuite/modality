@@ -2,7 +2,7 @@ package cn.slainc.mfa.autoconfigure;
 
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.context.UserContext;
-import cn.slainc.mfa.api.MfaChallengeStore;
+import cn.slainc.mfa.spi.MfaChallengeStore;
 import cn.slainc.mfa.support.InMemoryMfaChallengeStore;
 import cn.slainc.mfa.support.RedisMfaChallengeStore;
 import cn.slainc.mfa.authentication.SecondFactorGate;

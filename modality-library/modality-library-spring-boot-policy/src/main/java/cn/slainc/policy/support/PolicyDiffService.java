@@ -1,4 +1,4 @@
-package cn.slainc.policy.admin;
+package cn.slainc.policy.support;
 
 import cn.slainc.policy.domain.PolicyDocument;
 import cn.slainc.policy.domain.PolicyStatement;

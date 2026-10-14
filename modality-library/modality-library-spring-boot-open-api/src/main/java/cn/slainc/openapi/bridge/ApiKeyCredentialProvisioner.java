@@ -2,7 +2,7 @@ package cn.slainc.openapi.bridge;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.apikey.admin.ApiKeyAdminService;
+import cn.slainc.apikey.support.ApiKeyAdminService;
 import cn.slainc.openapi.domain.App;
 import cn.slainc.openapi.domain.AppCredential;
 import cn.slainc.openapi.domain.AppType;

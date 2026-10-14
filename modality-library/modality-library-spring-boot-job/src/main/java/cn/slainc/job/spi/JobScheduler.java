@@ -1,4 +1,4 @@
-package cn.slainc.job.api;
+package cn.slainc.job.spi;
 
 import cn.slainc.job.support.JobDefinition;
 import cn.slainc.job.support.JobRecorder;

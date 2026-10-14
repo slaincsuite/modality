@@ -1,4 +1,4 @@
-package cn.slainc.policy.admin;
+package cn.slainc.policy.support;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;

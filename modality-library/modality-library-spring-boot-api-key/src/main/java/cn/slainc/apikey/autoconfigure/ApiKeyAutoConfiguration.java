@@ -5,7 +5,7 @@ import cn.dev33.satoken.apikey.template.SaApiKeyTemplate;
 import cn.slainc.apikey.config.ApiKeyProperties;
 import cn.slainc.apikey.guard.ApiKeyGuard;
 import cn.slainc.apikey.guard.ApiKeyStatsRecorder;
-import cn.slainc.apikey.admin.ApiKeyStatsService;
+import cn.slainc.apikey.support.ApiKeyStatsService;
 import cn.slainc.apikey.template.GuardedApiKeyTemplate;
 import cn.slainc.apikey.advice.ApiKeyErrorAdvice;
 import cn.slainc.redis.ratelimit.RateLimiter;

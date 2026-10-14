@@ -1,4 +1,4 @@
-package cn.slainc.webhook.api;
+package cn.slainc.webhook.spi;
 
 import cn.slainc.webhook.sender.WebhookSendRequest;
 import cn.slainc.webhook.sender.WebhookSendResult;

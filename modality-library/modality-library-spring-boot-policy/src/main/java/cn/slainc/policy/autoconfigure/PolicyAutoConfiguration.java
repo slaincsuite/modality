@@ -1,9 +1,9 @@
 package cn.slainc.policy.autoconfigure;
 
 import cn.slainc.core.config.DynamicConfigService;
-import cn.slainc.policy.admin.PolicyAdminService;
-import cn.slainc.policy.admin.PolicyBindingService;
-import cn.slainc.policy.admin.PolicyDiffService;
+import cn.slainc.policy.support.PolicyAdminService;
+import cn.slainc.policy.support.PolicyBindingService;
+import cn.slainc.policy.support.PolicyDiffService;
 import cn.slainc.policy.aspect.PolicyAspect;
 import cn.slainc.policy.bridge.PolicySecurityBridge;
 import cn.slainc.policy.config.PolicyProperties;

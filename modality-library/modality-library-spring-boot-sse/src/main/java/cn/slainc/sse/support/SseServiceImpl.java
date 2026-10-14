@@ -2,7 +2,7 @@ package cn.slainc.sse.support;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.sse.api.SseService;
+import cn.slainc.sse.spi.SseService;
 import cn.slainc.sse.handshake.SseAuthenticator;
 import cn.slainc.sse.handshake.SseHandshake;
 import cn.slainc.sse.handshake.SseUser;

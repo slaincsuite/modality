@@ -1,4 +1,4 @@
-package cn.slainc.policy.admin;
+package cn.slainc.policy.support;
 
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.exception.BizException;

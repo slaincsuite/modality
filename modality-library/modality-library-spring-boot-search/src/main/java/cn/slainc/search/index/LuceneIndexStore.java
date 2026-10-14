@@ -1,7 +1,7 @@
 package cn.slainc.search.index;
 
 import cn.slainc.search.analyzer.SearchAnalyzer;
-import cn.slainc.search.api.SearchStats;
+import cn.slainc.search.spi.SearchStats;
 import cn.slainc.search.config.SearchProperties;
 import cn.slainc.search.spi.SearchDocumentSnapshot;
 import org.apache.lucene.document.Document;

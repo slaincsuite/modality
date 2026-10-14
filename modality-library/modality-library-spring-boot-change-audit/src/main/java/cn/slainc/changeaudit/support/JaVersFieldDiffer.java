@@ -1,6 +1,6 @@
 package cn.slainc.changeaudit.support;
 
-import cn.slainc.changeaudit.api.FieldDiffEngine;
+import cn.slainc.changeaudit.spi.FieldDiffEngine;
 import cn.slainc.changeaudit.support.FieldChange;
 import org.javers.core.Javers;
 import org.javers.core.JaversBuilder;

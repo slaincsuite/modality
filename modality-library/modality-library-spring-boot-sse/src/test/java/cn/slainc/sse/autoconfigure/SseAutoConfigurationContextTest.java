@@ -1,7 +1,7 @@
 package cn.slainc.sse.autoconfigure;
 
 import cn.slainc.sse.MapSseConfigService;
-import cn.slainc.sse.api.SseService;
+import cn.slainc.sse.spi.SseService;
 import cn.slainc.sse.cluster.SseClusterSubscriber;
 import cn.slainc.sse.cluster.SseEventRelay;
 import cn.slainc.sse.support.SseHeartbeatScheduler;

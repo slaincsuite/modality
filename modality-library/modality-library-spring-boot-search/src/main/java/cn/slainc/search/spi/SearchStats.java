@@ -1,4 +1,4 @@
-package cn.slainc.search.api;
+package cn.slainc.search.spi;
 
 import java.time.LocalDateTime;
 

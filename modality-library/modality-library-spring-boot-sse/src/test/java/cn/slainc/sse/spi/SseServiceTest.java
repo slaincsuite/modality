@@ -1,4 +1,4 @@
-package cn.slainc.sse.api;
+package cn.slainc.sse.spi;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.sse.support.SseServiceImpl;

@@ -1,7 +1,7 @@
 package cn.slainc.policy.aspect;
 
 import cn.slainc.policy.PolicyTestApplication;
-import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.domain.Effect;
 import cn.slainc.policy.domain.PolicyDocument;
 import cn.slainc.policy.domain.PolicyStatement;

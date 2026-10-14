@@ -1,6 +1,6 @@
 package cn.slainc.mfa.support;
 
-import cn.slainc.mfa.api.MfaChallengeStore;
+import cn.slainc.mfa.spi.MfaChallengeStore;
 import cn.slainc.mfa.challenge.MfaChallenge;
 import cn.slainc.utils.string.StringUtils;
 import org.slf4j.Logger;

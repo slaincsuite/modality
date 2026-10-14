@@ -1,6 +1,6 @@
 package cn.slainc.apikey;
 
-import cn.slainc.apikey.admin.ApiKeyCsvWriter;
+import cn.slainc.apikey.support.ApiKeyCsvWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
