@@ -1,4 +1,4 @@
-package cn.slainc.core.base;
+package cn.slainc.mybatis.base;
 
 import cn.slainc.mybatis.annotation.EncryptField;
 import cn.slainc.mybatis.annotation.Sensitive;
@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Map;
 
 @TableName(value = "t_user", autoResultMap = true)
-public class User extends cn.slainc.core.base.MybatisBaseEntity {
+public class User extends cn.slainc.mybatis.base.MybatisBaseEntity {
 
     private String name;
 

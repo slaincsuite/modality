@@ -2,7 +2,7 @@ package cn.slainc.mybatis;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.context.UserContext;
-import cn.slainc.core.base.User;
+import cn.slainc.mybatis.base.User;
 import cn.slainc.mybatis.dao.UserMapper;
 import cn.slainc.mybatis.sql.SqlAnalyzer;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;

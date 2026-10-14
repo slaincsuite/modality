@@ -1,7 +1,7 @@
 package cn.slainc.mybatis.sql;
 
 import cn.slainc.core.constant.SystemConstants;
-import cn.slainc.core.base.User;
+import cn.slainc.mybatis.base.User;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;

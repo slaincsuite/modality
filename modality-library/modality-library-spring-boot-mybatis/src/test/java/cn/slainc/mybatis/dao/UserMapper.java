@@ -1,7 +1,7 @@
 package cn.slainc.mybatis.dao;
 
 import cn.slainc.mybatis.datascope.DataScope;
-import cn.slainc.core.base.User;
+import cn.slainc.mybatis.base.User;
 import cn.slainc.mybatis.tenant.IgnoreTenant;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Select;

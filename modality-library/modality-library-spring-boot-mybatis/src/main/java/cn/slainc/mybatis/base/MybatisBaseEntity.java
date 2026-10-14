@@ -1,4 +1,4 @@
-package cn.slainc.core.base;
+package cn.slainc.mybatis.base;
 
 import cn.slainc.core.enums.DeleteStatus;
 import cn.slainc.core.support.Auditable;

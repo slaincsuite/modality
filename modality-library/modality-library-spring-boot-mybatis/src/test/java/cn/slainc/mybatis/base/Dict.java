@@ -1,4 +1,4 @@
-package cn.slainc.core.base;
+package cn.slainc.mybatis.base;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
