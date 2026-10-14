@@ -95,6 +95,8 @@ class WebSocketEndpointIntegrationTest {
         WebSocketTestClient alice = WebSocketTestClient.connect(port, "?token=alice", null);
         WebSocketTestClient bob = WebSocketTestClient.connect(port, "?token=bob", null);
         try {
+            awaitUntil(() -> !registry.sessionsOfUser("bob").isEmpty(), Duration.ofSeconds(5));
+
             broadcaster.sendToUser("bob", "点对点消息");
 
             assertEquals("点对点消息", bob.awaitMessage(Duration.ofSeconds(5)));
