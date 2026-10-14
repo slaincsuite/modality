@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 // 直接依赖系统注册表 Mapper 而非 SystemRegistryService，避免与可见性变更逻辑互相持有形成环
 public class AccessControlService {
@@ -115,15 +119,26 @@ public class AccessControlService {
         if (grants.isEmpty()) {
             return List.of();
         }
-        List<String> codes = new ArrayList<>();
-        for (AccessControlRecord grant : grants) {
-            SystemRegistryRecord system = systemRegistryMapper.selectById(grant.getSystemId());
-            if (system != null && system.enabled()
-                    && SystemRegistryRecord.VISIBILITY_PRIVATE.equals(system.getVisibility())) {
-                codes.add(system.accessPermissionCode());
-            }
-        }
-        return codes;
+        Set<Long> systemIds = grants.stream()
+                .map(AccessControlRecord::getSystemId)
+                .collect(Collectors.toSet());
+        Map<Long, SystemRegistryRecord> systems = systemRegistryMapper.selectBatchIds(systemIds).stream()
+                .collect(Collectors.toMap(SystemRegistryRecord::getId, Function.identity()));
+        return grants.stream()
+                .map(grant -> systems.get(grant.getSystemId()))
+                .filter(system -> system != null && system.enabled()
+                    && SystemRegistryRecord.VISIBILITY_PRIVATE.equals(system.getVisibility()))
+                .map(SystemRegistryRecord::accessPermissionCode)
+                .toList();
+//        List<String> codes = new ArrayList<>();
+//        for (AccessControlRecord grant : grants) {
+//            SystemRegistryRecord system = systemRegistryMapper.selectById(grant.getSystemId());
+//            if (system != null && system.enabled()
+//                    && SystemRegistryRecord.VISIBILITY_PRIVATE.equals(system.getVisibility())) {
+//                codes.add(system.accessPermissionCode());
+//            }
+//        }
+//        return codes;
     }
 
     private SystemRegistryRecord requireSystem(Long systemId) {

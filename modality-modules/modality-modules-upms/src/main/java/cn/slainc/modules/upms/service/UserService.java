@@ -1,5 +1,22 @@
 package cn.slainc.modules.upms.service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.context.UserContext;
 import cn.slainc.core.enums.LoginType;
@@ -10,6 +27,10 @@ import cn.slainc.core.result.PageResult;
 import cn.slainc.crypto.hash.BCryptUtils;
 import cn.slainc.modules.upms.UpmsKeys;
 import cn.slainc.modules.upms.config.UpmsProperties;
+import cn.slainc.modules.upms.entity.AccessControlRecord;
+import cn.slainc.modules.upms.entity.PolicyBindingRecord;
+import cn.slainc.modules.upms.entity.UserGroupMemberRecord;
+import cn.slainc.modules.upms.entity.UserLoginRecordRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.entity.UserRoleRecord;
 import cn.slainc.modules.upms.mapper.AccessControlMapper;
@@ -19,24 +40,8 @@ import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
-import cn.slainc.modules.upms.entity.PolicyBindingRecord;
-import cn.slainc.modules.upms.entity.AccessControlRecord;
-import cn.slainc.modules.upms.entity.UserGroupMemberRecord;
-import cn.slainc.modules.upms.entity.UserLoginRecordRecord;
 import cn.slainc.policy.admin.PolicyBindingService;
 import cn.slainc.security.kick.KickService;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 public class UserService {
 
@@ -206,10 +211,16 @@ public class UserService {
 
     @Transactional
     public int batchDelete(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        Map<Long, UserRecord> users = userMapper.selectBatchIds(ids).stream()
+                .filter(user -> !Boolean.TRUE.equals(user.getDeleted()))
+                .collect(Collectors.toMap(UserRecord::getId, Function.identity()));
         int count = 0;
         for (Long id : ids) {
-            UserRecord user = userMapper.selectById(id);
-            if (user != null && !Boolean.TRUE.equals(user.getDeleted())) {
+            UserRecord user = users.get(id);
+            if (user != null) {
                 softDelete(user);
                 count++;
             }
@@ -218,21 +229,27 @@ public class UserService {
     }
 
     public int batchDisable(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        Map<Long, UserRecord> users = userMapper.selectBatchIds(ids).stream()
+                .filter(user -> !Boolean.TRUE.equals(user.getDeleted()))
+                .collect(Collectors.toMap(UserRecord::getId, Function.identity()));
         int count = 0;
         for (Long id : ids) {
-            UserRecord user = userMapper.selectById(id);
-            if (user != null && !Boolean.TRUE.equals(user.getDeleted())
-                    && !UpmsKeys.STATUS_DISABLED.equals(user.getStatus())) {
-                user.setStatus(UpmsKeys.STATUS_DISABLED);
-                user.setUpdateTime(System.currentTimeMillis());
-                userMapper.updateById(user);
-                LoginType type = LoginType.of(user.getLoginType());
-                if (type != null) {
-                    cacheInvalidator.invalidateUser(id, type);
-                }
-                kickout(user, type, "账号已被禁用");
-                count++;
+            UserRecord user = users.get(id);
+            if (user == null || UpmsKeys.STATUS_DISABLED.equals(user.getStatus())) {
+                continue;
             }
+            user.setStatus(UpmsKeys.STATUS_DISABLED);
+            user.setUpdateTime(System.currentTimeMillis());
+            userMapper.updateById(user);
+            LoginType type = LoginType.of(user.getLoginType());
+            if (type != null) {
+                cacheInvalidator.invalidateUser(id, type);
+            }
+            kickout(user, type, "账号已被禁用");
+            count++;
         }
         return count;
     }
