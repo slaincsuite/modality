@@ -24,7 +24,7 @@ class JdbcAppStoreTest {
         DriverManagerDataSource dataSource = new DriverManagerDataSource(
                 "jdbc:h2:mem:app-store-" + UUID.randomUUID().toString().replace("-", "")
                         + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
-        new ClasspathSchemaInitializer(dataSource, "cn/slainc/modules/open/open-schema.sql").init();
+        new ClasspathSchemaInitializer(dataSource, "open-schema.sql").init();
         store = new JdbcAppStore(new JdbcTemplate(dataSource));
     }
 
