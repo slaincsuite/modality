@@ -1,6 +1,6 @@
 # modality
 
-> 面向企业多租户场景的 Spring Boot 基础平台：26 个可独立引用的自动配置库 + 6 个业务模块 + 1 个启动模块。
+> 面向企业多租户场景的 Spring Boot 基础平台：27 个可独立引用的自动配置库（含工单引擎）+ 7 个业务模块（含工单中心）+ 1 个启动模块。
 
 modality 把企业后台里反复要写的那一层沉淀成**可复用、可关闭、可覆盖**的库：多租户数据隔离、七套账号体系的认证鉴权、用户权限中心、OAuth2 / SSO / API Key / 签名协议、审计与策略引擎、文件存储、通知、动态配置、日志与监控。业务模块只负责端点与编排，库模块只提供能力与服务，二者用 SPI 解耦；启动模块负责聚合。
 
@@ -52,6 +52,17 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 - **请求签名**：HMAC / 证书签名，nonce 验签通过后才消费（签名错误的合法重试不会被判重放），高敏应用禁止降级到单机存储
 - **第三方登录**：JustAuth 引擎（钉钉、飞书、企业微信等），外呼带超时，state 一次性消费，绑定前先验密码
 
+### 工单中心
+
+- **引擎库与业务模块分层**：`workorder` 引擎库（纯 Java、零存储依赖）承载状态机 / 编号 / SLA / 通知等领域能力，`modules-workorder` 提供 HTTP 端点与 MySQL 落库，其他应用可只引引擎库复用能力
+- **可配置状态机**：状态与流转按类型定义，前置条件支持 SpEL（`#order` / `#vars` / `#now`），前 / 后置钩子 SPI；内置待处理 → 处理中 → 已解决 → 已关闭主链路，含挂起 / 恢复 / 重开 / 转派 / 升级 / 认领
+- **工单编号**：前缀 + 日期 + 序号，按天 / 按月重置可配，序号存储 SPI 化
+- **模板与自定义字段**：11 种字段类型，必填 / 长度 / 范围 / 正则 / 选项校验，模板版本化与回滚
+- **SLA 与工作日历**：响应 / 解决时限、预警百分比、工作日 / 节假日 / 调休精确计算
+- **协作与触达**：评论（内外部可见性、楼中楼、点赞）、附件（复用统一存储）、订阅、站内信通知（事件驱动、去重、失败重试）
+- **分配策略 SPI**：内置轮询与最少在办，可注册自定义策略
+- **统计与导出**：总览 / 分布 / 处理人排行 / 平均处理时长，Excel 导出（复用统一导出组件）
+
 ### 审计与策略
 
 - 审计中心：登录日志、操作日志、API 访问日志、策略评估日志，统计全部 SQL 聚合下推，导出限流限长
@@ -82,12 +93,12 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 | 数据 | `datasource`、`mybatis`、`redis`、`tenant` |
 | 能力 | `idempotent`、`storage`、`logger`、`monitor`、`sensitive` |
 | 安全与协议 | `security`、`jwt`、`oauth2`、`sso`、`api-key`、`captcha`、`sign`、`session` |
-| 领域 | `open-api`、`policy`、`thirdauth` |
+| 领域 | `open-api`、`policy`、`thirdauth`、`workorder` |
 | 平台 | `bom` |
 
-### 业务模块（6）
+### 业务模块（7）
 
-`upms`（用户权限）、`auth`（认证中心）、`open`（开放平台）、`audit`（审计中心）、`policy`（策略管理中心）、`infra`（基础设施中心）
+`upms`（用户权限）、`auth`（认证中心）、`open`（开放平台）、`audit`（审计中心）、`policy`（策略管理中心）、`infra`（基础设施中心）、`workorder`（工单中心）
 
 ### 启动模块（1）
 
@@ -229,7 +240,7 @@ docker run -d --name modality \
 
 - 版本 8.0+，库与连接统一 `utf8mb4`
 - 建库：`CREATE DATABASE modality DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
-- 建表：应用启动自动执行（表结构在各模块 resources 下的 `*-schema.sql`），可用 `modality.<module>.auto-create-table=false` 关闭后改为人工 DDL
+- 建表：应用启动自动执行（DDL 集中在仓库根目录 `db/` 下，按模块命名的 `*-schema.sql`），可用 `modality.<module>.auto-create-table=false` 关闭后改为人工 DDL
 - 账号权限：`SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, ALTER, REFERENCES`
 
 **Redis**
@@ -402,7 +413,43 @@ curl -s http://localhost:8080/open/portal/apps -H 'X-API-Key: sk_xxxxxxxx'
 
 支持的授权类型：`authorization_code`、`implicit`、`password`、`client_credentials`、`refresh_token`。签名方式调用见 `sign` 库（模块内 `modality.sign.keys[*]` 配置 appId 与密钥）。
 
-### 6. 以库的方式引入
+### 6. 工单中心
+
+以租户用户身份走通「创建 → 订阅 → 分派 → 解决 → 关闭 → 重开」全链路（管理端动作需要 `workorder:order:assign` / `workorder:order:close` 权限码）：
+
+```bash
+# 创建工单（编号按「前缀+日期+序号」自动生成）
+curl -s -X POST http://localhost:8080/workorder/my \
+  -H "satoken: $TOKEN" -H 'X-Login-Type: TENANT_USER' \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"打印机故障","content":"卡纸严重","priority":"HIGH"}'
+
+# 订阅该工单（后续 assign / comment / close 事件会发站内通知）
+curl -s -X POST http://localhost:8080/workorder/my/$ORDER_ID/subscription -H "satoken: $TOKEN"
+
+# 管理端：分派（受理）→ 标记解决 → 关闭 → 重开
+curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/assign \
+  -H "satoken: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"assigneeId":202}'
+curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/resolve  -H "satoken: $ADMIN_TOKEN"
+curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/close    -H "satoken: $ADMIN_TOKEN"
+curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/reopen   -H "satoken: $ADMIN_TOKEN"
+
+# 评论与催办
+curl -s -X POST http://localhost:8080/workorder/my/$ORDER_ID/comments \
+  -H "satoken: $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"content":"已补充故障现象"}'
+curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/urge \
+  -H "satoken: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"message":"请尽快处理"}'
+
+# 我的工单 / 我的订阅 / 我的通知
+curl -s http://localhost:8080/workorder/my/page -H "satoken: $TOKEN"
+curl -s http://localhost:8080/workorder/my/subscriptions -H "satoken: $TOKEN"
+curl -s http://localhost:8080/workorder/my/notifications -H "satoken: $TOKEN"
+```
+
+挂起 / 恢复 / 转派 / 升级 / 批量重开 / 流转预览等管理端点见 `WorkOrderFlowController`；全部端点在 Swagger 的「工单中心」分组下。
+
+### 7. 以库的方式引入
 
 如果只需要其中某项能力，可以只依赖对应库；版本由 BOM 统一收口：
 
@@ -437,6 +484,7 @@ modality.security.session.active-timeout=1800
 | `modality.storage.*` / `modality.infra.*` | 存储与基础设施中心 |
 | `modality.web.*` | Web 通用：跨域、安全响应头、请求限流、异步、静态资源、接口文档 |
 | `modality.monitor.*` / `modality.logger.*` / `modality.audit.*` | 监控、日志、审计 |
+| `modality.workorder-engine.*` / `modality.workorder.*` | 工单引擎与工单中心：开关、编号规则、模板、SLA、通知 |
 
 完整清单可直接查看各库 `autoconfigure` 包下的 `*Properties` 类，或启动后访问 `/actuator/configprops`（需先放开该端点）。
 
