@@ -11,4 +11,6 @@ dependencies {
     compileOnly project(':modality-library:modality-library-spring-boot-monitor')
     testImplementation project(':modality-library:modality-library-spring-boot-monitor')
     testImplementation libs.micrometer.core
+
+    testImplementation project(':modality-library:modality-library-spring-boot-crypto')
 }
