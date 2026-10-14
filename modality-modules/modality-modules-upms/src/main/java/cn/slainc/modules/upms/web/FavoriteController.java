@@ -1,8 +1,8 @@
 package cn.slainc.modules.upms.web;
 
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.upms.dto.FavoriteRequest;
 import cn.slainc.modules.upms.entity.FavoriteRecord;
 import cn.slainc.modules.upms.service.FavoriteService;

@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashSet;
 import java.util.List;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditOperation;
 
 @Tag(name = "菜单管理", description = "菜单树与页面资源维护")
 @RestController

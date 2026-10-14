@@ -11,9 +11,9 @@ import cn.slainc.modules.policy.store.PolicyMetaStore;
 import cn.slainc.policy.admin.PolicyAdminService;
 import cn.slainc.policy.admin.PolicyDiffService;
 import cn.slainc.policy.admin.PolicyTemplates;
-import cn.slainc.policy.model.Policy;
-import cn.slainc.policy.model.PolicyDocument;
-import cn.slainc.policy.model.PolicySubjectType;
+import cn.slainc.policy.domain.Policy;
+import cn.slainc.policy.domain.PolicyDocument;
+import cn.slainc.policy.domain.PolicySubjectType;
 import cn.slainc.policy.storage.PolicyAuditRecord;
 import cn.slainc.policy.storage.PolicyVersionRecord;
 

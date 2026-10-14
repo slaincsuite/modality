@@ -15,7 +15,7 @@ import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.excel.UserExcelService;
 import cn.slainc.modules.upms.service.UserService;
 import cn.slainc.security.annotation.RequirePermission;
-import cn.slainc.security.web.SecurityForbiddenException;
+import cn.slainc.security.handler.SecurityForbiddenException;
 import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,9 +34,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditOperation;
 
 @Tag(name = "用户管理", description = "用户的创建、查询、状态与生命周期管理")
 @RestController

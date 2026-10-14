@@ -1,8 +1,8 @@
 package cn.slainc.modules.open.store;
 
 import cn.slainc.modules.open.OpenKeys;
-import cn.slainc.openapi.model.OpenScope;
-import cn.slainc.openapi.model.ScopeRiskLevel;
+import cn.slainc.openapi.domain.OpenScope;
+import cn.slainc.openapi.domain.ScopeRiskLevel;
 import cn.slainc.openapi.spi.ScopeStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 

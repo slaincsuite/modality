@@ -3,7 +3,7 @@ package cn.slainc.modules.workorder.store;
 import cn.slainc.modules.workorder.entity.WorkOrderRecord;
 import cn.slainc.modules.workorder.mapper.WorkOrderMapper;
 import cn.slainc.utils.json.JsonUtils;
-import cn.slainc.workorder.model.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrder;
 import cn.slainc.workorder.spi.WorkOrderStore;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.Optional;

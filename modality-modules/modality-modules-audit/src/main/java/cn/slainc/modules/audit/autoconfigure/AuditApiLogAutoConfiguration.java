@@ -1,7 +1,7 @@
 package cn.slainc.modules.audit.autoconfigure;
 
 import cn.slainc.modules.audit.filter.ApiLogFilter;
-import cn.slainc.modules.audit.writer.ApiLogWriter;
+import cn.slainc.modules.audit.excel.ApiLogWriter;
 import cn.slainc.modules.audit.config.AuditConfigReader;
 import cn.slainc.modules.audit.mapper.ApiLogMapper;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

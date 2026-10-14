@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditOperation;
 
 @Tag(name = "系统注册", description = "接入系统与模块注册维护")
 @RestController

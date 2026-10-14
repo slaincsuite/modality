@@ -12,7 +12,7 @@ import cn.slainc.modules.workorder.entity.WorkOrderRecord;
 import cn.slainc.modules.workorder.entity.WorkOrderReplyRecord;
 import cn.slainc.workorder.comment.WorkOrderComment;
 import cn.slainc.workorder.subscribe.WorkOrderSubscriptionService;
-import cn.slainc.workorder.model.WorkOrderActivity;
+import cn.slainc.workorder.domain.WorkOrderActivity;
 import cn.slainc.workorder.spi.WorkOrderNotificationStore;
 import cn.slainc.workorder.subscribe.WorkOrderSubscriptionService;
 import cn.slainc.workorder.template.WorkOrderFieldDefinition;

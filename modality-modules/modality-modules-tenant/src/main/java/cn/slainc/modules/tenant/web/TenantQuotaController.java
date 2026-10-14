@@ -1,9 +1,9 @@
 package cn.slainc.modules.tenant.web;
 
 import cn.slainc.core.result.Result;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.tenant.TenantKeys;
 import cn.slainc.modules.tenant.dto.TenantQuotaRequest;
 import cn.slainc.modules.tenant.service.TenantManageService;

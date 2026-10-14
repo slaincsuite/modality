@@ -1,4 +1,4 @@
-package cn.slainc.modules.job.support;
+package cn.slainc.modules.job.store;
 
 import cn.slainc.modules.job.autoconfigure.JobModuleProperties;
 import org.slf4j.Logger;

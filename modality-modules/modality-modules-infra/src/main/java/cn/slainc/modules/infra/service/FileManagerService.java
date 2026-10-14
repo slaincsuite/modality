@@ -2,7 +2,7 @@ package cn.slainc.modules.infra.service;
 
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.storage.StorageTemplate;
-import cn.slainc.storage.model.StorageMetadata;
+import cn.slainc.storage.spi.StorageMetadata;
 import cn.slainc.storage.preview.FilePreviewService;
 import cn.slainc.storage.preview.FilePreviewService.PreviewResult;
 import java.io.IOException;

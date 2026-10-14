@@ -1,7 +1,7 @@
 package cn.slainc.modules.open.web;
 
 import cn.slainc.core.result.PageResult;
-import cn.slainc.logger.audit.AuditLog;
+import cn.slainc.logger.oplog.AuditLog;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.modules.open.dto.WebhookSubscriptionRequest;
 import cn.slainc.modules.open.service.WebhookDeliveryAdminService;

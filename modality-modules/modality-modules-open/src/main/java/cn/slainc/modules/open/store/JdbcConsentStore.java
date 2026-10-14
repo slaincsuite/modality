@@ -1,7 +1,7 @@
 package cn.slainc.modules.open.store;
 
 import cn.slainc.modules.open.OpenKeys;
-import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.openapi.domain.ConsentRecord;
 import cn.slainc.openapi.spi.ConsentStore;
 import cn.slainc.utils.json.JsonUtils;
 import org.springframework.jdbc.core.JdbcTemplate;

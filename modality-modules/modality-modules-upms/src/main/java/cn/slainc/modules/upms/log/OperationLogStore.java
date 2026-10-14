@@ -1,7 +1,7 @@
 package cn.slainc.modules.upms.log;
 
-import cn.slainc.logger.audit.AuditRecord;
-import cn.slainc.logger.audit.AuditLogStore;
+import cn.slainc.logger.oplog.AuditRecord;
+import cn.slainc.logger.oplog.AuditLogStore;
 import cn.slainc.modules.upms.entity.UserOperationLogRecord;
 import cn.slainc.modules.upms.mapper.UserOperationLogMapper;
 import org.slf4j.Logger;

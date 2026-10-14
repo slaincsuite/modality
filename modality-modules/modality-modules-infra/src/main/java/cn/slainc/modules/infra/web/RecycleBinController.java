@@ -2,9 +2,9 @@ package cn.slainc.modules.infra.web;
 
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.Result;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.infra.InfraKeys;
 import cn.slainc.modules.infra.entity.RecycleItemEntity;
 import cn.slainc.modules.infra.service.RecycleBinService;

@@ -2,13 +2,13 @@ package cn.slainc.modules.open.web;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.modules.open.dto.ScopeRequest;
-import cn.slainc.openapi.model.OpenScope;
-import cn.slainc.openapi.model.ScopeRiskLevel;
+import cn.slainc.openapi.domain.OpenScope;
+import cn.slainc.openapi.domain.ScopeRiskLevel;
 import cn.slainc.openapi.spi.ScopeService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;

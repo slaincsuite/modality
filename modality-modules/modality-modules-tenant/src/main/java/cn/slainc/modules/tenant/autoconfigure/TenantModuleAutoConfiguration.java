@@ -14,9 +14,9 @@ import cn.slainc.modules.tenant.web.TenantQuotaController;
 import cn.slainc.modules.tenant.web.TenantStatsController;
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.tenant.lifecycle.TenantLifecycleService;
-import cn.slainc.tenant.mapper.TenantMapper;
+import cn.slainc.tenant.dao.TenantMapper;
 import cn.slainc.tenant.quota.TenantQuotaService;
-import cn.slainc.tenant.service.TenantService;
+import cn.slainc.tenant.lookup.TenantService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Import;
 
 @AutoConfiguration
 @ConditionalOnClass(name = {"cn.slainc.tenant.lifecycle.TenantLifecycleService",
-        "cn.slainc.tenant.service.TenantService"})
+        "cn.slainc.tenant.lookup.TenantService"})
 @ConditionalOnProperty(prefix = "modality.tenant-module", name = "enabled", havingValue = "true",
         matchIfMissing = true)
 @EnableConfigurationProperties(TenantModuleProperties.class)

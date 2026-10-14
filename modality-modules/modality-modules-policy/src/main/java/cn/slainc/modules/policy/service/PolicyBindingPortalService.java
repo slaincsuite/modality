@@ -6,8 +6,8 @@ import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.policy.dto.BindingBatchRequest;
 import cn.slainc.modules.policy.dto.PolicyView;
 import cn.slainc.policy.admin.PolicyBindingService;
-import cn.slainc.policy.model.PolicyBinding;
-import cn.slainc.policy.model.PolicySubjectType;
+import cn.slainc.policy.domain.PolicyBinding;
+import cn.slainc.policy.domain.PolicySubjectType;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.ArrayList;

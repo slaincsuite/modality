@@ -3,7 +3,7 @@ package cn.slainc.modules.open.store;
 import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.open.OpenKeys;
-import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.openapi.domain.ConsentRecord;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.ResultSet;

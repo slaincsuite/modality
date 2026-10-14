@@ -1,8 +1,8 @@
 package cn.slainc.modules.open.web;
 
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.modules.open.dto.WebhookSubscriptionRequest;
 import cn.slainc.modules.open.service.WebhookDeliveryAdminService;

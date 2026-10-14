@@ -6,8 +6,8 @@ import cn.slainc.modules.tenant.entity.TenantPlanMenuRecord;
 import cn.slainc.modules.tenant.entity.TenantPlanRecord;
 import cn.slainc.modules.tenant.mapper.TenantPlanMapper;
 import cn.slainc.modules.tenant.mapper.TenantPlanMenuMapper;
-import cn.slainc.tenant.entity.Tenant;
-import cn.slainc.tenant.mapper.TenantMapper;
+import cn.slainc.tenant.domain.Tenant;
+import cn.slainc.tenant.dao.TenantMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.beans.factory.ObjectProvider;
 

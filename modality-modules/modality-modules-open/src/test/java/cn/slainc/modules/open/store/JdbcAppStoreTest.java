@@ -2,9 +2,9 @@ package cn.slainc.modules.open.store;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppStatus;
-import cn.slainc.openapi.model.AppType;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppStatus;
+import cn.slainc.openapi.domain.AppType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;

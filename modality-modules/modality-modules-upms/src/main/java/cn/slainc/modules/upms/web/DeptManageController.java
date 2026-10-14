@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditOperation;
 
 @Tag(name = "部门管理", description = "部门树维护")
 @RestController

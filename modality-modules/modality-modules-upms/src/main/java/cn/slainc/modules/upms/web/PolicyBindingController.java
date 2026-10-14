@@ -7,7 +7,7 @@ import cn.slainc.modules.upms.dto.PolicyBindClientRequest;
 import cn.slainc.modules.upms.dto.PolicyBindRoleRequest;
 import cn.slainc.modules.upms.dto.PolicyBindUserRequest;
 import cn.slainc.policy.admin.PolicyBindingService;
-import cn.slainc.policy.model.PolicyBinding;
+import cn.slainc.policy.domain.PolicyBinding;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditOperation;
 
 @Tag(name = "策略绑定", description = "用户与策略绑定关系的查询管理")
 @RestController

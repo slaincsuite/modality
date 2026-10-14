@@ -1,6 +1,6 @@
 package cn.slainc.modules.auth.web;
 
-import cn.slainc.oauth2.web.Oauth2ServerDelegate;
+import cn.slainc.oauth2.protocol.Oauth2ServerDelegate;
 import cn.slainc.web.result.NoWrap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

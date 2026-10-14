@@ -1,7 +1,7 @@
 package cn.slainc.modules.policy.dto;
 
 import cn.slainc.modules.policy.entity.PolicyMeta;
-import cn.slainc.policy.model.Policy;
+import cn.slainc.policy.domain.Policy;
 
 public record PolicyView(String id, String name, String description, String subjectType, String subjectId,
                          String loginType, String status, int version, String document, String creator,

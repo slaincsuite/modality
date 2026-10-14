@@ -2,13 +2,13 @@ package cn.slainc.modules.tenant.web;
 
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.Result;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.tenant.TenantKeys;
 import cn.slainc.modules.tenant.service.TenantManageService;
 import cn.slainc.security.annotation.RequirePermission;
-import cn.slainc.tenant.entity.Tenant;
+import cn.slainc.tenant.domain.Tenant;
 import cn.slainc.web.http.DownloadResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;

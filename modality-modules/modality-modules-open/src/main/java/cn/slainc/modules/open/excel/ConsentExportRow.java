@@ -1,8 +1,8 @@
 package cn.slainc.modules.open.excel;
 
 import cn.idev.excel.annotation.ExcelProperty;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.ConsentRecord;
 import cn.slainc.utils.date.DateUtils;
 
 import java.util.Optional;

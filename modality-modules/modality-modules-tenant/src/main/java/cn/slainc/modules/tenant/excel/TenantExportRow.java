@@ -1,7 +1,7 @@
 package cn.slainc.modules.tenant.excel;
 
 import cn.idev.excel.annotation.ExcelProperty;
-import cn.slainc.tenant.entity.Tenant;
+import cn.slainc.tenant.domain.Tenant;
 import cn.slainc.utils.date.DateUtils;
 import cn.slainc.utils.string.StringUtils;
 

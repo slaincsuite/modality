@@ -1,8 +1,8 @@
 package cn.slainc.modules.policy.web;
 
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLog;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.policy.PolicyCenterKeys;
 import cn.slainc.modules.policy.dto.PolicyTestCaseRequest;
 import cn.slainc.modules.policy.service.PolicyTestCaseService;

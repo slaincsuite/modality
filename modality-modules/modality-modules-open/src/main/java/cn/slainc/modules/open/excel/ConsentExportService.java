@@ -2,8 +2,8 @@ package cn.slainc.modules.open.excel;
 
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.open.service.OpenConsentAdminService;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.ConsentRecord;
 import cn.slainc.openapi.spi.AppService;
 
 import java.io.OutputStream;

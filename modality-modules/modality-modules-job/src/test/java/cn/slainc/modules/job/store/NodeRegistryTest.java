@@ -1,4 +1,4 @@
-package cn.slainc.modules.job.support;
+package cn.slainc.modules.job.store;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,11 +1,11 @@
 package cn.slainc.modules.open.service;
 
-import cn.slainc.apikey.service.ApiKeyStatsService;
+import cn.slainc.apikey.admin.ApiKeyStatsService;
 import cn.slainc.modules.open.store.ConsentQueryDao;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppStatus;
-import cn.slainc.openapi.model.AppCredential;
-import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppStatus;
+import cn.slainc.openapi.domain.AppCredential;
+import cn.slainc.openapi.domain.ConsentRecord;
 import cn.slainc.openapi.spi.AppService;
 import cn.slainc.openapi.spi.ConsentService;
 import cn.slainc.openapi.spi.CredentialService;

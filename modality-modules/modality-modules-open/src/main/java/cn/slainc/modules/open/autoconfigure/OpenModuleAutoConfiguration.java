@@ -79,7 +79,7 @@ public class OpenModuleAutoConfiguration {
     public OpenStatsService openStatsService(AppService appService, ConsentService consentService,
                                              CredentialService credentialService,
                                              ObjectProvider<ConsentQueryDao> queryDao,
-                                             ObjectProvider<cn.slainc.apikey.service.ApiKeyStatsService> apiKeyStats,
+                                             ObjectProvider<cn.slainc.apikey.admin.ApiKeyStatsService> apiKeyStats,
                                              OpenModuleProperties properties) {
         return new OpenStatsService(appService, consentService, credentialService, queryDao, apiKeyStats,
                 properties.getStats().getTrendDays(), properties.getStats().getTopN());

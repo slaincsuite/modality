@@ -1,6 +1,7 @@
 package cn.slainc.modules.job.support;
 
 import cn.slainc.job.support.JobHandler;
+import cn.slainc.modules.job.store.NodeRegistry;
 import cn.slainc.job.support.JobResult;
 import cn.slainc.modules.job.autoconfigure.JobModuleProperties;
 import cn.slainc.modules.job.entity.JobLogRecord;

@@ -66,10 +66,10 @@ class LogAndStatsTest extends UpmsIntegrationTestBase {
 
     @Test
     void operationLogStorePersistsAuditRecord() {
-        operationLogStore.save(new cn.slainc.logger.audit.AuditRecord("aid-1",
+        operationLogStore.save(new cn.slainc.logger.oplog.AuditRecord("aid-1",
                 java.time.Instant.now(), "创建用户", "upms",
-                cn.slainc.logger.audit.AuditOperation.CREATE, cn.slainc.logger.audit.AuditCategory.DATA,
-                cn.slainc.logger.audit.AuditLevel.INFO, true, 9L, "9", "op-user", 1L, "10.2.2.2", "UA", "dev-1",
+                cn.slainc.logger.oplog.AuditOperation.CREATE, cn.slainc.logger.oplog.AuditCategory.DATA,
+                cn.slainc.logger.oplog.AuditLevel.INFO, true, 9L, "9", "op-user", 1L, "10.2.2.2", "UA", "dev-1",
                 "/upms/user", "POST", null, null, null, "UserRecord", "{\"name\":\"x\"}", "ok", null, null, null,
                 null, 12L));
         var page = operationLogService.search(null, "op-user", "upms", null, true, null, null, 1, 10);

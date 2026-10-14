@@ -1,9 +1,9 @@
 package cn.slainc.modules.audit.web;
 
 import cn.slainc.core.enums.LoginType;
-import cn.slainc.logger.audit.AuditCategory;
-import cn.slainc.logger.audit.AuditLevel;
-import cn.slainc.logger.audit.AuditOperation;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLevel;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.audit.AuditKeys;
 import cn.slainc.modules.audit.entity.AuditLogRecord;
 import cn.slainc.modules.audit.excel.OnlineUserExcelService;

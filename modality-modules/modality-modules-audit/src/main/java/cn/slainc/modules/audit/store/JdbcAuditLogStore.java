@@ -2,8 +2,8 @@ package cn.slainc.modules.audit.store;
 
 import cn.slainc.modules.audit.service.AuditLogService;
 
-import cn.slainc.logger.audit.AuditLogStore;
-import cn.slainc.logger.audit.AuditRecord;
+import cn.slainc.logger.oplog.AuditLogStore;
+import cn.slainc.logger.oplog.AuditRecord;
 import cn.slainc.modules.audit.entity.AuditLogRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

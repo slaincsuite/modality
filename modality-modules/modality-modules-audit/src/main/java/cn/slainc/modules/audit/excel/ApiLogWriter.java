@@ -1,4 +1,4 @@
-package cn.slainc.modules.audit.writer;
+package cn.slainc.modules.audit.excel;
 
 import cn.slainc.modules.audit.entity.ApiLogRecord;
 import cn.slainc.modules.audit.mapper.ApiLogMapper;

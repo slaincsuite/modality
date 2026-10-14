@@ -4,7 +4,7 @@ import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.open.store.ConsentQueryDao;
-import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.openapi.domain.ConsentRecord;
 import cn.slainc.openapi.spi.ConsentService;
 import cn.slainc.web.websocket.WebSocketPusher;
 import org.slf4j.Logger;

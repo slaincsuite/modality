@@ -1,7 +1,7 @@
 package cn.slainc.modules.open.store;
 
 import cn.slainc.modules.open.OpenKeys;
-import cn.slainc.openapi.model.AppCredential;
+import cn.slainc.openapi.domain.AppCredential;
 import cn.slainc.openapi.spi.CredentialStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 

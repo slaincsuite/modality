@@ -2,7 +2,7 @@ package cn.slainc.modules.upms.service;
 
 import cn.slainc.modules.upms.entity.PolicyBindingRecord;
 import cn.slainc.modules.upms.mapper.PolicyBindingMapper;
-import cn.slainc.policy.model.PolicyBinding;
+import cn.slainc.policy.domain.PolicyBinding;
 import cn.slainc.policy.storage.PolicyBindingStore;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 

@@ -10,7 +10,7 @@ import cn.slainc.modules.infra.store.ChunkSessionStore;
 import cn.slainc.modules.infra.store.FileRecordStore;
 import cn.slainc.modules.infra.store.MemoryChunkSessionStore;
 import cn.slainc.storage.StorageTemplate;
-import cn.slainc.storage.model.PartInfo;
+import cn.slainc.storage.spi.PartInfo;
 import cn.slainc.storage.multipart.MultipartSession;
 import cn.slainc.storage.multipart.MultipartUploadTemplate;
 import cn.slainc.storage.support.StorageKeyGenerator;

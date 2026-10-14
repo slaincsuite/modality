@@ -2,7 +2,7 @@ package cn.slainc.modules.workorder.store;
 
 import cn.slainc.modules.workorder.entity.WorkOrderActivityRecord;
 import cn.slainc.modules.workorder.mapper.WorkOrderActivityMapper;
-import cn.slainc.workorder.model.WorkOrderActivity;
+import cn.slainc.workorder.domain.WorkOrderActivity;
 import cn.slainc.workorder.spi.WorkOrderActivityStore;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.util.List;

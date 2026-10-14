@@ -14,7 +14,7 @@ import cn.slainc.modules.job.entity.JobLogRecord;
 import cn.slainc.modules.job.entity.JobTaskRecord;
 import cn.slainc.modules.job.mapper.JobLogMapper;
 import cn.slainc.modules.job.mapper.JobTaskMapper;
-import cn.slainc.modules.job.support.NodeRegistry;
+import cn.slainc.modules.job.store.NodeRegistry;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

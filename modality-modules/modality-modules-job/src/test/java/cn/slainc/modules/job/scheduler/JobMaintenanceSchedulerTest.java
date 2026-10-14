@@ -1,4 +1,6 @@
-package cn.slainc.modules.job.support;
+package cn.slainc.modules.job.scheduler;
+
+import cn.slainc.modules.job.store.NodeRegistry;
 
 import cn.slainc.modules.job.autoconfigure.JobModuleProperties;
 import cn.slainc.modules.job.service.JobManageService;

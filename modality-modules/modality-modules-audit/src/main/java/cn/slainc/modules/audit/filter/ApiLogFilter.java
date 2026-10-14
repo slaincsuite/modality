@@ -14,7 +14,7 @@ import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.audit.config.AuditConfigReader;
 import cn.slainc.modules.audit.entity.ApiLogRecord;
-import cn.slainc.modules.audit.writer.ApiLogWriter;
+import cn.slainc.modules.audit.excel.ApiLogWriter;
 import cn.slainc.security.StpKit;
 import cn.slainc.utils.net.IpUtils;
 import jakarta.servlet.FilterChain;
