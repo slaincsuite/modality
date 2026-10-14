@@ -64,10 +64,28 @@ public class OpenApiConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean(ResultSchemaCustomizer.class)
+    @ConditionalOnProperty(prefix = "modality.web.open-api", name = "result-wrappers", havingValue = "true",
+            matchIfMissing = true)
+    public ResultSchemaCustomizer resultSchemaCustomizer() {
+        return new ResultSchemaCustomizer();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ResultOperationCustomizer.class)
+    @ConditionalOnProperty(prefix = "modality.web.open-api", name = "result-wrappers", havingValue = "true",
+            matchIfMissing = true)
+    public ResultOperationCustomizer resultOperationCustomizer() {
+        return new ResultOperationCustomizer();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(GroupedOpenApi.class)
     public GroupedOpenApi groupedOpenApi(OpenApiProperties properties,
                                                  ObjectProvider<EnumSchemaCustomizer> enumSchemaCustomizer,
-                                                 ObjectProvider<ErrorCodeSchemaCustomizer> errorCodeSchemaCustomizer) {
+                                                 ObjectProvider<ErrorCodeSchemaCustomizer> errorCodeSchemaCustomizer,
+                                                 ObjectProvider<ResultSchemaCustomizer> resultSchemaCustomizer,
+                                                 ObjectProvider<ResultOperationCustomizer> resultOperationCustomizer) {
         GroupedOpenApi.Builder builder = GroupedOpenApi.builder().group(properties.getGroup());
         if (!properties.getPaths().isEmpty()) {
             builder.pathsToMatch(properties.getPaths().toArray(new String[0]));
@@ -77,6 +95,8 @@ public class OpenApiConfig {
         }
         enumSchemaCustomizer.ifAvailable(builder::addOpenApiCustomizer);
         errorCodeSchemaCustomizer.ifAvailable(builder::addOpenApiCustomizer);
+        resultSchemaCustomizer.ifAvailable(builder::addOpenApiCustomizer);
+        resultOperationCustomizer.ifAvailable(builder::addOperationCustomizer);
         return builder.build();
     }
 }

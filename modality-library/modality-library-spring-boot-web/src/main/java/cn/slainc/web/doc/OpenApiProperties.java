@@ -32,6 +32,8 @@ public class OpenApiProperties {
 
     private boolean errorCodes = true;
 
+    private boolean resultWrappers = true;
+
     private Map<String, String> servers = new LinkedHashMap<>();
 
     public boolean isEnabled() {
@@ -120,6 +122,14 @@ public class OpenApiProperties {
 
     public void setErrorCodes(boolean errorCodes) {
         this.errorCodes = errorCodes;
+    }
+
+    public boolean isResultWrappers() {
+        return resultWrappers;
+    }
+
+    public void setResultWrappers(boolean resultWrappers) {
+        this.resultWrappers = resultWrappers;
     }
 
     public Map<String, String> getServers() {
