@@ -2,7 +2,7 @@ package cn.slainc.apikey;
 
 import cn.dev33.satoken.apikey.model.ApiKeyModel;
 import cn.slainc.apikey.loader.JdbcApiKeyDataLoader;
-import cn.slainc.apikey.service.ApiKeyAdminService;
+import cn.slainc.apikey.admin.ApiKeyAdminService;
 import cn.slainc.apikey.template.GuardedApiKeyTemplate;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeAll;

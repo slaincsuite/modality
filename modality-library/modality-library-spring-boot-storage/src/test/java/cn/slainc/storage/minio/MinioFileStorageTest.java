@@ -1,6 +1,6 @@
 package cn.slainc.storage.minio;
 
-import cn.slainc.storage.model.PartInfo;
+import cn.slainc.storage.spi.PartInfo;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.StatObjectArgs;

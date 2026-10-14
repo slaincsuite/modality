@@ -1,10 +1,10 @@
 package cn.slainc.workorder.type;
 
 import cn.slainc.core.exception.BizException;
-import cn.slainc.workorder.model.WorkOrderStateMachines;
-import cn.slainc.workorder.model.WorkOrderStateDefinition;
-import cn.slainc.workorder.model.WorkOrderTransitionDefinition;
-import cn.slainc.workorder.model.WorkOrderTypeDefinition;
+import cn.slainc.workorder.domain.WorkOrderStateMachines;
+import cn.slainc.workorder.domain.WorkOrderStateDefinition;
+import cn.slainc.workorder.domain.WorkOrderTransitionDefinition;
+import cn.slainc.workorder.domain.WorkOrderTypeDefinition;
 import cn.slainc.workorder.spi.WorkOrderTypeProvider;
 import cn.slainc.workorder.statemachine.WorkOrderStateMachine;
 import cn.slainc.workorder.statemachine.WorkOrderTransitionHook;

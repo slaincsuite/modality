@@ -1,12 +1,12 @@
 package cn.slainc.tenant.lifecycle;
 
 import cn.slainc.core.exception.BizException;
-import cn.slainc.tenant.entity.Tenant;
+import cn.slainc.tenant.domain.Tenant;
 import cn.slainc.tenant.enums.TenantStatus;
 import cn.slainc.tenant.isolation.TenantInfo;
 import cn.slainc.tenant.isolation.TenantIsolationDispatcher;
 import cn.slainc.tenant.isolation.TenantIsolationStrategy;
-import cn.slainc.tenant.service.TenantService;
+import cn.slainc.tenant.lookup.TenantService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

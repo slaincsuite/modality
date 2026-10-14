@@ -2,10 +2,10 @@ package cn.slainc.policy.aspect;
 
 import cn.slainc.policy.PolicyTestApplication;
 import cn.slainc.policy.admin.PolicyAdminService;
-import cn.slainc.policy.model.Effect;
-import cn.slainc.policy.model.PolicyDocument;
-import cn.slainc.policy.model.PolicyStatement;
-import cn.slainc.policy.model.PolicySubjectType;
+import cn.slainc.policy.domain.Effect;
+import cn.slainc.policy.domain.PolicyDocument;
+import cn.slainc.policy.domain.PolicyStatement;
+import cn.slainc.policy.domain.PolicySubjectType;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,11 +1,11 @@
 package cn.slainc.openapi.autoconfigure;
 
-import cn.slainc.apikey.service.ApiKeyAdminService;
+import cn.slainc.apikey.admin.ApiKeyAdminService;
 import cn.slainc.oauth2.client.ClientAdminService;
 import cn.slainc.openapi.bridge.ApiKeyCredentialProvisioner;
 import cn.slainc.openapi.bridge.GeneratedCredentialProvisioner;
 import cn.slainc.openapi.bridge.Oauth2CredentialProvisioner;
-import cn.slainc.openapi.model.App;
+import cn.slainc.openapi.domain.App;
 import cn.slainc.openapi.spi.AppService;
 import cn.slainc.openapi.spi.AppStore;
 import cn.slainc.openapi.spi.ConsentService;
@@ -48,8 +48,8 @@ class OpenApiAutoConfigurationTest {
                     assertThat(context).hasSingleBean(AppStore.class);
                     assertThat(context.getBean(AppStore.class)).isSameAs(moduleStore);
                     AppService appService = context.getBean(AppService.class);
-                    App app = cn.slainc.openapi.model.App.create("模块应用",
-                            cn.slainc.openapi.model.AppType.WEB, "dev-001");
+                    App app = cn.slainc.openapi.domain.App.create("模块应用",
+                            cn.slainc.openapi.domain.AppType.WEB, "dev-001");
                     appService.create(app);
                     assertThat(moduleStore.saved).isTrue();
                     assertThat(appService.get(app.getAppId()).getName()).isEqualTo("模块应用");
@@ -61,11 +61,11 @@ class OpenApiAutoConfigurationTest {
         runner.run(context -> {
             CredentialService credentialService = context.getBean(CredentialService.class);
             AppService appService = context.getBean(AppService.class);
-            App app = cn.slainc.openapi.model.App.create("回退应用",
-                    cn.slainc.openapi.model.AppType.WEB, "dev-001");
+            App app = cn.slainc.openapi.domain.App.create("回退应用",
+                    cn.slainc.openapi.domain.AppType.WEB, "dev-001");
             appService.create(app);
             var credential = credentialService.issue(app.getAppId());
-            assertThat(credential.getType()).isEqualTo(cn.slainc.openapi.model.AppCredential.Type.GENERATED);
+            assertThat(credential.getType()).isEqualTo(cn.slainc.openapi.domain.AppCredential.Type.GENERATED);
         });
     }
 
@@ -84,11 +84,11 @@ class OpenApiAutoConfigurationTest {
                 .run(context -> {
                     AppService appService = context.getBean(AppService.class);
                     CredentialService credentialService = context.getBean(CredentialService.class);
-                    App app = cn.slainc.openapi.model.App.create("桥应用",
-                            cn.slainc.openapi.model.AppType.WEB, "dev-001");
+                    App app = cn.slainc.openapi.domain.App.create("桥应用",
+                            cn.slainc.openapi.domain.AppType.WEB, "dev-001");
                     appService.create(app);
                     var credential = credentialService.issue(app.getAppId());
-                    assertThat(credential.getType()).isEqualTo(cn.slainc.openapi.model.AppCredential.Type.OAUTH2);
+                    assertThat(credential.getType()).isEqualTo(cn.slainc.openapi.domain.AppCredential.Type.OAUTH2);
                     assertThat(context.getBean(ClientAdminService.class)
                             .find(credential.getClientId())).isNotNull();
                 });

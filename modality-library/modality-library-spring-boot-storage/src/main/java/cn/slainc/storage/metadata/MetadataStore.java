@@ -1,6 +1,6 @@
 package cn.slainc.storage.metadata;
 
-import cn.slainc.storage.model.StorageMetadata;
+import cn.slainc.storage.spi.StorageMetadata;
 
 import java.util.Optional;
 

@@ -122,6 +122,6 @@ public class WorkOrderCommentService {
     }
 
     private String orderNumber(Long orderId) {
-        return orderStore.findById(orderId).map(cn.slainc.workorder.model.WorkOrder::getNumber).orElse(null);
+        return orderStore.findById(orderId).map(cn.slainc.workorder.domain.WorkOrder::getNumber).orElse(null);
     }
 }

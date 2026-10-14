@@ -1,10 +1,10 @@
 package cn.slainc.sse.api;
 
 import cn.slainc.core.exception.BizException;
-import cn.slainc.sse.api.impl.SseServiceImpl;
-import cn.slainc.sse.auth.SseAuthenticator;
-import cn.slainc.sse.auth.SseHandshake;
-import cn.slainc.sse.auth.SseUser;
+import cn.slainc.sse.support.SseServiceImpl;
+import cn.slainc.sse.handshake.SseAuthenticator;
+import cn.slainc.sse.handshake.SseHandshake;
+import cn.slainc.sse.handshake.SseUser;
 import cn.slainc.sse.autoconfigure.SseProperties;
 import cn.slainc.sse.cluster.SseEventRelay;
 import cn.slainc.sse.support.SseConnectionRegistry;

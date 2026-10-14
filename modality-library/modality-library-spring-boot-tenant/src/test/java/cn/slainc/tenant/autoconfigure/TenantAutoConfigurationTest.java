@@ -14,7 +14,7 @@ import cn.slainc.tenant.resolver.HeaderTenantResolver;
 import cn.slainc.tenant.resolver.ParamTenantResolver;
 import cn.slainc.tenant.resolver.PathTenantResolver;
 import cn.slainc.tenant.resolver.TenantResolverComposite;
-import cn.slainc.tenant.service.TenantService;
+import cn.slainc.tenant.lookup.TenantService;
 import cn.slainc.tenant.support.TenantTableWhitelist;
 import cn.slainc.web.filter.FilterOrder;
 import org.junit.jupiter.api.DisplayName;

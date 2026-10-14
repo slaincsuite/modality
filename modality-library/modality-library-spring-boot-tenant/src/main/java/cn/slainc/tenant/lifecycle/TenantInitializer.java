@@ -1,6 +1,6 @@
 package cn.slainc.tenant.lifecycle;
 
-import cn.slainc.tenant.entity.Tenant;
+import cn.slainc.tenant.domain.Tenant;
 
 public interface TenantInitializer {
 

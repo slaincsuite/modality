@@ -1,8 +1,8 @@
 package cn.slainc.sse.autoconfigure;
 
 import cn.slainc.sse.api.SseService;
-import cn.slainc.sse.auth.SseAuthenticator;
-import cn.slainc.sse.auth.TokenSseAuthenticator;
+import cn.slainc.sse.handshake.SseAuthenticator;
+import cn.slainc.sse.handshake.TokenSseAuthenticator;
 import cn.slainc.sse.cluster.SseEventRelay;
 import cn.slainc.sse.support.SseConnectionRegistry;
 import cn.slainc.sse.support.SseEventStore;
@@ -83,7 +83,7 @@ class SseAutoConfigurationTest {
     void shouldInjectTheResolvedAuthenticatorIntoTheService() {
         DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
         beanFactory.registerSingleton("sseAuthenticator",
-                (SseAuthenticator) handshake -> new cn.slainc.sse.auth.SseUser(7L, "u7"));
+                (SseAuthenticator) handshake -> new cn.slainc.sse.handshake.SseUser(7L, "u7"));
 
         SseService service = configuration.sseService(configuration.sseConnectionRegistry(),
                 configuration.sseEventStore(properties), properties,
@@ -92,7 +92,7 @@ class SseAutoConfigurationTest {
                 beanFactory.getBeanProvider(SseAuthenticator.class));
 
         // 请求不携带令牌，默认令牌认证器会拒绝，只有注入的自定义认证器能让订阅成功
-        service.subscribe(new cn.slainc.sse.auth.SseHandshake(
+        service.subscribe(new cn.slainc.sse.handshake.SseHandshake(
                 new org.springframework.mock.web.MockHttpServletRequest()));
         assertThat(service.connections(7L)).isEqualTo(1);
     }

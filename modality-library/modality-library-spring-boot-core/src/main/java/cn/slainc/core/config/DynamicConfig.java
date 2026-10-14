@@ -1,6 +1,6 @@
 package cn.slainc.core.config;
 
-import cn.slainc.core.entity.BaseEntity;
+import cn.slainc.core.base.BaseEntity;
 
 public class DynamicConfig extends BaseEntity {
 

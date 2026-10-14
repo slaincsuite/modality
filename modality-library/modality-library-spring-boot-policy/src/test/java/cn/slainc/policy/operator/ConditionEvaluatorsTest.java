@@ -1,6 +1,6 @@
 package cn.slainc.policy.operator;
 
-import cn.slainc.policy.model.ConditionOperator;
+import cn.slainc.policy.domain.ConditionOperator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

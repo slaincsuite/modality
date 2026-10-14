@@ -2,7 +2,7 @@ package cn.slainc.search.autoconfigure;
 
 import cn.slainc.search.analyzer.SearchAnalyzer;
 import cn.slainc.search.api.SearchEngine;
-import cn.slainc.search.api.impl.LuceneSearchEngine;
+import cn.slainc.search.support.LuceneSearchEngine;
 import cn.slainc.search.config.SearchProperties;
 import cn.slainc.search.index.LuceneIndexStore;
 import cn.slainc.search.index.SearchIndexer;

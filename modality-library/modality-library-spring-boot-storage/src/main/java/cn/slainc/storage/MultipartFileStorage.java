@@ -1,6 +1,6 @@
 package cn.slainc.storage;
 
-import cn.slainc.storage.model.PartInfo;
+import cn.slainc.storage.spi.PartInfo;
 
 import java.io.InputStream;
 import java.util.List;

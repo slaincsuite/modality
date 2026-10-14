@@ -14,7 +14,7 @@ class WorkOrderSubscriptionServiceTest {
     @BeforeEach
     void setUp() {
         WorkOrderStore orderStore = new cn.slainc.workorder.store.MemoryWorkOrderStore();
-        cn.slainc.workorder.model.WorkOrder order = new cn.slainc.workorder.model.WorkOrder();
+        cn.slainc.workorder.domain.WorkOrder order = new cn.slainc.workorder.domain.WorkOrder();
         order.setId(1L);
         order.setNumber("WO2026101300001");
         orderStore.save(order);

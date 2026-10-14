@@ -1,11 +1,11 @@
 package cn.slainc.openapi.bridge;
 
 import cn.dev33.satoken.apikey.model.ApiKeyModel;
-import cn.slainc.apikey.service.ApiKeyAdminService;
+import cn.slainc.apikey.admin.ApiKeyAdminService;
 import cn.slainc.openapi.SingleProvider;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppCredential;
-import cn.slainc.openapi.model.AppType;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppCredential;
+import cn.slainc.openapi.domain.AppType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

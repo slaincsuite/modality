@@ -1,7 +1,7 @@
 package cn.slainc.job.autoconfigure;
 
 import cn.slainc.job.api.JobScheduler;
-import cn.slainc.job.api.impl.JobSchedulerImpl;
+import cn.slainc.job.support.JobSchedulerImpl;
 import cn.slainc.job.support.QuartzBootstrap;
 import cn.slainc.job.support.QuartzStoreCustomizer;
 import org.junit.jupiter.api.Test;

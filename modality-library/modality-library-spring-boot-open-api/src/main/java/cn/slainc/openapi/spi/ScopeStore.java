@@ -1,6 +1,6 @@
 package cn.slainc.openapi.spi;
 
-import cn.slainc.openapi.model.OpenScope;
+import cn.slainc.openapi.domain.OpenScope;
 
 import java.util.List;
 import java.util.Optional;

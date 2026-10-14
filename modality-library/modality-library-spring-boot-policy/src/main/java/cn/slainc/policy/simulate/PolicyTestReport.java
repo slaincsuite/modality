@@ -1,6 +1,6 @@
 package cn.slainc.policy.simulate;
 
-import cn.slainc.policy.model.PolicyDecision;
+import cn.slainc.policy.domain.PolicyDecision;
 
 import java.util.ArrayList;
 import java.util.List;

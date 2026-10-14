@@ -1,9 +1,9 @@
 package cn.slainc.storage.support;
 
 import cn.slainc.storage.ExtendedFileStorage;
-import cn.slainc.storage.model.PartInfo;
-import cn.slainc.storage.model.StorageMetadata;
-import cn.slainc.storage.model.StorageObject;
+import cn.slainc.storage.spi.PartInfo;
+import cn.slainc.storage.spi.StorageMetadata;
+import cn.slainc.storage.spi.StorageObject;
 
 import java.io.InputStream;
 import java.io.OutputStream;

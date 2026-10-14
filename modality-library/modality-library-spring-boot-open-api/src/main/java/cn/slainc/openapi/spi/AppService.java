@@ -1,8 +1,8 @@
 package cn.slainc.openapi.spi;
 
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppAction;
-import cn.slainc.openapi.model.AppStatus;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppAction;
+import cn.slainc.openapi.domain.AppStatus;
 
 import java.util.List;
 

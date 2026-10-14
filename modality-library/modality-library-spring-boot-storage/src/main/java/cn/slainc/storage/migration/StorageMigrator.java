@@ -2,8 +2,8 @@ package cn.slainc.storage.migration;
 
 import cn.slainc.storage.ExtendedFileStorage;
 import cn.slainc.storage.StorageException;
-import cn.slainc.storage.model.StorageMetadata;
-import cn.slainc.storage.model.StorageObject;
+import cn.slainc.storage.spi.StorageMetadata;
+import cn.slainc.storage.spi.StorageObject;
 import cn.slainc.storage.routing.StorageBackendRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

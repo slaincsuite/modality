@@ -1,9 +1,9 @@
 package cn.slainc.tenant.context;
 
 import cn.slainc.tenant.autoconfigure.TenantStatusCheckProperties;
-import cn.slainc.tenant.entity.Tenant;
+import cn.slainc.tenant.domain.Tenant;
 import cn.slainc.tenant.enums.TenantStatus;
-import cn.slainc.tenant.service.TenantService;
+import cn.slainc.tenant.lookup.TenantService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

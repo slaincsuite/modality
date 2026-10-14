@@ -1,7 +1,7 @@
 package cn.slainc.mybatis.interceptor;
 
 import cn.slainc.mybatis.crypto.FieldEncryptor;
-import cn.slainc.mybatis.entity.User;
+import cn.slainc.core.base.User;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;

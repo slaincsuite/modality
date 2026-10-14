@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.function.BiPredicate;
 
 import cn.slainc.policy.match.WildcardMatcher;
-import cn.slainc.policy.model.ConditionOperator;
+import cn.slainc.policy.domain.ConditionOperator;
 import inet.ipaddr.IPAddressString;
 
 public final class ConditionEvaluators {

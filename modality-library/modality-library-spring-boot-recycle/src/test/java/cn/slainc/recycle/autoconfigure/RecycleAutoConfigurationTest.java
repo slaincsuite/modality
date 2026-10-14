@@ -1,6 +1,6 @@
 package cn.slainc.recycle.autoconfigure;
 
-import cn.slainc.recycle.job.RecycleBinCleaner;
+import cn.slainc.recycle.cleaner.RecycleBinCleaner;
 import cn.slainc.recycle.registry.RecycleBinRegistry;
 import cn.slainc.recycle.registry.RecyclableType;
 import cn.slainc.recycle.spi.RecycleItemStore;

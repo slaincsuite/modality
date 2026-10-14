@@ -2,7 +2,7 @@ package cn.slainc.sse.cluster;
 
 import cn.slainc.redis.pubsub.RedisPubSubService;
 import cn.slainc.sse.SseRedisTestSupport;
-import cn.slainc.sse.api.impl.SseServiceImpl;
+import cn.slainc.sse.support.SseServiceImpl;
 import cn.slainc.sse.autoconfigure.SseProperties;
 import cn.slainc.sse.support.SseConnectionRegistry;
 import cn.slainc.sse.support.SseEventStore;

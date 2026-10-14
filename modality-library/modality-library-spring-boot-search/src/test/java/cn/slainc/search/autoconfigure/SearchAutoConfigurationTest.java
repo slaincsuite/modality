@@ -5,7 +5,7 @@ import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.search.analyzer.SearchAnalyzer;
 import cn.slainc.search.api.SearchEngine;
 import cn.slainc.search.api.SearchStats;
-import cn.slainc.search.api.impl.LuceneSearchEngine;
+import cn.slainc.search.support.LuceneSearchEngine;
 import cn.slainc.search.config.DynamicSearchProperties;
 import cn.slainc.search.config.SearchProperties;
 import cn.slainc.search.index.LuceneIndexStore;

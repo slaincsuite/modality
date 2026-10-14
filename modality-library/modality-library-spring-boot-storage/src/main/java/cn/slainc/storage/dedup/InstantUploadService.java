@@ -2,9 +2,9 @@ package cn.slainc.storage.dedup;
 
 import cn.slainc.storage.ExtendedFileStorage;
 import cn.slainc.storage.StorageException;
-import cn.slainc.storage.model.StorageMetadata;
-import cn.slainc.storage.model.StorageObject;
-import cn.slainc.storage.model.UploadResult;
+import cn.slainc.storage.spi.StorageMetadata;
+import cn.slainc.storage.spi.StorageObject;
+import cn.slainc.storage.spi.UploadResult;
 import cn.slainc.storage.support.DelegatingFileStorage;
 import cn.slainc.utils.digest.DigestUtils;
 import cn.slainc.utils.io.FileUtils;

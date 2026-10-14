@@ -1,6 +1,6 @@
 package cn.slainc.workorder.number;
 
-import cn.slainc.workorder.model.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrder;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;

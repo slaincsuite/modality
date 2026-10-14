@@ -1,6 +1,6 @@
 package cn.slainc.storage.multipart;
 
-import cn.slainc.storage.model.PartInfo;
+import cn.slainc.storage.spi.PartInfo;
 
 import java.util.ArrayList;
 import java.util.Collection;

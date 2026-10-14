@@ -2,9 +2,9 @@ package cn.slainc.policy.admin;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.policy.model.Effect;
-import cn.slainc.policy.model.PolicyDocument;
-import cn.slainc.policy.model.PolicyStatement;
+import cn.slainc.policy.domain.Effect;
+import cn.slainc.policy.domain.PolicyDocument;
+import cn.slainc.policy.domain.PolicyStatement;
 
 import java.util.LinkedHashMap;
 import java.util.List;

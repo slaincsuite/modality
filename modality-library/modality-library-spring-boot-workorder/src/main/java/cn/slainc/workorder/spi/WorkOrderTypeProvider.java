@@ -1,6 +1,6 @@
 package cn.slainc.workorder.spi;
 
-import cn.slainc.workorder.model.WorkOrderTypeDefinition;
+import cn.slainc.workorder.domain.WorkOrderTypeDefinition;
 import java.util.List;
 
 

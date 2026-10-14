@@ -6,12 +6,12 @@ import cn.slainc.openapi.event.AppApprovedEvent;
 import cn.slainc.openapi.event.AppCreatedEvent;
 import cn.slainc.openapi.event.ConsentGrantedEvent;
 import cn.slainc.openapi.event.ConsentRevokedEvent;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppStatus;
-import cn.slainc.openapi.model.AppType;
-import cn.slainc.openapi.model.ConsentRecord;
-import cn.slainc.openapi.model.OpenScope;
-import cn.slainc.openapi.model.ScopeRiskLevel;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppStatus;
+import cn.slainc.openapi.domain.AppType;
+import cn.slainc.openapi.domain.ConsentRecord;
+import cn.slainc.openapi.domain.OpenScope;
+import cn.slainc.openapi.domain.ScopeRiskLevel;
 import cn.slainc.openapi.spi.AppStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -273,10 +273,10 @@ class OpenApiServiceTest {
         assertThrows(BizException.class, () -> credentialService.issue(app.getAppId()));
         credentialService.rotate(app.getAppId(), 60000L);
         credentialService.disable(app.getAppId());
-        assertEquals(cn.slainc.openapi.model.AppCredential.Status.DISABLED,
+        assertEquals(cn.slainc.openapi.domain.AppCredential.Status.DISABLED,
                 credentialService.find(app.getAppId()).getStatus());
         credentialService.enable(app.getAppId());
-        assertEquals(cn.slainc.openapi.model.AppCredential.Status.ENABLED,
+        assertEquals(cn.slainc.openapi.domain.AppCredential.Status.ENABLED,
                 credentialService.find(app.getAppId()).getStatus());
     }
 

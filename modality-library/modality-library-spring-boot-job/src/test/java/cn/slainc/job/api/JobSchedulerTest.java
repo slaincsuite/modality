@@ -1,6 +1,6 @@
 package cn.slainc.job.api;
 
-import cn.slainc.job.api.impl.JobSchedulerImpl;
+import cn.slainc.job.support.JobSchedulerImpl;
 import cn.slainc.job.autoconfigure.JobProperties;
 import cn.slainc.job.enums.MisfirePolicy;
 import cn.slainc.job.support.JobContext;

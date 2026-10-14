@@ -1,6 +1,6 @@
 package cn.slainc.openapi.spi;
 
-import cn.slainc.openapi.model.ConsentRecord;
+import cn.slainc.openapi.domain.ConsentRecord;
 
 import java.util.List;
 

@@ -1,8 +1,8 @@
 package cn.slainc.changeaudit.autoconfigure;
 
 import cn.slainc.changeaudit.api.FieldDiffEngine;
-import cn.slainc.changeaudit.api.impl.FieldDiffer;
-import cn.slainc.changeaudit.api.impl.JaVersFieldDiffer;
+import cn.slainc.changeaudit.support.FieldDiffer;
+import cn.slainc.changeaudit.support.JaVersFieldDiffer;
 import cn.slainc.changeaudit.aspect.ChangeAuditAspect;
 import cn.slainc.changeaudit.event.AfterCommitExecutor;
 import cn.slainc.changeaudit.spi.ChangeRecorder;

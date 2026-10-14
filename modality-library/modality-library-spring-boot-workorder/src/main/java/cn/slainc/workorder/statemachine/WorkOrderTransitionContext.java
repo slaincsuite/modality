@@ -1,6 +1,6 @@
 package cn.slainc.workorder.statemachine;
 
-import cn.slainc.workorder.model.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrder;
 import java.util.Collections;
 import java.util.Map;
 

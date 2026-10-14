@@ -2,7 +2,7 @@ package cn.slainc.webhook.autoconfigure;
 
 import cn.slainc.redis.lock.DistributedLockTemplate;
 import cn.slainc.webhook.api.WebhookSender;
-import cn.slainc.webhook.api.impl.HttpWebhookSender;
+import cn.slainc.webhook.support.HttpWebhookSender;
 import cn.slainc.webhook.config.WebhookProperties;
 import cn.slainc.webhook.spi.WebhookDeliveryPort;
 import cn.slainc.webhook.support.WebhookDeliveryDispatcher;

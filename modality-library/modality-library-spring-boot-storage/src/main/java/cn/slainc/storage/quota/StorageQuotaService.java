@@ -2,7 +2,7 @@ package cn.slainc.storage.quota;
 
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.storage.StorageException;
-import cn.slainc.storage.model.QuotaUsage;
+import cn.slainc.storage.spi.QuotaUsage;
 import cn.slainc.storage.support.StorageConfigKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

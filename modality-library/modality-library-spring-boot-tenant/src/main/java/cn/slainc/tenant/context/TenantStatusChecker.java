@@ -2,8 +2,8 @@ package cn.slainc.tenant.context;
 
 import cn.slainc.core.result.ResultCode;
 import cn.slainc.tenant.autoconfigure.TenantStatusCheckProperties;
-import cn.slainc.tenant.entity.Tenant;
-import cn.slainc.tenant.service.TenantService;
+import cn.slainc.tenant.domain.Tenant;
+import cn.slainc.tenant.lookup.TenantService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;

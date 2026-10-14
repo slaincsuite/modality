@@ -2,8 +2,8 @@ package cn.slainc.policy.storage;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.policy.model.Policy;
-import cn.slainc.policy.model.PolicyStatus;
+import cn.slainc.policy.domain.Policy;
+import cn.slainc.policy.domain.PolicyStatus;
 
 import java.util.ArrayList;
 import java.util.Comparator;

@@ -3,7 +3,7 @@ package cn.slainc.mfa.support;
 import cn.slainc.core.context.UserContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
-import cn.slainc.mfa.api.impl.InMemoryMfaChallengeStore;
+import cn.slainc.mfa.support.InMemoryMfaChallengeStore;
 import cn.slainc.mfa.config.MfaConfigReader;
 import cn.slainc.mfa.config.MfaProperties;
 import cn.slainc.mfa.recovery.RecoveryCodeGenerator;

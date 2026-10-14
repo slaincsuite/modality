@@ -4,7 +4,7 @@ import cn.slainc.crypto.hmac.HmacAlgorithm;
 import cn.slainc.crypto.hmac.HmacUtils;
 import cn.slainc.storage.ExtendedFileStorage;
 import cn.slainc.storage.StorageException;
-import cn.slainc.storage.model.SignedUrl;
+import cn.slainc.storage.spi.SignedUrl;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

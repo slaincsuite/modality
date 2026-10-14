@@ -1,7 +1,7 @@
 package cn.slainc.tenant.lifecycle;
 
 import cn.slainc.core.config.DynamicConfigService;
-import cn.slainc.tenant.entity.Tenant;
+import cn.slainc.tenant.domain.Tenant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;

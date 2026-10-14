@@ -1,11 +1,11 @@
 package cn.slainc.logger.autoconfigure;
 
 import cn.slainc.core.config.DynamicConfigService;
-import cn.slainc.logger.audit.AuditLogAspect;
-import cn.slainc.logger.audit.AuditLogDispatcher;
-import cn.slainc.logger.audit.AuditLogStore;
-import cn.slainc.logger.audit.AuditSnapshotProvider;
-import cn.slainc.logger.audit.Slf4jAuditLogStore;
+import cn.slainc.logger.oplog.AuditLogAspect;
+import cn.slainc.logger.oplog.AuditLogDispatcher;
+import cn.slainc.logger.oplog.AuditLogStore;
+import cn.slainc.logger.oplog.AuditSnapshotProvider;
+import cn.slainc.logger.oplog.Slf4jAuditLogStore;
 import cn.slainc.logger.context.LoginIdResolver;
 import cn.slainc.logger.level.LogLevelManager;
 import cn.slainc.logger.level.LoggingStartupRefresher;

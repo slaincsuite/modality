@@ -1,9 +1,9 @@
 package cn.slainc.sse.autoconfigure;
 
 import cn.slainc.sse.api.SseService;
-import cn.slainc.sse.api.impl.SseServiceImpl;
-import cn.slainc.sse.auth.SseAuthenticator;
-import cn.slainc.sse.auth.TokenSseAuthenticator;
+import cn.slainc.sse.support.SseServiceImpl;
+import cn.slainc.sse.handshake.SseAuthenticator;
+import cn.slainc.sse.handshake.TokenSseAuthenticator;
 import cn.slainc.sse.cluster.SseEventRelay;
 import cn.slainc.sse.support.SseConnectionRegistry;
 import cn.slainc.sse.support.SseEventStore;

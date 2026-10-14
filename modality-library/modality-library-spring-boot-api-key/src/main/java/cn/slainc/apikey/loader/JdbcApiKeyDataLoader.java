@@ -5,7 +5,7 @@ import cn.dev33.satoken.apikey.model.ApiKeyModel;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.slainc.apikey.ApiKeyRecord;
 import cn.slainc.apikey.ApiKeyStatus;
-import cn.slainc.apikey.mapper.ApiKeyMapper;
+import cn.slainc.apikey.loader.ApiKeyMapper;
 import cn.slainc.apikey.support.ApiKeyJson;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 

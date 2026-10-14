@@ -1,6 +1,6 @@
 package cn.slainc.workorder.assign;
 
-import cn.slainc.workorder.model.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrder;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 

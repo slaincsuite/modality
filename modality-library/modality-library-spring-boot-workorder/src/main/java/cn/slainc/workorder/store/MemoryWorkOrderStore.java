@@ -1,6 +1,6 @@
 package cn.slainc.workorder.store;
 
-import cn.slainc.workorder.model.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrder;
 import cn.slainc.workorder.spi.WorkOrderStore;
 import java.util.Map;
 import java.util.Optional;

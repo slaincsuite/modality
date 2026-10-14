@@ -2,8 +2,8 @@ package cn.slainc.openapi.support;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.openapi.model.OpenScope;
-import cn.slainc.openapi.model.ScopeRiskLevel;
+import cn.slainc.openapi.domain.OpenScope;
+import cn.slainc.openapi.domain.ScopeRiskLevel;
 import cn.slainc.openapi.spi.ScopeService;
 import cn.slainc.openapi.spi.ScopeStore;
 

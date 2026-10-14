@@ -1,7 +1,7 @@
 package cn.slainc.storage.dedup;
 
 import cn.slainc.storage.local.LocalFileStorage;
-import cn.slainc.storage.model.UploadResult;
+import cn.slainc.storage.spi.UploadResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

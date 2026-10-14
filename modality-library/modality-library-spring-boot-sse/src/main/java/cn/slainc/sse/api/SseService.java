@@ -1,6 +1,6 @@
 package cn.slainc.sse.api;
 
-import cn.slainc.sse.auth.SseHandshake;
+import cn.slainc.sse.handshake.SseHandshake;
 import cn.slainc.sse.support.SseEvent;
 import cn.slainc.sse.support.SseEventStore;
 import cn.slainc.sse.support.SseMetrics;

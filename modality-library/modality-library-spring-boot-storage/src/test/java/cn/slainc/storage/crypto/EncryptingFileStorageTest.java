@@ -5,7 +5,7 @@ import cn.slainc.crypto.key.SecretKeyUtils;
 import cn.slainc.crypto.symmetric.AesKeySize;
 import cn.slainc.storage.StorageException;
 import cn.slainc.storage.local.LocalFileStorage;
-import cn.slainc.storage.model.StorageMetadata;
+import cn.slainc.storage.spi.StorageMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

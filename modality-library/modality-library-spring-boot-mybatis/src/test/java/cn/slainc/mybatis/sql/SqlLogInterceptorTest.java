@@ -1,7 +1,7 @@
 package cn.slainc.mybatis.sql;
 
 import cn.slainc.core.constant.SystemConstants;
-import cn.slainc.mybatis.entity.User;
+import cn.slainc.core.base.User;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -104,7 +104,7 @@ class SqlLogInterceptorTest {
     private static Invocation updateInvocation(RuntimeException failure) throws Exception {
         MappedStatement statement = mock(MappedStatement.class);
         when(statement.getSqlCommandType()).thenReturn(SqlCommandType.INSERT);
-        when(statement.getId()).thenReturn("cn.slainc.mybatis.mapper.UserMapper.insert");
+        when(statement.getId()).thenReturn("cn.slainc.mybatis.dao.UserMapper.insert");
         Executor executor = mock(Executor.class);
         when(executor.update(any(MappedStatement.class), any())).thenAnswer(invocation -> {
             if (failure != null) {

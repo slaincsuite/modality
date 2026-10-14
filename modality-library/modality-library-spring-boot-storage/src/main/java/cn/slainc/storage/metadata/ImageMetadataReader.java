@@ -1,7 +1,7 @@
 package cn.slainc.storage.metadata;
 
 import cn.slainc.storage.StorageException;
-import cn.slainc.storage.model.ImageMetadata;
+import cn.slainc.storage.spi.ImageMetadata;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;

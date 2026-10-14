@@ -2,9 +2,9 @@ package cn.slainc.storage.local;
 
 import cn.slainc.storage.ExtendedFileStorage;
 import cn.slainc.storage.StorageException;
-import cn.slainc.storage.model.PartInfo;
-import cn.slainc.storage.model.StorageMetadata;
-import cn.slainc.storage.model.StorageObject;
+import cn.slainc.storage.spi.PartInfo;
+import cn.slainc.storage.spi.StorageMetadata;
+import cn.slainc.storage.spi.StorageObject;
 import cn.slainc.storage.support.ContentTypes;
 import cn.slainc.storage.support.StoragePathValidator;
 import cn.slainc.utils.io.FileUtils;

@@ -2,10 +2,10 @@ package cn.slainc.openapi.bridge;
 
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.openapi.SingleProvider;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppCredential;
-import cn.slainc.openapi.model.AppStatus;
-import cn.slainc.openapi.model.AppType;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppCredential;
+import cn.slainc.openapi.domain.AppStatus;
+import cn.slainc.openapi.domain.AppType;
 import cn.slainc.oauth2.client.ClientAdminService;
 import cn.slainc.oauth2.client.ClientRecordCache;
 import cn.slainc.oauth2.client.ClientRecordRepository;

@@ -1,9 +1,9 @@
 package cn.slainc.openapi.support;
 
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppCredential;
-import cn.slainc.openapi.model.ConsentRecord;
-import cn.slainc.openapi.model.OpenScope;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppCredential;
+import cn.slainc.openapi.domain.ConsentRecord;
+import cn.slainc.openapi.domain.OpenScope;
 import cn.slainc.openapi.spi.AppStore;
 import cn.slainc.openapi.spi.ConsentStore;
 import cn.slainc.openapi.spi.CredentialStore;

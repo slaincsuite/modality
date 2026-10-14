@@ -2,7 +2,7 @@ package cn.slainc.storage.video;
 
 import cn.slainc.storage.command.CommandResult;
 import cn.slainc.storage.command.ExternalCommandRunner;
-import cn.slainc.storage.model.VideoMetadata;
+import cn.slainc.storage.spi.VideoMetadata;
 import cn.slainc.utils.json.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

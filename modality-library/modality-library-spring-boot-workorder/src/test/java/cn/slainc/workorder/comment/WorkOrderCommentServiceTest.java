@@ -28,21 +28,21 @@ class WorkOrderCommentServiceTest {
         orderStore = new cn.slainc.workorder.store.MemoryWorkOrderStore();
         commentStore = new cn.slainc.workorder.store.MemoryWorkOrderCommentStore();
         orderStore.save(orderWithNumber("WO2026101300001"));
-        cn.slainc.workorder.model.WorkOrder other = orderWithNumber("WO2026101300002");
+        cn.slainc.workorder.domain.WorkOrder other = orderWithNumber("WO2026101300002");
         other.setId(2L);
         orderStore.save(other);
         service = new WorkOrderCommentService(commentStore, orderStore, events::add);
     }
 
-    private cn.slainc.workorder.model.WorkOrder orderWithNumber(String number) {
-        cn.slainc.workorder.model.WorkOrder order = new cn.slainc.workorder.model.WorkOrder();
+    private cn.slainc.workorder.domain.WorkOrder orderWithNumber(String number) {
+        cn.slainc.workorder.domain.WorkOrder order = new cn.slainc.workorder.domain.WorkOrder();
         order.setNumber(number);
         order.setStatus("OPEN");
         return order;
     }
 
     private void seedSecondOrder() {
-        cn.slainc.workorder.model.WorkOrder other = new cn.slainc.workorder.model.WorkOrder();
+        cn.slainc.workorder.domain.WorkOrder other = new cn.slainc.workorder.domain.WorkOrder();
         other.setId(2L);
         other.setNumber("WO2026101300002");
         other.setStatus("OPEN");

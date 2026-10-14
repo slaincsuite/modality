@@ -1,6 +1,6 @@
 package cn.slainc.openapi.spi;
 
-import cn.slainc.openapi.model.AppCredential;
+import cn.slainc.openapi.domain.AppCredential;
 
 import java.util.Optional;
 

@@ -1,6 +1,6 @@
 package cn.slainc.storage.command;
 
-import cn.slainc.storage.model.VideoMetadata;
+import cn.slainc.storage.spi.VideoMetadata;
 import cn.slainc.storage.video.FfmpegCommandBuilder;
 import cn.slainc.storage.video.FfprobeCommandBuilder;
 import cn.slainc.storage.video.VideoMetadataReader;

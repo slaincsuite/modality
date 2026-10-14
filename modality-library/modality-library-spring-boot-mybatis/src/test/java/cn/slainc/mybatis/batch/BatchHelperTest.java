@@ -2,8 +2,8 @@ package cn.slainc.mybatis.batch;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.mybatis.MybatisTestApplication;
-import cn.slainc.mybatis.entity.User;
-import cn.slainc.mybatis.mapper.UserMapper;
+import cn.slainc.core.base.User;
+import cn.slainc.mybatis.dao.UserMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,7 +1,7 @@
 package cn.slainc.policy.admin;
 
-import cn.slainc.policy.model.PolicyDocument;
-import cn.slainc.policy.model.PolicyStatement;
+import cn.slainc.policy.domain.PolicyDocument;
+import cn.slainc.policy.domain.PolicyStatement;
 import cn.slainc.utils.json.JsonUtils;
 
 import java.util.ArrayList;

@@ -14,7 +14,7 @@ import cn.slainc.workorder.event.WorkOrderSuspendedEvent;
 import cn.slainc.workorder.event.WorkOrderTransferredEvent;
 import cn.slainc.workorder.event.WorkOrderTransitionedEvent;
 import cn.slainc.workorder.event.WorkOrderUrgedEvent;
-import cn.slainc.workorder.model.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrder;
 import cn.slainc.workorder.spi.WorkOrderNotificationStore;
 import cn.slainc.workorder.spi.WorkOrderStore;
 import cn.slainc.workorder.spi.WorkOrderSubscriptionStore;

@@ -3,10 +3,10 @@ package cn.slainc.policy.admin;
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
-import cn.slainc.policy.model.Policy;
-import cn.slainc.policy.model.PolicyBinding;
-import cn.slainc.policy.model.PolicyDocument;
-import cn.slainc.policy.model.PolicySubjectType;
+import cn.slainc.policy.domain.Policy;
+import cn.slainc.policy.domain.PolicyBinding;
+import cn.slainc.policy.domain.PolicyDocument;
+import cn.slainc.policy.domain.PolicySubjectType;
 import cn.slainc.policy.storage.PolicyBindingStore;
 
 import java.util.List;

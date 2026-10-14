@@ -1,6 +1,6 @@
 package cn.slainc.core.page;
 
-import cn.slainc.core.entity.BaseQuery;
+import cn.slainc.core.base.BaseQuery;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

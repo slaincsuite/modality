@@ -2,9 +2,9 @@ package cn.slainc.openapi.bridge;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppCredential;
-import cn.slainc.openapi.model.AppType;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppCredential;
+import cn.slainc.openapi.domain.AppType;
 import cn.slainc.openapi.spi.CredentialProvisioner;
 import cn.slainc.oauth2.client.ClientAdminService;
 import cn.slainc.oauth2.client.Oauth2ClientRecord;

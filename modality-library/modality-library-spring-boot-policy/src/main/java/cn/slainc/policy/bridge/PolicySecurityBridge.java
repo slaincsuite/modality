@@ -3,7 +3,7 @@ package cn.slainc.policy.bridge;
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.policy.engine.PolicyEngine;
-import cn.slainc.policy.model.PolicyRequest;
+import cn.slainc.policy.domain.PolicyRequest;
 import cn.slainc.security.spi.SecurityPolicyProvider;
 
 import java.util.List;

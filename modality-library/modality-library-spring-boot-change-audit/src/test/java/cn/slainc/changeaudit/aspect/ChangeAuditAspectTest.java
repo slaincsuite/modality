@@ -1,7 +1,7 @@
 package cn.slainc.changeaudit.aspect;
 
 import cn.slainc.changeaudit.annotation.ChangeAudited;
-import cn.slainc.changeaudit.api.impl.FieldDiffer;
+import cn.slainc.changeaudit.support.FieldDiffer;
 import cn.slainc.changeaudit.autoconfigure.ChangeAuditConfigReader;
 import cn.slainc.changeaudit.autoconfigure.ChangeAuditProperties;
 import cn.slainc.changeaudit.enums.ChangeOperation;

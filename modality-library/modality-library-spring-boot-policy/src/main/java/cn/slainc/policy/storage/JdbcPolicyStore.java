@@ -2,10 +2,10 @@ package cn.slainc.policy.storage;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.policy.model.Policy;
-import cn.slainc.policy.model.PolicyDocument;
-import cn.slainc.policy.model.PolicyStatus;
-import cn.slainc.policy.model.PolicySubjectType;
+import cn.slainc.policy.domain.Policy;
+import cn.slainc.policy.domain.PolicyDocument;
+import cn.slainc.policy.domain.PolicyStatus;
+import cn.slainc.policy.domain.PolicySubjectType;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;

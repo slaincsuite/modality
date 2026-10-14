@@ -2,11 +2,11 @@ package cn.slainc.tenant.lifecycle;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.tenant.entity.Tenant;
+import cn.slainc.tenant.domain.Tenant;
 import cn.slainc.tenant.enums.TenantStatus;
 import cn.slainc.tenant.isolation.TenantInfo;
 import cn.slainc.tenant.isolation.TenantIsolationDispatcher;
-import cn.slainc.tenant.service.TenantService;
+import cn.slainc.tenant.lookup.TenantService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

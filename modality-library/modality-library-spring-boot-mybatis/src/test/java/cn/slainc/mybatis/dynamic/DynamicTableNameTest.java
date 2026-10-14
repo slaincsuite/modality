@@ -1,8 +1,8 @@
 package cn.slainc.mybatis.dynamic;
 
 import cn.slainc.mybatis.MybatisTestApplication;
-import cn.slainc.mybatis.entity.Dict;
-import cn.slainc.mybatis.mapper.DictMapper;
+import cn.slainc.core.base.Dict;
+import cn.slainc.mybatis.dao.DictMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

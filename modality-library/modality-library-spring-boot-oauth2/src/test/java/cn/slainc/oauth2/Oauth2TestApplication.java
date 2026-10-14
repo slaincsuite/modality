@@ -5,7 +5,7 @@ import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.result.Result;
 import cn.slainc.oauth2.userinfo.Oauth2UserInfoService;
-import cn.slainc.oauth2.web.Oauth2ServerDelegate;
+import cn.slainc.oauth2.protocol.Oauth2ServerDelegate;
 import cn.slainc.crypto.hash.BCryptUtils;
 import cn.slainc.security.login.LoginRequest;
 import cn.slainc.security.login.SecurityLoginService;

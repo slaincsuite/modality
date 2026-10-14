@@ -1,7 +1,7 @@
 package cn.slainc.openapi.spi;
 
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppCredential;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppCredential;
 
 public interface CredentialProvisioner {
 

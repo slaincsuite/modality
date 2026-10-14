@@ -2,8 +2,8 @@ package cn.slainc.openapi.support;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
-import cn.slainc.openapi.model.App;
-import cn.slainc.openapi.model.AppCredential;
+import cn.slainc.openapi.domain.App;
+import cn.slainc.openapi.domain.AppCredential;
 import cn.slainc.openapi.spi.AppStore;
 import cn.slainc.openapi.spi.CredentialProvisioner;
 import cn.slainc.openapi.spi.CredentialService;

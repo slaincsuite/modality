@@ -2,7 +2,7 @@ package cn.slainc.storage.metadata;
 
 import cn.slainc.core.constant.MimeTypes;
 import cn.slainc.storage.FileStorage;
-import cn.slainc.storage.model.StorageMetadata;
+import cn.slainc.storage.spi.StorageMetadata;
 import cn.slainc.utils.json.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

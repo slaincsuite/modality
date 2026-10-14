@@ -1,9 +1,9 @@
 package cn.slainc.workorder.statemachine;
 
 import cn.slainc.core.exception.BizException;
-import cn.slainc.workorder.model.WorkOrder;
-import cn.slainc.workorder.model.WorkOrderStateMachines;
-import cn.slainc.workorder.model.WorkOrderTransitionDefinition;
+import cn.slainc.workorder.domain.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrderStateMachines;
+import cn.slainc.workorder.domain.WorkOrderTransitionDefinition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

@@ -2,7 +2,7 @@ package cn.slainc.storage.multipart;
 
 import cn.slainc.storage.MultipartFileStorage;
 import cn.slainc.storage.StorageException;
-import cn.slainc.storage.model.PartInfo;
+import cn.slainc.storage.spi.PartInfo;
 import cn.slainc.utils.thread.ThreadPoolUtils;
 
 import java.io.IOException;

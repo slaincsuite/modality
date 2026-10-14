@@ -2,7 +2,7 @@ package cn.slainc.storage.multipart;
 
 import cn.slainc.storage.StorageException;
 import cn.slainc.storage.local.LocalFileStorage;
-import cn.slainc.storage.model.PartInfo;
+import cn.slainc.storage.spi.PartInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

@@ -9,7 +9,7 @@ import cn.slainc.workorder.event.WorkOrderSuspendedEvent;
 import cn.slainc.workorder.event.WorkOrderTransferredEvent;
 import cn.slainc.workorder.event.WorkOrderTransitionedEvent;
 import cn.slainc.workorder.event.WorkOrderUrgedEvent;
-import cn.slainc.workorder.model.WorkOrder;
+import cn.slainc.workorder.domain.WorkOrder;
 import cn.slainc.workorder.number.MemoryWorkOrderSequenceStore;
 import cn.slainc.workorder.number.SequenceWorkOrderNumberGenerator;
 import cn.slainc.workorder.spi.WorkOrderStore;
@@ -120,8 +120,8 @@ class WorkOrderEngineTest {
         assertThat(engine.get(order.getId()).getStatus()).isEqualTo("SUSPENDED");
         engine.resume(order.getId(), 9L);
         assertThat(engine.get(order.getId()).getStatus()).isEqualTo("IN_PROGRESS");
-        List<cn.slainc.workorder.model.WorkOrderActivity> activities = engine.activities(order.getId());
-        assertThat(activities).extracting(cn.slainc.workorder.model.WorkOrderActivity::action)
+        List<cn.slainc.workorder.domain.WorkOrderActivity> activities = engine.activities(order.getId());
+        assertThat(activities).extracting(cn.slainc.workorder.domain.WorkOrderActivity::action)
                 .containsExactly("claim", "suspend", "resume");
         assertThat(events).filteredOn(e -> e instanceof WorkOrderSuspendedEvent).hasSize(1);
         assertThat(events).filteredOn(e -> e instanceof WorkOrderResumedEvent).hasSize(1);
@@ -139,7 +139,7 @@ class WorkOrderEngineTest {
         assertThat(events).filteredOn(e -> e instanceof WorkOrderTransferredEvent).hasSize(1);
         assertThat(events).filteredOn(e -> e instanceof WorkOrderEscalatedEvent).hasSize(1);
         assertThat(engine.activities(order.getId()))
-                .extracting(cn.slainc.workorder.model.WorkOrderActivity::reason)
+                .extracting(cn.slainc.workorder.domain.WorkOrderActivity::reason)
                 .contains("原处理人休假", "问题升级");
     }
 

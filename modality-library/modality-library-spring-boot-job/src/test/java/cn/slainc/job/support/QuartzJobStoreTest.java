@@ -1,6 +1,6 @@
 package cn.slainc.job.support;
 
-import cn.slainc.job.api.impl.JobSchedulerImpl;
+import cn.slainc.job.support.JobSchedulerImpl;
 import cn.slainc.job.autoconfigure.JobProperties;
 import cn.slainc.job.enums.MisfirePolicy;
 import org.h2.jdbcx.JdbcDataSource;

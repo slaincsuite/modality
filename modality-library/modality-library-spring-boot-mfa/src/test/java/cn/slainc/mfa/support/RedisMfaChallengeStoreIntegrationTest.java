@@ -1,7 +1,7 @@
 package cn.slainc.mfa.support;
 
 import cn.slainc.mfa.api.MfaChallengeStore;
-import cn.slainc.mfa.api.impl.RedisMfaChallengeStore;
+import cn.slainc.mfa.support.RedisMfaChallengeStore;
 import cn.slainc.mfa.challenge.MfaChallenge;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -26,7 +26,7 @@ class RedisMfaChallengeStoreIntegrationTest {
         redisTemplate = RedisProbe.newStringRedisTemplate();
         // 读穿透回落是设计行为（Redis 短暂不可用时写入降级到内存，恢复后仍可读）；
         // 集成测试用空内存回落 + 直接断言 Redis 里的键与 TTL 证明数据真的落在了 Redis
-        store = new RedisMfaChallengeStore(redisTemplate, new cn.slainc.mfa.api.impl.InMemoryMfaChallengeStore());
+        store = new RedisMfaChallengeStore(redisTemplate, new cn.slainc.mfa.support.InMemoryMfaChallengeStore());
     }
 
     @AfterAll

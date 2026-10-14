@@ -2,7 +2,7 @@ package cn.slainc.storage.image;
 
 import cn.slainc.storage.StorageException;
 import cn.slainc.storage.metadata.ImageMetadataReader;
-import cn.slainc.storage.model.ImageMetadata;
+import cn.slainc.storage.spi.ImageMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

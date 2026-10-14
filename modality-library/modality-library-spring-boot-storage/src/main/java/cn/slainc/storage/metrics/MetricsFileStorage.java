@@ -1,7 +1,7 @@
 package cn.slainc.storage.metrics;
 
 import cn.slainc.storage.ExtendedFileStorage;
-import cn.slainc.storage.model.PartInfo;
+import cn.slainc.storage.spi.PartInfo;
 import cn.slainc.storage.support.DelegatingFileStorage;
 
 import java.io.InputStream;

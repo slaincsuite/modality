@@ -1,6 +1,6 @@
 package cn.slainc.policy.storage;
 
-import cn.slainc.policy.model.PolicyBinding;
+import cn.slainc.policy.domain.PolicyBinding;
 
 import java.util.List;
 

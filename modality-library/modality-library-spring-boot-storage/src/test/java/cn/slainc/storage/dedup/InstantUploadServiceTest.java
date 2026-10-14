@@ -1,8 +1,8 @@
 package cn.slainc.storage.dedup;
 
 import cn.slainc.storage.local.LocalFileStorage;
-import cn.slainc.storage.model.StorageObject;
-import cn.slainc.storage.model.UploadResult;
+import cn.slainc.storage.spi.StorageObject;
+import cn.slainc.storage.spi.UploadResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

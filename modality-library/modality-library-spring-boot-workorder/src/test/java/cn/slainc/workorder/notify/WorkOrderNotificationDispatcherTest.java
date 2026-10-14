@@ -24,7 +24,7 @@ class WorkOrderNotificationDispatcherTest {
     void setUp() {
         notificationStore = new MemoryWorkOrderNotificationStore();
         WorkOrderStore orderStore = new MemoryWorkOrderStore();
-        cn.slainc.workorder.model.WorkOrder order = new cn.slainc.workorder.model.WorkOrder();
+        cn.slainc.workorder.domain.WorkOrder order = new cn.slainc.workorder.domain.WorkOrder();
         order.setId(1L);
         order.setNumber("WO2026101300001");
         order.setTitle("登录页报错");

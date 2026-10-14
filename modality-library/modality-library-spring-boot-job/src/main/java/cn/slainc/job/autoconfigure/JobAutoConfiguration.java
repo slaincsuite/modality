@@ -2,7 +2,7 @@ package cn.slainc.job.autoconfigure;
 
 import cn.slainc.job.annotation.Job;
 import cn.slainc.job.api.JobScheduler;
-import cn.slainc.job.api.impl.JobSchedulerImpl;
+import cn.slainc.job.support.JobSchedulerImpl;
 import cn.slainc.job.support.JobDefinition;
 import cn.slainc.job.support.JobHandler;
 import cn.slainc.job.support.QuartzBootstrap;

@@ -1,7 +1,7 @@
 package cn.slainc.storage;
 
-import cn.slainc.storage.model.StorageMetadata;
-import cn.slainc.storage.model.StorageObject;
+import cn.slainc.storage.spi.StorageMetadata;
+import cn.slainc.storage.spi.StorageObject;
 
 import java.io.InputStream;
 import java.io.OutputStream;
