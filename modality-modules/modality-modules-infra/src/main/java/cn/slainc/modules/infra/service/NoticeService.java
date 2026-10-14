@@ -4,11 +4,13 @@ import cn.slainc.core.jdbc.JdbcPager;
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.infra.InfraKeys;
+import cn.slainc.modules.infra.entity.NoticeRecord;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class NoticeService {
@@ -21,8 +23,11 @@ public class NoticeService {
 
     private final JdbcTemplate jdbc;
 
-    public NoticeService(JdbcTemplate jdbc) {
+    private final ObjectProvider<RecycleBinService> recycleBinServiceProvider;
+
+    public NoticeService(JdbcTemplate jdbc, ObjectProvider<RecycleBinService> recycleBinServiceProvider) {
         this.jdbc = jdbc;
+        this.recycleBinServiceProvider = recycleBinServiceProvider;
     }
 
     public PageResult<NoticeView> page(long current, long size, String keyword, String status) {
@@ -98,8 +103,27 @@ public class NoticeService {
     }
 
     public void delete(Long id) {
-        find(id);
+        NoticeView existing = find(id);
+        RecycleBinService recycleBinService = recycleBinServiceProvider.getIfAvailable();
+        if (recycleBinService != null) {
+            recycleBinService.stashByType(InfraKeys.RECYCLE_TYPE_NOTICE, toRecyclableRecord(existing));
+        }
         jdbc.update("DELETE FROM " + InfraKeys.NOTICE_TABLE + " WHERE id = ?", id);
+    }
+
+    private static NoticeRecord toRecyclableRecord(NoticeView view) {
+        NoticeRecord record = new NoticeRecord();
+        record.setId(view.id());
+        record.setTitle(view.title());
+        record.setContent(view.content());
+        record.setLevel(view.level());
+        record.setStatus(view.status());
+        record.setPublishTime(view.publishTime());
+        record.setExpireTime(view.expireTime());
+        record.setOperator(view.operator());
+        record.setCreateTime(view.createTime());
+        record.setUpdateTime(view.updateTime());
+        return record;
     }
 
     private List<NoticeView> query(String suffix, List<Object> args) {

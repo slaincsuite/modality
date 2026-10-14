@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS t_infra_notice (
     publish_time BIGINT,
     expire_time BIGINT,
     operator VARCHAR(64),
+    tenant_id BIGINT NOT NULL DEFAULT 1,
     create_time BIGINT NOT NULL,
     update_time BIGINT NOT NULL
 );
@@ -127,4 +128,67 @@ CREATE TABLE IF NOT EXISTS t_infra_api_key (
     expires_time BIGINT NOT NULL DEFAULT -1,
     create_time BIGINT NOT NULL,
     update_time BIGINT NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS t_search_document (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    source_type VARCHAR(64) NOT NULL,
+    source_id VARCHAR(64) NOT NULL,
+    title VARCHAR(512),
+    summary VARCHAR(1024),
+    content TEXT,
+    tags VARCHAR(512),
+    url VARCHAR(1024),
+    enabled TINYINT NOT NULL DEFAULT 1,
+    indexed_at BIGINT,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_search_document_source UNIQUE (source_type, source_id, tenant_id),
+    KEY idx_search_document_tenant (tenant_id, enabled)
+);
+
+CREATE TABLE IF NOT EXISTS t_search_index_term (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    document_id BIGINT NOT NULL,
+    term VARCHAR(64) NOT NULL,
+    field VARCHAR(16) NOT NULL,
+    weight INT NOT NULL DEFAULT 1,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    KEY idx_search_index_term_term (tenant_id, term),
+    KEY idx_search_index_term_document (document_id)
+);
+
+CREATE TABLE IF NOT EXISTS t_search_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    keyword VARCHAR(128) NOT NULL,
+    searched_at BIGINT NOT NULL,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    CONSTRAINT uk_search_history_user_keyword UNIQUE (user_id, keyword),
+    KEY idx_search_history_user (user_id, searched_at)
+);
+
+CREATE TABLE IF NOT EXISTS t_recycle_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    entity_type VARCHAR(64) NOT NULL,
+    entity_id VARCHAR(64) NOT NULL,
+    entity_name VARCHAR(255),
+    snapshot TEXT,
+    operator VARCHAR(64),
+    operator_id BIGINT,
+    deleted_at BIGINT,
+    expire_at BIGINT,
+    restored TINYINT NOT NULL DEFAULT 0,
+    restored_at BIGINT,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    created_by VARCHAR(64),
+    created_at BIGINT,
+    updated_by VARCHAR(64),
+    updated_at BIGINT,
+    version INT NOT NULL DEFAULT 0,
+    KEY idx_recycle_item_entity (entity_type, entity_id),
+    KEY idx_recycle_item_tenant (tenant_id, deleted_at),
+    KEY idx_recycle_item_expire (expire_at)
 );

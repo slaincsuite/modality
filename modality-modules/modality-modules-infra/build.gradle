@@ -15,9 +15,15 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-excel')
     api project(':modality-library:modality-library-spring-boot-api-key')
     api project(':modality-library:modality-library-spring-boot-captcha')
+    api project(':modality-library:modality-library-spring-boot-search')
+    api project(':modality-library:modality-library-spring-boot-recycle')
     implementation libs.caffeine
     compileOnly project(':modality-library:modality-library-spring-boot-mybatis')
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
     testImplementation project(':modality-library:modality-library-spring-boot-mybatis')
+    testImplementation libs.lucene.core
+    testImplementation libs.lucene.analysis.common
+    testImplementation libs.lucene.queryparser
+    testImplementation libs.lucene.highlighter
     testRuntimeOnly libs.h2
 }

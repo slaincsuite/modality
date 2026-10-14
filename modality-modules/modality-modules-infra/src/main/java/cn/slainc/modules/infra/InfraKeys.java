@@ -14,6 +14,11 @@ public final class InfraKeys {
 
     public static final String API_KEY_TABLE = "t_infra_api_key";
 
+    public static final String SEARCH_DOCUMENT_TABLE = "t_search_document";
+    public static final String SEARCH_INDEX_TERM_TABLE = "t_search_index_term";
+    public static final String SEARCH_HISTORY_TABLE = "t_search_history";
+    public static final String RECYCLE_ITEM_TABLE = "t_recycle_item";
+
     public static final String PERMISSION_CONFIG_QUERY = "infra:config:query";
     public static final String PERMISSION_CONFIG_CREATE = "infra:config:create";
     public static final String PERMISSION_CONFIG_UPDATE = "infra:config:update";
@@ -51,6 +56,14 @@ public final class InfraKeys {
     public static final String PERMISSION_APIKEY_MANAGE = "infra:apikey:manage";
     public static final String PERMISSION_SYSTEM_QUERY = "infra:system:query";
     public static final String PERMISSION_SYSTEM_ALERT = "infra:system:alert";
+    public static final String PERMISSION_SEARCH_QUERY = "infra:search:query";
+    public static final String PERMISSION_SEARCH_INDEX = "infra:search:index";
+    public static final String PERMISSION_SEARCH_REMOVE = "infra:search:remove";
+    public static final String PERMISSION_RECYCLE_QUERY = "infra:recycle:query";
+    public static final String PERMISSION_RECYCLE_RESTORE = "infra:recycle:restore";
+    public static final String PERMISSION_RECYCLE_PURGE = "infra:recycle:purge";
+
+    public static final String RECYCLE_TYPE_NOTICE = "INFRA_NOTICE";
 
     public static final String MASKED_VALUE = "******";
     public static final String DEFAULT_NOTIFY_TOPIC = "infra-notify";

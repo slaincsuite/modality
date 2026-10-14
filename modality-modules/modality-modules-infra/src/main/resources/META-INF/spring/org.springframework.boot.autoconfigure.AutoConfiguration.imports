@@ -5,3 +5,6 @@ cn.slainc.modules.infra.autoconfigure.InfraLogConsoleAutoConfiguration
 cn.slainc.modules.infra.autoconfigure.InfraRedisConsoleAutoConfiguration
 cn.slainc.modules.infra.autoconfigure.InfraSqlConsoleAutoConfiguration
 cn.slainc.modules.infra.autoconfigure.InfraSystemAutoConfiguration
+cn.slainc.modules.infra.autoconfigure.InfraMybatisAutoConfiguration
+cn.slainc.modules.infra.autoconfigure.InfraSearchAutoConfiguration
+cn.slainc.modules.infra.autoconfigure.InfraRecycleAutoConfiguration

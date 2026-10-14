@@ -104,8 +104,9 @@ public class InfraCoreAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public NoticeService noticeService(JdbcTemplate jdbc) {
-        return new NoticeService(jdbc);
+    public NoticeService noticeService(JdbcTemplate jdbc,
+                                       ObjectProvider<cn.slainc.modules.infra.service.RecycleBinService> recycleBinService) {
+        return new NoticeService(jdbc, recycleBinService);
     }
 
     @Bean

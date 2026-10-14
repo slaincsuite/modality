@@ -1,6 +1,7 @@
 package cn.slainc.modules.infra;
 
 import com.jayway.jsonpath.JsonPath;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -23,6 +24,24 @@ import static org.assertj.core.api.Assertions.assertThat;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class InfraModuleTestBase {
 
+    // 每个测试 JVM 使用独立的 Lucene 索引目录，避免上一次运行留下的索引影响断言
+    private static final String SEARCH_INDEX_DIR;
+
+    static {
+        try {
+            SEARCH_INDEX_DIR = java.nio.file.Files.createTempDirectory("modality-infra-search-")
+                    .toAbsolutePath().toString();
+        } catch (IOException exception) {
+            throw new IllegalStateException(exception);
+        }
+    }
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void searchProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        registry.add("modality.search.directory", () -> SEARCH_INDEX_DIR);
+        registry.add("modality.search.refresh-interval-ms", () -> "200");
+    }
+
     protected static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     @Autowired
@@ -34,7 +53,8 @@ public abstract class InfraModuleTestBase {
     void loginAndReset() throws Exception {
         for (String table : new String[]{"t_infra_config_history", "t_infra_dict_type", "t_infra_dict_item",
                 "t_infra_notice", "t_infra_notify_template", "t_infra_notify_message", "t_infra_notify_webhook",
-                "t_infra_notify_record", "t_infra_file_record"}) {
+                "t_infra_notify_record", "t_infra_file_record", "t_search_document", "t_search_index_term",
+                "t_search_history", "t_recycle_item"}) {
             jdbc.execute("DELETE FROM " + table);
         }
         jdbc.execute("DELETE FROM t_dynamic_config");
