@@ -6,7 +6,7 @@ import cn.slainc.core.context.UserContext;
 import cn.slainc.modules.upms.dto.PolicyBindClientRequest;
 import cn.slainc.modules.upms.dto.PolicyBindRoleRequest;
 import cn.slainc.modules.upms.dto.PolicyBindUserRequest;
-import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.policy.domain.PolicyBinding;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;

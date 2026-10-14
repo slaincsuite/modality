@@ -2,8 +2,8 @@ package cn.slainc.modules.infra.web;
 
 import cn.dev33.satoken.apikey.model.ApiKeyModel;
 import cn.slainc.modules.infra.InfraKeys;
-import cn.slainc.apikey.admin.ApiKeyAdminService;
-import cn.slainc.apikey.admin.ApiKeyStatsService;
+import cn.slainc.apikey.support.ApiKeyAdminService;
+import cn.slainc.apikey.support.ApiKeyStatsService;
 import cn.slainc.modules.infra.store.ApiKeyQueryStore;
 import cn.slainc.security.annotation.RequirePermission;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -3,7 +3,7 @@ package cn.slainc.modules.audit.policylog;
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.audit.AuditModuleApplication;
-import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.domain.Effect;
 import cn.slainc.policy.domain.PolicyDocument;
 import cn.slainc.policy.domain.PolicyStatement;

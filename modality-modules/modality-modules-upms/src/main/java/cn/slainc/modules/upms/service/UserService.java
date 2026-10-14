@@ -40,7 +40,7 @@ import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
-import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.security.kick.KickService;
 
 public class UserService {

@@ -1,6 +1,6 @@
 package cn.slainc.modules.open.service;
 
-import cn.slainc.apikey.admin.ApiKeyStatsService;
+import cn.slainc.apikey.support.ApiKeyStatsService;
 import cn.slainc.modules.open.store.ConsentQueryDao;
 import cn.slainc.openapi.domain.App;
 import cn.slainc.openapi.domain.AppStatus;

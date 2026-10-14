@@ -9,7 +9,7 @@ import cn.slainc.modules.infra.service.SearchHistoryService;
 import cn.slainc.modules.infra.service.SearchManagementService;
 import cn.slainc.modules.infra.web.SearchController;
 import cn.slainc.modules.infra.web.SearchHistoryController;
-import cn.slainc.search.api.SearchEngine;
+import cn.slainc.search.spi.SearchEngine;
 import cn.slainc.search.config.SearchProperties;
 import cn.slainc.search.index.SearchIndexer;
 import cn.slainc.search.source.SearchDocumentRegistry;

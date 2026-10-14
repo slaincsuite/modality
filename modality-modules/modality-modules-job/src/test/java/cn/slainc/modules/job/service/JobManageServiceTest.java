@@ -2,7 +2,7 @@ package cn.slainc.modules.job.service;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.job.annotation.Job;
-import cn.slainc.job.api.JobScheduler;
+import cn.slainc.job.spi.JobScheduler;
 import cn.slainc.job.enums.MisfirePolicy;
 import cn.slainc.job.support.JobContext;
 import cn.slainc.job.support.JobDefinition;

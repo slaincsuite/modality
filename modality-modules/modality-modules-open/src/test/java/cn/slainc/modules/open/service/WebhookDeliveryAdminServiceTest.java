@@ -5,7 +5,7 @@ import cn.slainc.modules.open.entity.WebhookDelivery;
 import cn.slainc.modules.open.entity.WebhookSubscription;
 import cn.slainc.modules.open.store.JdbcWebhookDeliveryStore;
 import cn.slainc.modules.open.store.JdbcWebhookSubscriptionStore;
-import cn.slainc.webhook.api.WebhookSender;
+import cn.slainc.webhook.spi.WebhookSender;
 import cn.slainc.webhook.config.WebhookProperties;
 import cn.slainc.webhook.enums.WebhookDeliveryStatus;
 import cn.slainc.webhook.sender.WebhookSendRequest;

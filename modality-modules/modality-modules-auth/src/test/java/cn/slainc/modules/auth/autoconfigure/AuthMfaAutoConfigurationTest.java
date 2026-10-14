@@ -1,6 +1,6 @@
 package cn.slainc.modules.auth.autoconfigure;
 
-import cn.slainc.mfa.api.MfaChallengeStore;
+import cn.slainc.mfa.spi.MfaChallengeStore;
 import cn.slainc.mfa.authentication.SecondFactorGate;
 import cn.slainc.mfa.spi.MfaFactorPort;
 import cn.slainc.mfa.spi.MfaUserLoader;

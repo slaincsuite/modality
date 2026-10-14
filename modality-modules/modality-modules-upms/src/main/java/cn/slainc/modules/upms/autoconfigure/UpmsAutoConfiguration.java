@@ -60,7 +60,7 @@ import cn.slainc.modules.upms.web.UserStatsController;
 import cn.slainc.modules.upms.web.FavoriteController;
 import cn.slainc.modules.upms.web.RecentVisitController;
 import cn.slainc.mybatis.datascope.DataScopeProvider;
-import cn.slainc.policy.admin.PolicyBindingService;
+import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.policy.storage.PolicyBindingStore;
 import cn.slainc.security.cache.SecurityPermissionCache;
 import cn.slainc.security.kick.KickService;
