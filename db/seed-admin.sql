@@ -59,6 +59,7 @@ SELECT code, code, 'API', 0, 0, 'enabled', @now, @now FROM (
   SELECT 'upms:user:update' UNION ALL
   SELECT 'tenant:manage:create' UNION ALL
   SELECT 'tenant:manage:delete' UNION ALL
+  SELECT 'tenant:manage:export' UNION ALL
   SELECT 'tenant:manage:query' UNION ALL
   SELECT 'tenant:manage:update'
 ) AS seed;

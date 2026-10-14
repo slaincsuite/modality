@@ -8,6 +8,7 @@ public final class TenantKeys {
     public static final String PERMISSION_TENANT_CREATE = "tenant:manage:create";
     public static final String PERMISSION_TENANT_UPDATE = "tenant:manage:update";
     public static final String PERMISSION_TENANT_DELETE = "tenant:manage:delete";
+    public static final String PERMISSION_TENANT_EXPORT = "tenant:manage:export";
 
     private TenantKeys() {
     }

@@ -65,6 +65,31 @@ public class TenantManageService {
         return tenantService.requireById(tenantId);
     }
 
+    public Tenant requireByCode(String tenantCode) {
+        if (tenantCode == null || tenantCode.isBlank()) {
+            throw new BizException("租户编码不能为空");
+        }
+        Tenant tenant = tenantService.findByCode(tenantCode.trim());
+        if (tenant == null) {
+            throw new BizException("租户不存在：" + tenantCode);
+        }
+        return tenant;
+    }
+
+    public boolean codeExists(String tenantCode) {
+        return tenantCode != null && !tenantCode.isBlank() && tenantService.existsByCode(tenantCode.trim());
+    }
+
+    public List<Tenant> listForExport(String status, String keyword) {
+        TenantStatus statusEnum = TenantStatus.of(status, null);
+        String trimmed = keyword == null ? "" : keyword.trim();
+        return tenantMapper.selectList(new LambdaQueryWrapper<Tenant>()
+                .eq(statusEnum != null, Tenant::getStatus, statusEnum)
+                .and(!trimmed.isEmpty(),
+                        w -> w.like(Tenant::getTenantCode, trimmed).or().like(Tenant::getTenantName, trimmed))
+                .orderByDesc(Tenant::getId));
+    }
+
     public TenantQuota quota(Long tenantId) {
         require(tenantId);
         return quotaService.quotaOf(tenantId);

@@ -252,6 +252,43 @@ class TenantManageModuleTest {
     }
 
     @Test
+    void queriesTenantByCode() throws Exception {
+        post("/tenant", body("bycode-co", "按编码查"));
+
+        HttpResponse<String> found = get("/tenant/code/bycode-co");
+        assertThat((int) JsonPath.read(found.body(), "$.code")).isEqualTo(200);
+        assertThat((String) JsonPath.read(found.body(), "$.data.tenantCode")).isEqualTo("bycode-co");
+
+        HttpResponse<String> missing = get("/tenant/code/no-such-code");
+        assertThat((int) JsonPath.read(missing.body(), "$.code")).isNotEqualTo(200);
+    }
+
+    @Test
+    void checksCodeAvailability() throws Exception {
+        post("/tenant", body("taken-co", "已占用"));
+
+        HttpResponse<String> taken = get("/tenant/exists?code=taken-co");
+        assertThat((boolean) JsonPath.read(taken.body(), "$.data")).isTrue();
+
+        HttpResponse<String> free = get("/tenant/exists?code=free-code");
+        assertThat((boolean) JsonPath.read(free.body(), "$.data")).isFalse();
+    }
+
+    @Test
+    void exportsTenantsAsExcel() throws Exception {
+        post("/tenant", body("excel-co", "导出对象"));
+
+        HttpResponse<byte[]> response = HTTP.send(HttpRequest.newBuilder(
+                        URI.create("http://localhost:" + port + "/tenant/export?status=TRIAL"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("Content-Type")).hasValueSatisfying(
+                value -> assertThat(value).contains("spreadsheet"));
+        assertThat(response.body().length).isGreaterThan(0);
+    }
+
+    @Test
     void rejectsInvalidIsolationStrategy() throws Exception {
         Map<String, Object> body = new java.util.HashMap<>(body("bad-co", "非法策略"));
         body.put("isolationStrategy", "CLUSTER");
