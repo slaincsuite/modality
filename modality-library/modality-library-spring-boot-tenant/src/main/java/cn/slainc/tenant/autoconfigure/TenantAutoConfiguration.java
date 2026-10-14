@@ -2,7 +2,7 @@ package cn.slainc.tenant.autoconfigure;
 
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.datasource.manager.DynamicDataSourceManager;
-import cn.slainc.core.base.MybatisBaseEntity;
+import cn.slainc.mybatis.base.MybatisBaseEntity;
 import cn.slainc.mybatis.tenant.DefaultTenantLineHandler;
 import cn.slainc.mybatis.properties.MybatisProperties;
 import cn.slainc.redis.cache.CacheInvalidationPublisher;

@@ -1,14 +1,16 @@
 package cn.slainc.tenant.domain;
 
-import cn.slainc.core.base.MybatisBaseEntity;
+import cn.slainc.mybatis.base.MybatisBaseEntity;
 import cn.slainc.tenant.enums.TenantStatus;
 import cn.slainc.tenant.isolation.TenantIsolationStrategy;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
-@TableName("t_tenant")
+@TableName(Tenant.TABLE_NAME)
 public class Tenant extends MybatisBaseEntity {
+
+    public static final String TABLE_NAME = "t_tenant";
 
     private String tenantCode;
 
