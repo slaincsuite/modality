@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 public class InMemoryDataSourceDefinitionRepository implements DataSourceDefinitionRepository {
 
@@ -22,7 +21,7 @@ public class InMemoryDataSourceDefinitionRepository implements DataSourceDefinit
 
     @Override
     public List<DataSourceDefinition> findEnabled() {
-        return store.values().stream().filter(DataSourceDefinition::isEnabled).collect(Collectors.toList());
+        return store.values().stream().filter(DataSourceDefinition::isEnabled).toList();
     }
 
     @Override
