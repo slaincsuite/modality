@@ -1,0 +1,2 @@
+cn.slainc.modules.job.autoconfigure.JobMybatisAutoConfiguration
+cn.slainc.modules.job.autoconfigure.JobModuleAutoConfiguration
