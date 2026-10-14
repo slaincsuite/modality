@@ -66,12 +66,12 @@ class RedisMfaChallengeStoreIntegrationTest {
 
     @Test
     void shouldDropAChallengeAfterItsTtl() throws InterruptedException {
-        MfaChallenge challenge = MfaChallenge.of("it-3", 7L, "carol", "TOTP", Duration.ofSeconds(1));
+        MfaChallenge challenge = MfaChallenge.of("it-3", 7L, "carol", "TOTP", Duration.ofSeconds(3));
 
-        store.save(challenge, Duration.ofSeconds(1));
+        store.save(challenge, Duration.ofSeconds(3));
         assertThat(store.peek("it-3")).isNotNull();
 
-        Thread.sleep(1500L);
+        Thread.sleep(3500L);
 
         assertThat(store.peek("it-3")).isNull();
     }
