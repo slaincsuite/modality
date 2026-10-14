@@ -7,6 +7,8 @@ public final class OpenKeys {
     public static final String CONSENT_TABLE = "t_open_consent";
     public static final String CREDENTIAL_TABLE = "t_open_credential";
     public static final String APP_LOG_TABLE = "t_open_app_log";
+    public static final String WEBHOOK_SUBSCRIPTION_TABLE = "t_webhook_subscription";
+    public static final String WEBHOOK_DELIVERY_TABLE = "t_webhook_delivery";
 
     public static final String PERMISSION_APP_QUERY = "open:app:query";
     public static final String PERMISSION_APP_REVIEW = "open:app:review";
@@ -20,6 +22,12 @@ public final class OpenKeys {
     public static final String PERMISSION_CONSENT_EXPORT = "open:consent:export";
     public static final String PERMISSION_CONSENT_REVOKE = "open:consent:revoke";
     public static final String PERMISSION_STATS_QUERY = "open:stats:query";
+    public static final String PERMISSION_WEBHOOK_QUERY = "open:webhook:query";
+    public static final String PERMISSION_WEBHOOK_CREATE = "open:webhook:create";
+    public static final String PERMISSION_WEBHOOK_UPDATE = "open:webhook:update";
+    public static final String PERMISSION_WEBHOOK_DELETE = "open:webhook:delete";
+    public static final String PERMISSION_WEBHOOK_DELIVERY_QUERY = "open:webhook:delivery:query";
+    public static final String PERMISSION_WEBHOOK_DELIVERY_RETRY = "open:webhook:delivery:retry";
 
     public static final String DEFAULT_SCOPE_GROUP = "默认";
 

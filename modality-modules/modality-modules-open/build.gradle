@@ -13,6 +13,7 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-policy')
     api project(':modality-library:modality-library-spring-boot-excel')
     api project(':modality-library:modality-library-spring-boot-logger')
+    api project(':modality-library:modality-library-spring-boot-webhook')
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
     testRuntimeOnly libs.h2
 }
