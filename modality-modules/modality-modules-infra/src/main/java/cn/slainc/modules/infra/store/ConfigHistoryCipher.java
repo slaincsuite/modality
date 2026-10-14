@@ -1,9 +1,10 @@
 package cn.slainc.modules.infra.store;
 
-import cn.slainc.crypto.symmetric.AesUtils;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Base64;
+
+import cn.slainc.crypto.digest.DigestUtils;
+import cn.slainc.crypto.symmetric.AesUtils;
 
 // 配置历史的值在库内以 AES-GCM 落盘：加密配置的明文与普通配置的值都不允许在历史表裸存
 public class ConfigHistoryCipher {
@@ -39,10 +40,6 @@ public class ConfigHistoryCipher {
     }
 
     private static byte[] sha256(String material) {
-        try {
-            return MessageDigest.getInstance("SHA-256").digest(material.getBytes(StandardCharsets.UTF_8));
-        } catch (Exception exception) {
-            throw new IllegalStateException("初始化配置历史加密密钥失败", exception);
-        }
+        return DigestUtils.sha256(material.getBytes(StandardCharsets.UTF_8));
     }
 }
