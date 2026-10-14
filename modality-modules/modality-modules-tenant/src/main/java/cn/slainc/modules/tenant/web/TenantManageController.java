@@ -3,6 +3,10 @@ package cn.slainc.modules.tenant.web;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.Result;
 import cn.slainc.modules.tenant.TenantKeys;
+import cn.slainc.modules.tenant.dto.TenantCreateRequest;
+import cn.slainc.modules.tenant.dto.TenantQuotaRequest;
+import cn.slainc.modules.tenant.dto.TenantRenewRequest;
+import cn.slainc.modules.tenant.dto.TenantUpdateRequest;
 import cn.slainc.modules.tenant.service.TenantManageService;
 import cn.slainc.security.annotation.RequirePermission;
 import cn.slainc.tenant.entity.Tenant;
@@ -12,12 +16,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/tenant")
@@ -37,6 +43,12 @@ public class TenantManageController {
                                            @RequestParam(defaultValue = "1") long current,
                                            @RequestParam(defaultValue = "10") long size) {
         return Result.ok(tenantManageService.page(status, keyword, current, size));
+    }
+
+    @GetMapping("/stats")
+    @RequirePermission(permissions = TenantKeys.PERMISSION_TENANT_QUERY)
+    public Result<Map<String, Long>> stats() {
+        return Result.ok(tenantManageService.stats());
     }
 
     @GetMapping("/list")
@@ -61,6 +73,24 @@ public class TenantManageController {
     @RequirePermission(permissions = TenantKeys.PERMISSION_TENANT_CREATE)
     public Result<Tenant> create(@RequestBody TenantCreateRequest request) {
         return Result.ok(tenantManageService.create(request));
+    }
+
+    @PutMapping("/{id}")
+    @RequirePermission(permissions = TenantKeys.PERMISSION_TENANT_UPDATE)
+    public Result<Tenant> update(@PathVariable Long id, @RequestBody TenantUpdateRequest request) {
+        return Result.ok(tenantManageService.update(id, request));
+    }
+
+    @PutMapping("/{id}/quota")
+    @RequirePermission(permissions = TenantKeys.PERMISSION_TENANT_UPDATE)
+    public Result<TenantQuota> adjustQuota(@PathVariable Long id, @RequestBody TenantQuotaRequest request) {
+        return Result.ok(tenantManageService.adjustQuota(id, request));
+    }
+
+    @PostMapping("/{id}/disable")
+    @RequirePermission(permissions = TenantKeys.PERMISSION_TENANT_UPDATE)
+    public Result<Tenant> disable(@PathVariable Long id) {
+        return Result.ok(tenantManageService.disable(id));
     }
 
     @PostMapping("/trial")

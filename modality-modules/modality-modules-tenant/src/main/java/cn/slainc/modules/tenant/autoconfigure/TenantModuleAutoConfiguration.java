@@ -2,10 +2,12 @@ package cn.slainc.modules.tenant.autoconfigure;
 
 import cn.slainc.modules.tenant.service.TenantManageService;
 import cn.slainc.modules.tenant.web.TenantManageController;
+import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.tenant.lifecycle.TenantLifecycleService;
 import cn.slainc.tenant.mapper.TenantMapper;
 import cn.slainc.tenant.quota.TenantQuotaService;
 import cn.slainc.tenant.service.TenantService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -28,7 +30,8 @@ public class TenantModuleAutoConfiguration {
     public TenantManageService tenantManageService(TenantMapper tenantMapper,
                                                    TenantLifecycleService lifecycleService,
                                                    TenantService tenantService,
-                                                   TenantQuotaService quotaService) {
-        return new TenantManageService(tenantMapper, lifecycleService, tenantService, quotaService);
+                                                   TenantQuotaService quotaService,
+                                                   ObjectProvider<DynamicConfigService> configServiceProvider) {
+        return new TenantManageService(tenantMapper, lifecycleService, tenantService, quotaService, configServiceProvider);
     }
 }

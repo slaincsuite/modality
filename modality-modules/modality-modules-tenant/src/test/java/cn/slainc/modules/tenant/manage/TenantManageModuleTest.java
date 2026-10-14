@@ -66,6 +66,14 @@ class TenantManageModuleTest {
                 HttpResponse.BodyHandlers.ofString());
     }
 
+    private HttpResponse<String> put(String path, Map<String, Object> body) throws Exception {
+        return HTTP.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+                .header("satoken", token)
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(JsonUtils.toJson(body))).build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
     private HttpResponse<String> delete(String path) throws Exception {
         return HTTP.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
                 .header("satoken", token)
@@ -187,6 +195,60 @@ class TenantManageModuleTest {
         assertThat((int) JsonPath.read(detail.body(), "$.code")).isNotEqualTo(200);
         Long rows = jdbc.queryForObject("SELECT COUNT(*) FROM t_tenant WHERE id = ? AND deleted = 0", Long.class, id);
         assertThat(rows).isEqualTo(0);
+    }
+
+    @Test
+    void updatesTenantProfile() throws Exception {
+        Long id = idOf(post("/tenant", body("profile-co", "原名")).body());
+
+        HttpResponse<String> response = put("/tenant/" + id,
+                Map.of("tenantName", "新名称", "contactName", "新联系人", "remark", "已更新"));
+
+        assertThat((int) JsonPath.read(response.body(), "$.code")).isEqualTo(200);
+        assertThat((String) JsonPath.read(response.body(), "$.data.tenantName")).isEqualTo("新名称");
+        assertThat((String) JsonPath.read(response.body(), "$.data.remark")).isEqualTo("已更新");
+        assertThat((String) JsonPath.read(response.body(), "$.data.tenantCode")).isEqualTo("profile-co");
+    }
+
+    @Test
+    void disabledTenantCannotBeReactivated() throws Exception {
+        Long id = idOf(post("/tenant", body("off-co", "停用对象")).body());
+
+        HttpResponse<String> disabled = action("/tenant/" + id + "/disable");
+        assertThat((String) JsonPath.read(disabled.body(), "$.data.status")).isEqualTo("DISABLED");
+
+        HttpResponse<String> activated = action("/tenant/" + id + "/activate");
+        assertThat((int) JsonPath.read(activated.body(), "$.code")).isNotEqualTo(200);
+    }
+
+    @Test
+    void adjustsQuotaThroughDynamicConfig() throws Exception {
+        Long id = idOf(post("/tenant", body("adj-co", "配额调整")).body());
+
+        HttpResponse<String> adjusted = put("/tenant/" + id + "/quota",
+                Map.of("maxUsers", 50, "maxStorage", 1073741824L));
+
+        assertThat((int) JsonPath.read(adjusted.body(), "$.code")).isEqualTo(200);
+        assertThat(longOf(adjusted.body(), "$.data.maxUsers")).isEqualTo(50);
+        assertThat(longOf(adjusted.body(), "$.data.maxStorage")).isEqualTo(1073741824L);
+
+        HttpResponse<String> queried = get("/tenant/" + id + "/quota");
+        assertThat(longOf(queried.body(), "$.data.maxUsers")).isEqualTo(50);
+    }
+
+    @Test
+    void statsCountsByStatus() throws Exception {
+        post("/tenant", body("stat-a", "统计甲"));
+        Long frozenId = idOf(post("/tenant", body("stat-b", "统计乙")).body());
+        action("/tenant/" + frozenId + "/freeze");
+
+        HttpResponse<String> response = get("/tenant/stats");
+
+        assertThat((int) JsonPath.read(response.body(), "$.code")).isEqualTo(200);
+        assertThat(longOf(response.body(), "$.data.total")).isGreaterThanOrEqualTo(2);
+        assertThat(longOf(response.body(), "$.data.FROZEN")).isGreaterThanOrEqualTo(1);
+        assertThat(longOf(response.body(), "$.data.ACTIVE")).isGreaterThanOrEqualTo(0);
+        assertThat(longOf(response.body(), "$.data.DISABLED")).isGreaterThanOrEqualTo(0);
     }
 
     @Test

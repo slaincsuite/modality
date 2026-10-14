@@ -1,21 +1,28 @@
 package cn.slainc.modules.tenant.service;
 
+import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
-import cn.slainc.modules.tenant.web.TenantCreateRequest;
+import cn.slainc.modules.tenant.dto.TenantCreateRequest;
+import cn.slainc.modules.tenant.dto.TenantQuotaRequest;
+import cn.slainc.modules.tenant.dto.TenantUpdateRequest;
 import cn.slainc.tenant.entity.Tenant;
 import cn.slainc.tenant.enums.TenantStatus;
 import cn.slainc.tenant.isolation.TenantIsolationStrategy;
 import cn.slainc.tenant.lifecycle.TenantLifecycleService;
 import cn.slainc.tenant.mapper.TenantMapper;
 import cn.slainc.tenant.quota.TenantQuota;
+import cn.slainc.tenant.quota.TenantQuotaDimension;
 import cn.slainc.tenant.quota.TenantQuotaService;
 import cn.slainc.tenant.service.TenantService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TenantManageService {
 
@@ -27,12 +34,16 @@ public class TenantManageService {
 
     private final TenantQuotaService quotaService;
 
+    private final ObjectProvider<DynamicConfigService> configServiceProvider;
+
     public TenantManageService(TenantMapper tenantMapper, TenantLifecycleService lifecycleService,
-                               TenantService tenantService, TenantQuotaService quotaService) {
+                               TenantService tenantService, TenantQuotaService quotaService,
+                               ObjectProvider<DynamicConfigService> configServiceProvider) {
         this.tenantMapper = tenantMapper;
         this.lifecycleService = lifecycleService;
         this.tenantService = tenantService;
         this.quotaService = quotaService;
+        this.configServiceProvider = configServiceProvider;
     }
 
     public PageResult<Tenant> page(String status, String keyword, long current, long size) {
@@ -61,6 +72,59 @@ public class TenantManageService {
 
     public Tenant create(TenantCreateRequest request) {
         return lifecycleService.create(toTenant(request));
+    }
+
+    public Tenant update(Long tenantId, TenantUpdateRequest request) {
+        Tenant tenant = tenantService.requireById(tenantId);
+        Tenant patch = new Tenant();
+        patch.setId(tenant.getId());
+        patch.setTenantName(request.tenantName());
+        patch.setContactName(request.contactName());
+        patch.setContactPhone(request.contactPhone());
+        patch.setContactEmail(request.contactEmail());
+        patch.setRemark(request.remark());
+        return tenantService.update(patch);
+    }
+
+    public Tenant disable(Long tenantId) {
+        Tenant tenant = tenantService.requireById(tenantId);
+        if (tenant.getStatus() == TenantStatus.DISABLED) {
+            return tenant;
+        }
+        tenant.setStatus(TenantStatus.DISABLED);
+        return tenantService.update(tenant);
+    }
+
+    public TenantQuota adjustQuota(Long tenantId, TenantQuotaRequest request) {
+        require(tenantId);
+        DynamicConfigService configService = configServiceProvider.getIfAvailable();
+        if (configService == null) {
+            throw new BizException("动态配置能力未装配，无法调整租户配额");
+        }
+        setIfPresent(configService, tenantId, TenantQuotaDimension.USERS, request.maxUsers());
+        setIfPresent(configService, tenantId, TenantQuotaDimension.STORAGE, request.maxStorage());
+        setIfPresent(configService, tenantId, TenantQuotaDimension.API_QPS, request.maxApiQps());
+        setIfPresent(configService, tenantId, TenantQuotaDimension.API_DAILY, request.maxApiDaily());
+        return quotaService.quotaOf(tenantId);
+    }
+
+    private void setIfPresent(DynamicConfigService configService, Long tenantId, TenantQuotaDimension dimension,
+                              Long value) {
+        if (value == null) {
+            return;
+        }
+        configService.set(TenantQuotaService.QUOTA_KEY_PREFIX + tenantId + "." + dimension.getProperty(),
+                String.valueOf(value), "tenant.quota");
+    }
+
+    public Map<String, Long> stats() {
+        Map<String, Long> stats = new LinkedHashMap<>();
+        stats.put("total", tenantMapper.selectCount(null));
+        for (TenantStatus status : TenantStatus.values()) {
+            stats.put(status.name(), tenantMapper.selectCount(
+                    new LambdaQueryWrapper<Tenant>().eq(Tenant::getStatus, status)));
+        }
+        return stats;
     }
 
     public Tenant trial(TenantCreateRequest request) {

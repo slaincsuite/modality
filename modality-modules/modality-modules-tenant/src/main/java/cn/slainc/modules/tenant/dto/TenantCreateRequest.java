@@ -1,4 +1,4 @@
-package cn.slainc.modules.tenant.web;
+package cn.slainc.modules.tenant.dto;
 
 import java.time.LocalDateTime;
 
