@@ -1,14 +1,25 @@
 package cn.slainc.security.login;
 
+import java.time.Duration;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.StringRedisTemplate;
+
 import cn.dev33.satoken.session.SaTerminalInfo;
-import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import cn.dev33.satoken.stp.SaTokenInfo;
+import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.event.LoginEvent;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.crypto.hash.BCryptUtils;
-import cn.slainc.security.LoginTypes;
 import cn.slainc.security.StpKit;
 import cn.slainc.security.audit.SecurityAuditRecorder;
 import cn.slainc.security.ban.AccountBanService;
@@ -22,18 +33,6 @@ import cn.slainc.security.password.PasswordPolicyService;
 import cn.slainc.security.restrict.LoginRestrictionService;
 import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.security.spi.PasswordAccount;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.redis.core.StringRedisTemplate;
-
-import java.time.Duration;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class SecurityLoginService {
 
@@ -281,7 +280,7 @@ public class SecurityLoginService {
             item.put("createTime", terminal.getCreateTime());
             item.put("extraData", terminal.getExtraData());
             return item;
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     private Long asLong(Object loginId) {
