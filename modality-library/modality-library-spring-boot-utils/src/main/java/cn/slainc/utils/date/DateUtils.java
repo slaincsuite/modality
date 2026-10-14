@@ -13,6 +13,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class DateUtils {
 
@@ -40,7 +42,13 @@ public final class DateUtils {
             DateTimeFormatter.ofPattern(PATTERN_COMPACT_DATE),
             DateTimeFormatter.ISO_LOCAL_DATE);
 
+    private static final Map<String, DateTimeFormatter> PATTERN_CACHE = new ConcurrentHashMap<>();
+
     private DateUtils() {
+    }
+
+    private static DateTimeFormatter formatterOf(String pattern) {
+        return PATTERN_CACHE.computeIfAbsent(pattern, DateTimeFormatter::ofPattern);
     }
 
     public static LocalDateTime now() {
@@ -52,7 +60,7 @@ public final class DateUtils {
     }
 
     public static String format(LocalDateTime time, String pattern) {
-        return time == null ? null : time.format(DateTimeFormatter.ofPattern(pattern));
+        return time == null ? null : time.format(formatterOf(pattern));
     }
 
     public static String format(LocalDateTime time) {
@@ -60,7 +68,7 @@ public final class DateUtils {
     }
 
     public static String format(LocalDate date, String pattern) {
-        return date == null ? null : date.format(DateTimeFormatter.ofPattern(pattern));
+        return date == null ? null : date.format(formatterOf(pattern));
     }
 
     public static String format(LocalDate date) {
@@ -83,7 +91,7 @@ public final class DateUtils {
         if (text == null || text.isBlank()) {
             return null;
         }
-        return LocalDateTime.parse(text.trim(), DateTimeFormatter.ofPattern(pattern));
+        return LocalDateTime.parse(text.trim(), formatterOf(pattern));
     }
 
     public static LocalDateTime parseDateTime(String text, List<DateTimeFormatter> formatters) {
@@ -122,7 +130,7 @@ public final class DateUtils {
     }
 
     public static LocalDate parseDate(String text, String pattern) {
-        return text == null ? null : LocalDate.parse(text.trim(), DateTimeFormatter.ofPattern(pattern));
+        return text == null ? null : LocalDate.parse(text.trim(), formatterOf(pattern));
     }
 
     public static Date toDate(LocalDateTime time) {
