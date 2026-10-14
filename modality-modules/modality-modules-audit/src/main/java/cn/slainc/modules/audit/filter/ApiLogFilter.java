@@ -1,23 +1,26 @@
 package cn.slainc.modules.audit.filter;
 
-import cn.slainc.modules.audit.writer.ApiLogWriter;
+import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import cn.slainc.core.constant.HttpHeaders;
 import cn.slainc.core.context.RequestContext;
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.audit.config.AuditConfigReader;
 import cn.slainc.modules.audit.entity.ApiLogRecord;
+import cn.slainc.modules.audit.writer.ApiLogWriter;
 import cn.slainc.security.StpKit;
+import cn.slainc.utils.net.IpUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 
 // API 访问日志过滤器：错误请求与慢请求必记，正常请求按采样率记录；记录动作本身走异步写入器
@@ -119,12 +122,10 @@ public class ApiLogFilter extends OncePerRequestFilter {
     }
 
     private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            int comma = forwarded.indexOf(',');
-            return comma > 0 ? forwarded.substring(0, comma).trim() : forwarded.trim();
-        }
-        return request.getRemoteAddr();
+        return IpUtils.resolveClientIp(request.getHeader(HttpHeaders.FORWARDED_FOR),
+                request.getHeader(HttpHeaders.REAL_IP),
+                request.getHeader(HttpHeaders.CF_CONNECTING_IP),
+                request.getRemoteAddr());
     }
 
     private String truncate(String text, int maxLength) {
