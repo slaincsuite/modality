@@ -10,6 +10,8 @@ import cn.slainc.modules.infra.excel.DictTransferService;
 import cn.slainc.modules.infra.service.NoticeService;
 import cn.slainc.modules.infra.service.NotifyService;
 import cn.slainc.modules.infra.service.NotifyWebhookClient;
+import cn.slainc.modules.infra.store.ApiKeyQueryStore;
+import cn.slainc.modules.infra.web.ApiKeyManageController;
 import cn.slainc.modules.infra.web.ConfigAdminController;
 import cn.slainc.modules.infra.web.DictController;
 import cn.slainc.modules.infra.web.NoticeController;
@@ -35,8 +37,8 @@ import cn.slainc.web.websocket.WebSocketPusher;
 @ConditionalOnBean(JdbcTemplate.class)
 @ConditionalOnProperty(prefix = "modality.infra", name = "enabled", matchIfMissing = true)
 @EnableConfigurationProperties(InfraModuleProperties.class)
-@Import({ConfigAdminController.class, DictController.class, NoticeController.class, NotifyAdminController.class,
-        NotifyUserController.class})
+@Import({ApiKeyManageController.class, ConfigAdminController.class, DictController.class, NoticeController.class,
+        NotifyAdminController.class, NotifyUserController.class})
 public class InfraCoreAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(InfraCoreAutoConfiguration.class);
@@ -86,6 +88,12 @@ public class InfraCoreAutoConfiguration {
                                    InfraModuleProperties properties) {
         return new DictService(jdbc, properties.getDictCacheTtl(), invalidationPublisher.getIfAvailable(),
                 invalidationListener.getIfAvailable());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ApiKeyQueryStore apiKeyQueryStore(JdbcTemplate jdbc) {
+        return new ApiKeyQueryStore(jdbc);
     }
 
     @Bean

@@ -12,6 +12,8 @@ public final class InfraKeys {
     public static final String NOTIFY_RECORD_TABLE = "t_infra_notify_record";
     public static final String FILE_RECORD_TABLE = "t_infra_file_record";
 
+    public static final String API_KEY_TABLE = "t_infra_api_key";
+
     public static final String PERMISSION_CONFIG_QUERY = "infra:config:query";
     public static final String PERMISSION_CONFIG_CREATE = "infra:config:create";
     public static final String PERMISSION_CONFIG_UPDATE = "infra:config:update";
@@ -44,6 +46,9 @@ public final class InfraKeys {
     public static final String PERMISSION_LOG_LEVEL = "infra:log:level";
     public static final String PERMISSION_CACHE_QUERY = "infra:cache:query";
     public static final String PERMISSION_CACHE_CLEAR = "infra:cache:clear";
+    public static final String PERMISSION_APIKEY_QUERY = "infra:apikey:query";
+    public static final String PERMISSION_APIKEY_ISSUE = "infra:apikey:issue";
+    public static final String PERMISSION_APIKEY_MANAGE = "infra:apikey:manage";
     public static final String PERMISSION_SYSTEM_QUERY = "infra:system:query";
     public static final String PERMISSION_SYSTEM_ALERT = "infra:system:alert";
 
