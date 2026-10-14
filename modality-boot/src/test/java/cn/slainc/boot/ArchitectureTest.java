@@ -11,10 +11,12 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 class ArchitectureTest {
 
     private static final String[] LAYERED_PACKAGES = {
-            "..cn.slainc.utils..", "..cn.slainc.crypto..", "..cn.slainc.core..", "..cn.slainc.web..",
-            "..cn.slainc.excel..", "..cn.slainc.datasource..", "..cn.slainc.mybatis..", "..cn.slainc.redis..",
-            "..cn.slainc.tenant..", "..cn.slainc.idempotent..", "..cn.slainc.storage..", "..cn.slainc.logger..",
-            "..cn.slainc.monitor..", "..cn.slainc.security..", "..cn.slainc.jwt..", "..cn.slainc.oauth2..",
+            "..cn.slainc.utils..", "..cn.slainc.crypto..", "..cn.slainc.core..", "..cn.slainc.workorder..",
+            "..cn.slainc.web..", "..cn.slainc.excel..", "..cn.slainc.datasource..", "..cn.slainc.mybatis..",
+            "..cn.slainc.redis..", "..cn.slainc.recycle..", "..cn.slainc.search..", "..cn.slainc.changeaudit..",
+            "..cn.slainc.job..", "..cn.slainc.sse..", "..cn.slainc.webhook..", "..cn.slainc.tenant..",
+            "..cn.slainc.idempotent..", "..cn.slainc.storage..", "..cn.slainc.logger..", "..cn.slainc.monitor..",
+            "..cn.slainc.security..", "..cn.slainc.mfa..", "..cn.slainc.jwt..", "..cn.slainc.oauth2..",
             "..cn.slainc.sso..", "..cn.slainc.apikey..", "..cn.slainc.captcha..", "..cn.slainc.sign..",
             "..cn.slainc.session..", "..cn.slainc.sensitive..", "..cn.slainc.openapi..", "..cn.slainc.policy..",
             "..cn.slainc.thirdauth.."
@@ -50,4 +52,22 @@ class ArchitectureTest {
     static final ArchRule businessModulesMustNotDependOnEachOther = SlicesRuleDefinition.slices()
             .matching("..cn.slainc.modules.(*)..")
             .should().notDependOnEachOther();
+
+    // 库内禁止使用模块独占包名（service/web/dto/entity/mapper/model/impl/vo/form/controller/repository），web 库本体豁免
+    @ArchTest
+    static final ArchRule librariesMustNotUseModuleReservedPackages = noClasses()
+            .that().resideInAPackage("..cn.slainc..")
+            .and().resideOutsideOfPackage("..cn.slainc.modules..")
+            .and().resideOutsideOfPackage("..cn.slainc.web..")
+            .should().resideInAnyPackage(
+                    "..service..", "..web..", "..dto..", "..entity..", "..mapper..", "..model..",
+                    "..impl..", "..vo..", "..form..", "..controller..", "..repository..");
+
+    // REST 控制器只允许出现在业务模块的 web 包
+    @ArchTest
+    static final ArchRule restControllersOnlyInModuleWebPackage = noClasses()
+            .that().resideOutsideOfPackage("..cn.slainc.modules..web..")
+            .and().resideOutsideOfPackage("..cn.slainc.boot..")
+            .should().beAnnotatedWith("org.springframework.web.bind.annotation.RestController")
+            .orShould().beAnnotatedWith("org.springframework.web.bind.annotation.Controller");
 }

@@ -513,6 +513,9 @@ modality.security.session.active-timeout=1800
 3. **命名不带项目前缀**：类名直接表达能力（如 `TenantAutoConfiguration`）；与三方同名时换更具体的语义名
 4. **包路径与模块一一对应**：`api-key` → `cn.slainc.apikey`，`open-api` → `cn.slainc.openapi`
 5. **分层方向不可逆**：`utils`/`crypto` 最底层，`core` 不依赖 `web`，库不依赖业务模块，业务模块之间禁止互相依赖（跨模块能力一律下沉为「接口 + 模型」SPI）
+6. **库与模块的包名互斥**：库内禁止出现 `service`、`web`、`dto`、`entity`、`mapper`、`model`、`impl`、`vo`、`form`、`controller`、`repository` 等模块独占包名（由 boot 的 ArchUnit 规则固化）；库内实现类放 `support`/`admin`/`loader`/`dao`/`domain`/`spi` 等技术词包，`cn.slainc.web` 库本体豁免
+7. **REST 控制器只存在于业务模块的 `web` 包**：库内不得出现 `@RestController`/`@Controller`（`@RestControllerAdvice` 与 Actuator `@Endpoint` 例外，归 `advice`/协议装配包）
+8. **业务模块统一目录样式**：必备 `autoconfigure`（装配）、`service`（业务服务，直接类禁止 impl 子包）、`web`（控制器）；按需 `config`/`dto`/`entity`/`mapper`/`store`（非 MP 存储）/`excel`/`listener`/`publisher`/`scheduler`/`aspect`/`filter`/`context` 及领域子包
 6. **库不注册端点**：`src/main/java` 下不得出现 `@RestController` / `@RequestMapping`，端点由使用方声明；只有 `@RestControllerAdvice` 与 Actuator `@Endpoint` 例外
 7. **自动配置**：类放 `autoconfigure` 包、每个 Bean 加 `@ConditionalOnMissingBean`、每项能力可用 `@ConditionalOnProperty` 关闭且 `matchIfMissing = true`；依赖 `compileOnly` 坐标时必须用 `@ConditionalOnClass(name = "...")` 独立注册
 8. **依赖**：版本只在 `gradle/libs.versions.toml` 维护，模块里禁止写版本号字面量；能 `implementation` 就不要 `api`

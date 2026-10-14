@@ -61,7 +61,7 @@ class Batch5ProtocolAcceptanceTest {
     private DynamicSsoClientTemplate ssoClientTemplate;
 
     @Autowired
-    private cn.slainc.apikey.service.ApiKeyAdminService apiKeyAdminService;
+    private cn.slainc.apikey.admin.ApiKeyAdminService apiKeyAdminService;
 
     @Autowired
     private SignKeyRegistry signKeyRegistry;
