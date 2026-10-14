@@ -6,7 +6,6 @@ import cn.slainc.logger.audit.AuditCategory;
 import cn.slainc.logger.audit.AuditLog;
 import cn.slainc.logger.audit.AuditOperation;
 import cn.slainc.modules.tenant.TenantKeys;
-import cn.slainc.modules.tenant.excel.TenantExportService;
 import cn.slainc.modules.tenant.service.TenantManageService;
 import cn.slainc.security.annotation.RequirePermission;
 import cn.slainc.tenant.entity.Tenant;
@@ -28,11 +27,8 @@ public class TenantQueryController {
 
     private final TenantManageService tenantManageService;
 
-    private final TenantExportService tenantExportService;
-
-    public TenantQueryController(TenantManageService tenantManageService, TenantExportService tenantExportService) {
+    public TenantQueryController(TenantManageService tenantManageService) {
         this.tenantManageService = tenantManageService;
-        this.tenantExportService = tenantExportService;
     }
 
     @GetMapping("/page")
@@ -75,7 +71,7 @@ public class TenantQueryController {
     public void export(@RequestParam(required = false) String status,
                        @RequestParam(required = false) String keyword,
                        HttpServletResponse response) {
-        tenantExportService.export(DownloadResponses.attachmentStream(response, "tenants.xlsx",
+        tenantManageService.exportExcel(DownloadResponses.attachmentStream(response, "tenants.xlsx",
                 DownloadResponses.CONTENT_TYPE_EXCEL), status, keyword);
     }
 }

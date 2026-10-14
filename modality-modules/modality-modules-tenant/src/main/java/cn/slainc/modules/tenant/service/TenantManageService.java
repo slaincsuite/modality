@@ -3,9 +3,11 @@ package cn.slainc.modules.tenant.service;
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
+import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.tenant.dto.TenantCreateRequest;
 import cn.slainc.modules.tenant.dto.TenantQuotaRequest;
 import cn.slainc.modules.tenant.dto.TenantUpdateRequest;
+import cn.slainc.modules.tenant.excel.TenantExportRow;
 import cn.slainc.tenant.entity.Tenant;
 import cn.slainc.tenant.enums.TenantStatus;
 import cn.slainc.tenant.isolation.TenantIsolationStrategy;
@@ -19,7 +21,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.io.OutputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +92,14 @@ public class TenantManageService {
                 .and(!trimmed.isEmpty(),
                         w -> w.like(Tenant::getTenantCode, trimmed).or().like(Tenant::getTenantName, trimmed))
                 .orderByDesc(Tenant::getId));
+    }
+
+    public void exportExcel(OutputStream outputStream, String status, String keyword) {
+        List<TenantExportRow> rows = new ArrayList<>();
+        for (Tenant tenant : listForExport(status, keyword)) {
+            rows.add(new TenantExportRow(tenant));
+        }
+        ExcelUtils.write(outputStream, TenantExportRow.class, rows, "租户");
     }
 
     public TenantQuota quota(Long tenantId) {
