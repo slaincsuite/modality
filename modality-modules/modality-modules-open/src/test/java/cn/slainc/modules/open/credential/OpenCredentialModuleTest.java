@@ -17,7 +17,7 @@ import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// 凭证自助管理：oauth2 桥真实落 t_oauth_client、api-key 桥真实落 t_api_key、明文只出现一次、轮换带宽限期（真实 Tomcat + H2）
+// 凭证自助管理：oauth2 桥真实落 t_oauth_client、api-key 桥真实落 t_infra_api_key、明文只出现一次、轮换带宽限期（真实 Tomcat + H2）
 @SpringBootTest(classes = OpenModuleApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OpenCredentialModuleTest {
@@ -43,9 +43,20 @@ class OpenCredentialModuleTest {
             }
         }
         try {
-            jdbc.execute("DELETE FROM t_api_key");
+            jdbc.execute("CREATE TABLE IF NOT EXISTS t_infra_api_key ("
+                    + "id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+                    + "api_key VARCHAR(64) NOT NULL UNIQUE, title VARCHAR(128), intro VARCHAR(256), "
+                    + "login_id VARCHAR(64) NOT NULL, scopes VARCHAR(512), extra_data TEXT, "
+                    + "status VARCHAR(16) NOT NULL DEFAULT 'enabled', "
+                    + "expires_time BIGINT NOT NULL DEFAULT -1, create_time BIGINT NOT NULL, "
+                    + "update_time BIGINT NOT NULL)");
         } catch (org.springframework.dao.DataAccessException ignored) {
-            // t_api_key 由 api-key 库建表，未装配时忽略
+            // t_infra_api_key 由 api-key 库建表，未装配时忽略
+        }
+        try {
+            jdbc.execute("DELETE FROM t_infra_api_key");
+        } catch (org.springframework.dao.DataAccessException ignored) {
+            // t_infra_api_key 由 api-key 库建表，未装配时忽略
         }
         token = JsonPath.read(login(), "$.data");
     }
@@ -92,7 +103,7 @@ class OpenCredentialModuleTest {
         String apiKey = JsonPath.read(issued, "$.data.clientId").toString();
         assertThat(apiKey).startsWith("sk_");
 
-        Integer keyRows = jdbc.queryForObject("SELECT COUNT(*) FROM t_api_key WHERE api_key = ?",
+        Integer keyRows = jdbc.queryForObject("SELECT COUNT(*) FROM t_infra_api_key WHERE api_key = ?",
                 Integer.class, apiKey);
         assertThat(keyRows).isEqualTo(1);
 

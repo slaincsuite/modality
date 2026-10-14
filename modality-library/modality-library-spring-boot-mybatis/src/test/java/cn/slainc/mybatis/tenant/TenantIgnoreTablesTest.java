@@ -20,10 +20,10 @@ class TenantIgnoreTablesTest {
         MybatisProperties properties = new MybatisProperties();
         DefaultTenantLineHandler handler = spy(new DefaultTenantLineHandler(properties));
 
-        TenantIgnoreTables.merge(List.of("t_api_key"), properties, handler);
+        TenantIgnoreTables.merge(List.of("t_infra_api_key"), properties, handler);
 
-        assertTrue(properties.getTenant().getIgnoreTables().contains("t_api_key"));
-        assertTrue(handler.ignoreTable("t_api_key"));
+        assertTrue(properties.getTenant().getIgnoreTables().contains("t_infra_api_key"));
+        assertTrue(handler.ignoreTable("t_infra_api_key"));
         verify(handler).refresh();
     }
 

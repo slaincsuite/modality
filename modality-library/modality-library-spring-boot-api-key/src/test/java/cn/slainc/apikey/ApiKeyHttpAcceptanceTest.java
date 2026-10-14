@@ -46,7 +46,7 @@ class ApiKeyHttpAcceptanceTest {
     void setUp() {
         httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER)
                 .connectTimeout(Duration.ofSeconds(5)).build();
-        jdbcTemplate.update("DELETE FROM t_api_key");
+        jdbcTemplate.update("DELETE FROM t_infra_api_key");
         deleteByPrefix("modality:apikey:");
         deleteByPrefix("satoken:");
     }

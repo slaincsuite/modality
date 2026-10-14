@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @TableName(ApiKeyRecord.TABLE_NAME)
 public class ApiKeyRecord {
 
-    public static final String TABLE_NAME = "t_api_key";
+    public static final String TABLE_NAME = "t_infra_api_key";
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
