@@ -1,19 +1,20 @@
 package cn.slainc.policy.operator;
 
-import cn.slainc.policy.model.ConditionOperator;
-import cn.slainc.policy.match.WildcardMatcher;
-import inet.ipaddr.IPAddressString;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
+
+import cn.slainc.policy.match.WildcardMatcher;
+import cn.slainc.policy.model.ConditionOperator;
+import inet.ipaddr.IPAddressString;
 
 public final class ConditionEvaluators {
 
@@ -91,19 +92,19 @@ public final class ConditionEvaluators {
         }
         try {
             return Instant.parse(text);
-        } catch (Exception ignored) {
+        } catch (DateTimeParseException ignored) {
         }
         try {
             return OffsetDateTime.parse(text).toInstant();
-        } catch (Exception ignored) {
+        } catch (DateTimeParseException ignored) {
         }
         try {
             return LocalDateTime.parse(text).toInstant(ZoneOffset.UTC);
-        } catch (Exception ignored) {
+        } catch (DateTimeParseException ignored) {
         }
         try {
             return LocalDate.parse(text).atStartOfDay(ZoneOffset.UTC).toInstant();
-        } catch (Exception ignored) {
+        } catch (DateTimeParseException ignored) {
             return null;
         }
     }
