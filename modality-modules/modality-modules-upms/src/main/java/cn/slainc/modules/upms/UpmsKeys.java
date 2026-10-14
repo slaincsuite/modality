@@ -31,6 +31,8 @@ public final class UpmsKeys {
     public static final String OPERATION_LOG_TABLE = "t_user_operation_log";
 
     public static final String LOGIN_RECORD_TABLE = "t_user_login_record";
+    public static final String FAVORITE_TABLE = "t_favorite";
+    public static final String RECENT_VISIT_TABLE = "t_recent_visit";
 
     // 管理端点权限码：控制器一律引用常量，不写字面量
 

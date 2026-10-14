@@ -6,6 +6,7 @@ import cn.slainc.core.context.UserContext;
 import cn.slainc.modules.upms.dto.MenuRequest;
 import cn.slainc.modules.upms.entity.MenuRecord;
 import cn.slainc.modules.upms.service.MenuService;
+import cn.slainc.modules.upms.service.RecentVisitService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashSet;
@@ -30,8 +32,16 @@ public class MenuManageController {
 
     private final MenuService menuService;
 
-    public MenuManageController(MenuService menuService) {
+    private final RecentVisitService recentVisitService;
+
+    public MenuManageController(MenuService menuService, RecentVisitService recentVisitService) {
         this.menuService = menuService;
+        this.recentVisitService = recentVisitService;
+    }
+
+    @GetMapping("/hot")
+    public List<MenuRecord> hot(@RequestParam(required = false) Integer limit) {
+        return recentVisitService.hot(limit);
     }
 
     @PostMapping

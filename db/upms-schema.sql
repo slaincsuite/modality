@@ -202,3 +202,33 @@ CREATE TABLE IF NOT EXISTS t_user_login_record (
     KEY idx_user_login_tenant_time (tenant_id, create_time),
     KEY idx_user_login_user (user_id, create_time)
 );
+
+CREATE TABLE IF NOT EXISTS t_favorite (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
+    target_key VARCHAR(128) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    path VARCHAR(256),
+    icon VARCHAR(64),
+    sort INT NOT NULL DEFAULT 0,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_favorite_user_target UNIQUE (user_id, target_type, target_key)
+);
+
+CREATE TABLE IF NOT EXISTS t_recent_visit (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    user_id BIGINT NOT NULL,
+    target_type VARCHAR(32) NOT NULL,
+    target_key VARCHAR(128) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    path VARCHAR(256),
+    visited_at BIGINT NOT NULL,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_recent_visit_user_target UNIQUE (user_id, target_type, target_key),
+    KEY idx_recent_visit_user_time (user_id, visited_at)
+);

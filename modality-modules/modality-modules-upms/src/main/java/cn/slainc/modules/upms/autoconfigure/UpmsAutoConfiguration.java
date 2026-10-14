@@ -24,6 +24,8 @@ import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserOperationLogMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
+import cn.slainc.modules.upms.mapper.FavoriteMapper;
+import cn.slainc.modules.upms.mapper.RecentVisitMapper;
 import cn.slainc.modules.upms.security.UpmsAccountAdminPort;
 import cn.slainc.modules.upms.security.UpmsAccountAuthProvider;
 import cn.slainc.modules.upms.security.UpmsAccountPasswordUpdater;
@@ -33,6 +35,8 @@ import cn.slainc.modules.upms.security.UpmsPermissionProvider;
 import cn.slainc.modules.upms.service.AccessControlService;
 import cn.slainc.modules.upms.service.DeptService;
 import cn.slainc.modules.upms.service.MenuService;
+import cn.slainc.modules.upms.service.FavoriteService;
+import cn.slainc.modules.upms.service.RecentVisitService;
 import cn.slainc.modules.upms.service.PermissionService;
 import cn.slainc.modules.upms.service.RoleService;
 import cn.slainc.modules.upms.service.UpmsPolicyBindingStore;
@@ -53,6 +57,8 @@ import cn.slainc.modules.upms.web.SystemRegistryController;
 import cn.slainc.modules.upms.web.UserGroupManageController;
 import cn.slainc.modules.upms.web.UserManageController;
 import cn.slainc.modules.upms.web.UserStatsController;
+import cn.slainc.modules.upms.web.FavoriteController;
+import cn.slainc.modules.upms.web.RecentVisitController;
 import cn.slainc.mybatis.datascope.DataScopeProvider;
 import cn.slainc.policy.admin.PolicyBindingService;
 import cn.slainc.policy.storage.PolicyBindingStore;
@@ -87,7 +93,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 @Import({UserManageController.class, RoleManageController.class, PermissionManageController.class,
         MenuManageController.class, DeptManageController.class, UserGroupManageController.class,
         SystemRegistryController.class, AccessControlController.class, PolicyBindingController.class,
-        OperationLogController.class, LoginRecordController.class, UserStatsController.class})
+        OperationLogController.class, LoginRecordController.class, UserStatsController.class,
+        FavoriteController.class, RecentVisitController.class})
 public class UpmsAutoConfiguration {
 
     @Bean
@@ -169,6 +176,19 @@ public class UpmsAutoConfiguration {
     @ConditionalOnMissingBean
     public MenuService menuService(cn.slainc.modules.upms.mapper.MenuMapper menuMapper) {
         return new MenuService(menuMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public FavoriteService favoriteService(FavoriteMapper favoriteMapper) {
+        return new FavoriteService(favoriteMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RecentVisitService recentVisitService(RecentVisitMapper recentVisitMapper,
+                                                 cn.slainc.modules.upms.mapper.MenuMapper menuMapper) {
+        return new RecentVisitService(recentVisitMapper, menuMapper);
     }
 
     @Bean
