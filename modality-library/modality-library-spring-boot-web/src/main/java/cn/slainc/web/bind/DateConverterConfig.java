@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class DateConverterConfig implements WebMvcConfigurer {
 
@@ -38,20 +39,31 @@ public class DateConverterConfig implements WebMvcConfigurer {
 
     public static class StringToLocalTimeConverter implements Converter<String, LocalTime> {
 
+        private static final DateTimeFormatter HH_MM_SS = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+        private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
+
+        private static final DateTimeFormatter HHMMSS = DateTimeFormatter.ofPattern("HHmmss");
+
         @Override
         public LocalTime convert(String source) {
             if (source == null || source.isBlank()) {
                 return null;
             }
             String text = source.trim();
-            for (String pattern : new String[]{"HH:mm:ss", "HH:mm", "HHmmss"}) {
-                try {
-                    return LocalTime.parse(text, DateTimeFormatter.ofPattern(pattern));
-                } catch (RuntimeException ignored) {
-                    continue;
-                }
+            try {
+                return LocalTime.parse(text, HH_MM_SS);
+            } catch (DateTimeParseException ignored) {
             }
-            return null;
+            try {
+                return LocalTime.parse(text, HH_MM);
+            } catch (DateTimeParseException ignored) {
+            }
+            try {
+                return LocalTime.parse(text, HHMMSS);
+            } catch (DateTimeParseException ignored) {
+                return null;
+            }
         }
     }
 }
