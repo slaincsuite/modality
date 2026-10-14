@@ -71,6 +71,7 @@ def thirdPartyAliases = [
         'jackson-databind',
         'jakarta-validation-api',
         'jakarta-transaction-api',
+        'commons-io',
 ]
 
 dependencies {
