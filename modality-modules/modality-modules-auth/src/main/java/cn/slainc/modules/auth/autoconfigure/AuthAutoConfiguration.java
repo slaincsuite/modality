@@ -5,6 +5,7 @@ import cn.slainc.monitor.metrics.BusinessMetrics;
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.modules.auth.web.AuthLoginController;
 import cn.slainc.modules.auth.service.AuthLoginService;
+import cn.slainc.modules.auth.service.AuthSecondFactorGate;
 import cn.slainc.modules.auth.web.AuthLogoutController;
 import cn.slainc.modules.auth.service.AuthLogoutService;
 import cn.slainc.modules.auth.service.AuthSessionService;
@@ -21,6 +22,7 @@ import cn.slainc.security.audit.SecurityAuditRecorder;
 import cn.slainc.security.ban.AccountBanService;
 import cn.slainc.security.config.SecurityConfigReader;
 import cn.slainc.security.kick.KickService;
+import cn.slainc.security.lock.AccountLockService;
 import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.security.login.SecurityLoginService;
 import cn.slainc.security.password.PasswordPolicyService;
@@ -71,9 +73,13 @@ public class AuthAutoConfiguration {
                                              ObjectProvider<SessionRenewalService> renewalService,
                                              ObjectProvider<SessionExtender> sessionExtender,
                                              ObjectProvider<CurrentRequestReader> requestReader,
-                                             ApplicationEventPublisher publisher) {
+                                             ApplicationEventPublisher publisher,
+                                             ObjectProvider<AuthSecondFactorGate> secondFactorGate,
+                                             ObjectProvider<AccountAuthProvider> authProvider,
+                                             ObjectProvider<AccountBanService> banService,
+                                             ObjectProvider<AccountLockService> lockService) {
         return new AuthLoginService(delegate, properties, captchaService, restrictionPort, renewalService,
-                sessionExtender, requestReader, publisher);
+                sessionExtender, requestReader, publisher, secondFactorGate, authProvider, banService, lockService);
     }
 
     @Bean

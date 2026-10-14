@@ -19,6 +19,8 @@ public final class AuthTicketStore<T> {
 
     public static final String BIND_KEY_PREFIX = "modality:auth:bind:";
 
+    public static final String MFA_KEY_PREFIX = "modality:auth:mfa:";
+
     private final StringRedisTemplate redis;
 
     private final String keyPrefix;

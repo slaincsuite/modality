@@ -20,6 +20,9 @@ dependencies {
     implementation libs.zxing.core
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
     compileOnly libs.spring.boot.starter.jdbc
+    // 二次验证库按可选装配引入：未依赖时模块整体退避、可独立启动
+    compileOnly project(':modality-library:modality-library-spring-boot-mfa')
     testImplementation libs.spring.boot.starter.jdbc
+    testImplementation project(':modality-library:modality-library-spring-boot-mfa')
     testRuntimeOnly libs.h2
 }

@@ -6,12 +6,17 @@ import cn.slainc.captcha.CaptchaVerifyResult;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.event.LoginEvent;
 import cn.slainc.core.exception.BizException;
+import cn.slainc.crypto.hash.BCryptUtils;
 import cn.slainc.modules.auth.config.AuthProperties;
+import cn.slainc.security.ban.AccountBanService;
+import cn.slainc.security.lock.AccountLockService;
 import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.security.login.LoginRequest;
 import cn.slainc.security.login.LoginResult;
 import cn.slainc.security.login.SecurityLoginService;
+import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.security.spi.AccountRestrictionPort;
+import cn.slainc.security.spi.PasswordAccount;
 import cn.slainc.session.extend.SessionExtender;
 import cn.slainc.session.extend.SessionRenewalService;
 import org.springframework.beans.factory.ObjectProvider;
@@ -37,13 +42,25 @@ public class AuthLoginService {
 
     private final ApplicationEventPublisher publisher;
 
+    private final ObjectProvider<AuthSecondFactorGate> secondFactorGate;
+
+    private final ObjectProvider<AccountAuthProvider> authProvider;
+
+    private final ObjectProvider<AccountBanService> banService;
+
+    private final ObjectProvider<AccountLockService> lockService;
+
     public AuthLoginService(SecurityLoginService delegate, AuthProperties properties,
                             ObjectProvider<CaptchaService> captchaService,
                             ObjectProvider<AccountRestrictionPort> restrictionPort,
                             ObjectProvider<SessionRenewalService> renewalService,
                             ObjectProvider<SessionExtender> sessionExtender,
                             ObjectProvider<CurrentRequestReader> requestReader,
-                            ApplicationEventPublisher publisher) {
+                            ApplicationEventPublisher publisher,
+                            ObjectProvider<AuthSecondFactorGate> secondFactorGate,
+                            ObjectProvider<AccountAuthProvider> authProvider,
+                            ObjectProvider<AccountBanService> banService,
+                            ObjectProvider<AccountLockService> lockService) {
         this.delegate = delegate;
         this.properties = properties;
         this.captchaService = captchaService;
@@ -52,6 +69,10 @@ public class AuthLoginService {
         this.sessionExtender = sessionExtender;
         this.requestReader = requestReader;
         this.publisher = publisher;
+        this.secondFactorGate = secondFactorGate;
+        this.authProvider = authProvider;
+        this.banService = banService;
+        this.lockService = lockService;
     }
 
     public record LoginCommand(String username, String password, String deviceType, String deviceId,
@@ -59,11 +80,17 @@ public class AuthLoginService {
     }
 
     public record AuthLoginView(String tokenName, String tokenValue, Long loginId, String loginType,
-                                long tokenTimeout, boolean mustChangePassword, boolean remember) {
+                                long tokenTimeout, boolean mustChangePassword, boolean remember,
+                                boolean secondFactorRequired, String challengeId, String method) {
 
         public static AuthLoginView of(LoginResult result, boolean remember, long tokenTimeout) {
             return new AuthLoginView(result.tokenName(), result.tokenValue(), result.loginId(), result.loginType(),
-                    tokenTimeout, result.mustChangePassword(), remember);
+                    tokenTimeout, result.mustChangePassword(), remember, false, null, null);
+        }
+
+        public static AuthLoginView secondFactorRequired(String challengeId, String method, Long loginId,
+                                                          String loginType) {
+            return new AuthLoginView(null, null, loginId, loginType, 0, false, false, true, challengeId, method);
         }
     }
 
@@ -72,9 +99,23 @@ public class AuthLoginService {
         String clientIp = reader == null ? null : reader.clientIp();
         checkCaptcha(type, command, clientIp);
         checkUserRestrictions(type, command, clientIp);
+        AuthSecondFactorGate gate = secondFactorGate == null ? null : secondFactorGate.getIfAvailable();
+        if (gate != null && gate.appliesTo(type)) {
+            PasswordAccount account = findAccount(type, command.username());
+            if (account != null && gate.required(type, account.userId(), account.username())) {
+                verifyPassword(type, command, account, clientIp);
+                String challengeId = gate.challenge(type, account.userId(), account.username(),
+                        command.deviceType(), command.deviceId(), command.remember());
+                return AuthLoginView.secondFactorRequired(challengeId, gate.method(), account.userId(), type.value());
+            }
+        }
         LoginResult result = delegate.login(type, new LoginRequest(command.username(), command.password(),
                 command.deviceType(), command.deviceId(), clientIp));
-        if (command.remember()) {
+        return completeLogin(type, result, command.remember());
+    }
+
+    public AuthLoginView completeLogin(LoginType type, LoginResult result, boolean remember) {
+        if (remember) {
             SessionRenewalService renewal = renewalService.getIfAvailable();
             SessionExtender extender = sessionExtender.getIfAvailable();
             if (renewal != null) {
@@ -86,6 +127,50 @@ public class AuthLoginService {
             }
         }
         return AuthLoginView.of(result, false, result.tokenTimeout());
+    }
+
+    private PasswordAccount findAccount(LoginType type, String username) {
+        AccountAuthProvider provider = authProvider == null ? null : authProvider.getIfAvailable();
+        if (provider == null || username == null) {
+            return null;
+        }
+        try {
+            return provider.findAccount(username, type);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    // MFA 分支在签发挑战前就地完成密码裁决：封禁、锁定、失败计数与事件口径与 security 密码登录保持一致
+    private void verifyPassword(LoginType type, LoginCommand command, PasswordAccount account, String clientIp) {
+        Object loginId = account.userId() == null ? account.username() : account.userId();
+        if (!account.enabled()) {
+            throw failure(type, command.username(), clientIp, "账号已被禁用，禁止登录");
+        }
+        AccountBanService ban = banService == null ? null : banService.getIfAvailable();
+        if (ban != null && ban.isBanned(type, loginId)) {
+            long remain = Math.max(ban.getBanRemain(type, loginId), 0);
+            throw failure(type, command.username(), clientIp, "账号已被封禁，剩余 " + remain + " 秒");
+        }
+        AccountLockService lock = lockService == null ? null : lockService.getIfAvailable();
+        if (lock != null && lock.isLocked(type, loginId)) {
+            long remain = lock.lockRemainSeconds(type, loginId);
+            throw failure(type, command.username(), clientIp, "密码错误次数过多，账号已锁定，请于 " + remain + " 秒后重试");
+        }
+        if (command.password() == null || !BCryptUtils.verifyQuietly(command.password(), account.passwordHash())) {
+            int remaining = lock == null ? -1 : lock.recordFailure(type, loginId);
+            throw failure(type, command.username(), clientIp, credentialFailureMessage(remaining));
+        }
+        if (lock != null) {
+            lock.reset(type, loginId);
+        }
+    }
+
+    private String credentialFailureMessage(int remaining) {
+        if (remaining < 0) {
+            return "用户名或密码错误";
+        }
+        return remaining <= 0 ? "用户名或密码错误，账号已锁定" : "用户名或密码错误，剩余尝试次数 " + remaining;
     }
 
     private void checkCaptcha(LoginType type, LoginCommand command, String clientIp) {
