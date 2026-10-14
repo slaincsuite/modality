@@ -1,12 +1,5 @@
 package cn.slainc.web.websocket;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-
 import java.net.http.WebSocketHandshakeException;
 import java.time.Duration;
 import java.util.concurrent.CompletionException;
@@ -19,6 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 
 @SpringBootTest(classes = WebSocketEndpointIntegrationTest.TestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -35,9 +34,11 @@ class WebSocketEndpointIntegrationTest {
     @LocalServerPort
     int port;
 
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
     WebSocketSessionRegistry registry;
 
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
     WebSocketBroadcaster broadcaster;
 
@@ -123,6 +124,7 @@ class WebSocketEndpointIntegrationTest {
         awaitUntil(() -> registry.sessionsOfUser("carol").isEmpty(), Duration.ofSeconds(5));
     }
 
+    @SuppressWarnings("BusyWait")
     private void awaitUntil(BooleanSupplier condition, Duration timeout) throws InterruptedException {
         long deadline = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < deadline) {
