@@ -11,7 +11,7 @@ import cn.slainc.openapi.spi.AppService;
 import cn.slainc.openapi.spi.ConsentService;
 import cn.slainc.openapi.spi.CredentialService;
 import cn.slainc.openapi.spi.ScopeService;
-import cn.slainc.policy.admin.PolicyAdminService;
+import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.domain.Effect;
 import cn.slainc.policy.domain.PolicyDocument;
 import cn.slainc.policy.domain.PolicyStatement;

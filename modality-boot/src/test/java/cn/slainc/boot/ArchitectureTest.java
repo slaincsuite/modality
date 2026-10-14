@@ -53,7 +53,7 @@ class ArchitectureTest {
             .matching("..cn.slainc.modules.(*)..")
             .should().notDependOnEachOther();
 
-    // 库内禁止使用模块独占包名（service/web/dto/entity/mapper/model/impl/vo/form/controller/repository），web 库本体豁免
+    // 库内禁止使用模块独占包名（service/web/dto/entity/mapper/model/impl/vo/form/controller/repository）与 api/admin，web 库本体豁免
     @ArchTest
     static final ArchRule librariesMustNotUseModuleReservedPackages = noClasses()
             .that().resideInAPackage("..cn.slainc..")
@@ -61,7 +61,7 @@ class ArchitectureTest {
             .and().resideOutsideOfPackage("..cn.slainc.web..")
             .should().resideInAnyPackage(
                     "..service..", "..web..", "..dto..", "..entity..", "..mapper..", "..model..",
-                    "..impl..", "..vo..", "..form..", "..controller..", "..repository..");
+                    "..impl..", "..vo..", "..form..", "..controller..", "..repository..", "..api..", "..admin..");
 
     // REST 控制器只允许出现在业务模块的 web 包
     @ArchTest
