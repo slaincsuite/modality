@@ -2,7 +2,7 @@ package cn.slainc.modules.audit.excel;
 
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
-import cn.slainc.modules.audit.service.AuditLogService;
+import cn.slainc.modules.audit.service.oplog.AuditLogService;
 import cn.slainc.modules.audit.entity.AuditLogRecord;
 import cn.slainc.utils.date.DateUtils;
 import java.io.OutputStream;

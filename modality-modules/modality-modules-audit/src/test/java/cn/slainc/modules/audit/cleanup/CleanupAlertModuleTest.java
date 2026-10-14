@@ -4,7 +4,7 @@ import cn.slainc.core.context.TenantContext;
 import cn.slainc.modules.audit.AuditModuleApplication;
 import cn.slainc.modules.audit.alert.AuditAlertChannel;
 import cn.slainc.modules.audit.alert.AuditAlertMessage;
-import cn.slainc.modules.audit.service.AuditAlertService;
+import cn.slainc.modules.audit.service.alert.AuditAlertService;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

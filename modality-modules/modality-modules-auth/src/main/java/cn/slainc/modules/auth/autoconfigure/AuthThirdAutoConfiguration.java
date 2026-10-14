@@ -1,11 +1,11 @@
 package cn.slainc.modules.auth.autoconfigure;
 
 import cn.slainc.modules.auth.config.AuthProperties;
-import cn.slainc.modules.auth.service.AuthSessionService;
+import cn.slainc.modules.auth.service.session.AuthSessionService;
 import cn.slainc.modules.auth.store.AuthTicketStore;
 import cn.slainc.modules.auth.third.ThirdBindTicket;
-import cn.slainc.modules.auth.web.ThirdPartyLoginController;
-import cn.slainc.modules.auth.service.ThirdPartyLoginService;
+import cn.slainc.modules.auth.web.third.ThirdPartyLoginController;
+import cn.slainc.modules.auth.service.third.ThirdPartyLoginService;
 import cn.slainc.security.lock.AccountLockService;
 import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.sensitive.xss.XssSanitizer;

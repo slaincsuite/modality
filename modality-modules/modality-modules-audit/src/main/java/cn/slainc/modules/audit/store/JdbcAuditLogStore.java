@@ -1,6 +1,6 @@
 package cn.slainc.modules.audit.store;
 
-import cn.slainc.modules.audit.service.AuditLogService;
+import cn.slainc.modules.audit.service.oplog.AuditLogService;
 
 import cn.slainc.logger.oplog.AuditLogStore;
 import cn.slainc.logger.oplog.AuditRecord;

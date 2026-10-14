@@ -1,17 +1,17 @@
 package cn.slainc.modules.policy.autoconfigure;
 
 import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
-import cn.slainc.modules.policy.service.PolicyBindingPortalService;
-import cn.slainc.modules.policy.service.PolicyManageService;
-import cn.slainc.modules.policy.service.PolicyTestCaseService;
-import cn.slainc.modules.policy.service.PolicyTransferService;
+import cn.slainc.modules.policy.service.binding.PolicyBindingPortalService;
+import cn.slainc.modules.policy.service.manage.PolicyManageService;
+import cn.slainc.modules.policy.service.testcase.PolicyTestCaseService;
+import cn.slainc.modules.policy.service.transfer.PolicyTransferService;
 import cn.slainc.modules.policy.store.PolicyMetaStore;
 import cn.slainc.modules.policy.store.PolicyTestCaseStore;
-import cn.slainc.modules.policy.web.PolicyBindingPortalController;
-import cn.slainc.modules.policy.web.PolicyManageController;
-import cn.slainc.modules.policy.web.PolicySimulateController;
-import cn.slainc.modules.policy.web.PolicyTestCaseController;
-import cn.slainc.modules.policy.web.PolicyTransferController;
+import cn.slainc.modules.policy.web.binding.PolicyBindingPortalController;
+import cn.slainc.modules.policy.web.manage.PolicyManageController;
+import cn.slainc.modules.policy.web.simulate.PolicySimulateController;
+import cn.slainc.modules.policy.web.testcase.PolicyTestCaseController;
+import cn.slainc.modules.policy.web.transfer.PolicyTransferController;
 import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.policy.support.PolicyDiffService;

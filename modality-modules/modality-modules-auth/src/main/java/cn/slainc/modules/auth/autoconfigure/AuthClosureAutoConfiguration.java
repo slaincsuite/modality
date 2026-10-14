@@ -1,9 +1,9 @@
 package cn.slainc.modules.auth.autoconfigure;
 
 import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
-import cn.slainc.modules.auth.web.AccountClosureController;
+import cn.slainc.modules.auth.web.closure.AccountClosureController;
 import cn.slainc.modules.auth.scheduler.AccountClosureScheduler;
-import cn.slainc.modules.auth.service.AccountClosureService;
+import cn.slainc.modules.auth.service.closure.AccountClosureService;
 import cn.slainc.modules.auth.store.AccountClosureStore;
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.security.audit.SecurityAuditRecorder;

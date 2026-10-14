@@ -1,9 +1,9 @@
 package cn.slainc.modules.infra.autoconfigure;
 
-import cn.slainc.modules.infra.service.CacheConsoleService;
-import cn.slainc.modules.infra.service.RedisConsoleService;
-import cn.slainc.modules.infra.web.CacheConsoleController;
-import cn.slainc.modules.infra.web.RedisConsoleController;
+import cn.slainc.modules.infra.service.console.CacheConsoleService;
+import cn.slainc.modules.infra.service.console.RedisConsoleService;
+import cn.slainc.modules.infra.web.console.CacheConsoleController;
+import cn.slainc.modules.infra.web.console.RedisConsoleController;
 import cn.slainc.redis.autoconfigure.RedisProperties;
 import cn.slainc.redis.cache.CacheInvalidationPublisher;
 import cn.slainc.redis.config.RedisDynamicConfigService;

@@ -1,6 +1,6 @@
 package cn.slainc.modules.audit.aspect;
 
-import cn.slainc.modules.audit.service.PolicyEvaluationLogService;
+import cn.slainc.modules.audit.service.policylog.PolicyEvaluationLogService;
 
 import cn.slainc.core.context.RequestContext;
 import cn.slainc.core.context.TenantContext;

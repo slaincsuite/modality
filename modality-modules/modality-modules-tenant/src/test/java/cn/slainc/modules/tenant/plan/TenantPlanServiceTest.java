@@ -6,7 +6,7 @@ import cn.slainc.modules.tenant.entity.TenantPlanMenuRecord;
 import cn.slainc.modules.tenant.entity.TenantPlanRecord;
 import cn.slainc.modules.tenant.mapper.TenantPlanMapper;
 import cn.slainc.modules.tenant.mapper.TenantPlanMenuMapper;
-import cn.slainc.modules.tenant.service.TenantPlanService;
+import cn.slainc.modules.tenant.service.plan.TenantPlanService;
 import cn.slainc.tenant.domain.Tenant;
 import cn.slainc.tenant.dao.TenantMapper;
 import cn.slainc.tenant.lookup.TenantService;

@@ -4,7 +4,7 @@ import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
 import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.upms.service.user.UserService;
 import cn.idev.excel.EasyExcel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

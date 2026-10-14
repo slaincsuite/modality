@@ -2,7 +2,7 @@ package cn.slainc.modules.audit.autoconfigure;
 
 import cn.slainc.modules.audit.config.AuditConfigReader;
 import cn.slainc.modules.audit.aspect.PolicyEvaluationAuditAspect;
-import cn.slainc.modules.audit.service.PolicyEvaluationLogService;
+import cn.slainc.modules.audit.service.policylog.PolicyEvaluationLogService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

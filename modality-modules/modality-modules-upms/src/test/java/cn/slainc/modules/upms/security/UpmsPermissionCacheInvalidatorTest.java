@@ -3,7 +3,7 @@ package cn.slainc.modules.upms.security;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
 import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.upms.service.user.UserService;
 import cn.slainc.security.config.SecurityKeys;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

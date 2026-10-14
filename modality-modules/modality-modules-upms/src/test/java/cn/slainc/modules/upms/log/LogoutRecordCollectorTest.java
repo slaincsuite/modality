@@ -5,7 +5,7 @@ import cn.slainc.core.event.LogoutEvent;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
 import cn.slainc.modules.upms.entity.UserOperationLogRecord;
 import cn.slainc.modules.upms.mapper.UserOperationLogMapper;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.upms.service.user.UserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

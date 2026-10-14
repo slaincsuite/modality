@@ -2,7 +2,6 @@ package cn.slainc.modules.tenant;
 
 public final class TenantKeys {
 
-    public static final String TENANT_TABLE = "t_tenant";
 
     public static final String PLAN_TABLE = "t_tenant_plan";
 

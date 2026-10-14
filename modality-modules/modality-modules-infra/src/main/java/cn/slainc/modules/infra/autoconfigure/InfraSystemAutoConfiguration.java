@@ -1,7 +1,7 @@
 package cn.slainc.modules.infra.autoconfigure;
 
-import cn.slainc.modules.infra.service.SystemConsoleService;
-import cn.slainc.modules.infra.web.SystemConsoleController;
+import cn.slainc.modules.infra.service.console.SystemConsoleService;
+import cn.slainc.modules.infra.web.console.SystemConsoleController;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.health.actuate.endpoint.HealthEndpoint;

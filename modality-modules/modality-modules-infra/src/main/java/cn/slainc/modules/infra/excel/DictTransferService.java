@@ -2,7 +2,7 @@ package cn.slainc.modules.infra.excel;
 
 import cn.slainc.core.lang.BizAssert;
 import cn.slainc.excel.ExcelUtils;
-import cn.slainc.modules.infra.service.DictService;
+import cn.slainc.modules.infra.service.config.DictService;
 import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;

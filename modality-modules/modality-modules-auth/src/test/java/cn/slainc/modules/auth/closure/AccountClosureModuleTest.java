@@ -1,5 +1,5 @@
 package cn.slainc.modules.auth.closure;
-import cn.slainc.modules.auth.service.AccountClosureService;
+import cn.slainc.modules.auth.service.closure.AccountClosureService;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.modules.auth.AuthModuleApplication;

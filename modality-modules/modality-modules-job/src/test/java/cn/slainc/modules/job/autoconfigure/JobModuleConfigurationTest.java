@@ -3,7 +3,7 @@ package cn.slainc.modules.job.autoconfigure;
 import cn.slainc.job.spi.JobScheduler;
 import cn.slainc.modules.job.mapper.JobLogMapper;
 import cn.slainc.modules.job.mapper.JobTaskMapper;
-import cn.slainc.modules.job.service.JobManageService;
+import cn.slainc.modules.job.service.task.JobManageService;
 import cn.slainc.modules.job.scheduler.JobMaintenanceScheduler;
 import cn.slainc.modules.job.store.NodeRegistry;
 import org.junit.jupiter.api.Test;

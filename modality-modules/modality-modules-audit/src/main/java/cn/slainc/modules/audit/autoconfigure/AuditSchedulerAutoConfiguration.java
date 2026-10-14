@@ -1,9 +1,9 @@
 package cn.slainc.modules.audit.autoconfigure;
 
 import cn.slainc.modules.audit.scheduler.AuditAlertScheduler;
-import cn.slainc.modules.audit.service.AuditAlertService;
+import cn.slainc.modules.audit.service.alert.AuditAlertService;
 import cn.slainc.modules.audit.scheduler.AuditCleanupScheduler;
-import cn.slainc.modules.audit.service.AuditCleanupService;
+import cn.slainc.modules.audit.service.cleanup.AuditCleanupService;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

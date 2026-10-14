@@ -2,7 +2,7 @@ package cn.slainc.modules.upms.security;
 
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.upms.service.user.UserService;
 import cn.slainc.security.spi.AccountRestrictionPort;
 
 import java.util.List;

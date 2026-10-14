@@ -1,22 +1,24 @@
 package cn.slainc.modules.infra.autoconfigure;
 
+import cn.slainc.modules.infra.service.recycle.RecycleBinService;
+
 import cn.slainc.core.config.DynamicConfigService;
-import cn.slainc.modules.infra.service.ConfigAdminService;
+import cn.slainc.modules.infra.service.config.ConfigAdminService;
 import cn.slainc.modules.infra.store.ConfigHistoryCipher;
 import cn.slainc.modules.infra.store.ConfigHistoryStore;
 import cn.slainc.modules.infra.context.CurrentUser;
-import cn.slainc.modules.infra.service.DictService;
+import cn.slainc.modules.infra.service.config.DictService;
 import cn.slainc.modules.infra.excel.DictTransferService;
-import cn.slainc.modules.infra.service.NoticeService;
-import cn.slainc.modules.infra.service.NotifyService;
-import cn.slainc.modules.infra.service.NotifyWebhookClient;
+import cn.slainc.modules.infra.service.notify.NoticeService;
+import cn.slainc.modules.infra.service.notify.NotifyService;
+import cn.slainc.modules.infra.service.notify.NotifyWebhookClient;
 import cn.slainc.modules.infra.store.ApiKeyQueryStore;
-import cn.slainc.modules.infra.web.ApiKeyManageController;
-import cn.slainc.modules.infra.web.ConfigAdminController;
-import cn.slainc.modules.infra.web.DictController;
-import cn.slainc.modules.infra.web.NoticeController;
-import cn.slainc.modules.infra.web.NotifyAdminController;
-import cn.slainc.modules.infra.web.NotifyUserController;
+import cn.slainc.modules.infra.web.apikey.ApiKeyManageController;
+import cn.slainc.modules.infra.web.config.ConfigAdminController;
+import cn.slainc.modules.infra.web.config.DictController;
+import cn.slainc.modules.infra.web.notify.NoticeController;
+import cn.slainc.modules.infra.web.notify.NotifyAdminController;
+import cn.slainc.modules.infra.web.notify.NotifyUserController;
 import cn.slainc.redis.cache.CacheInvalidationListener;
 import cn.slainc.redis.cache.CacheInvalidationPublisher;
 import javax.sql.DataSource;
@@ -105,7 +107,7 @@ public class InfraCoreAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public NoticeService noticeService(JdbcTemplate jdbc,
-                                       ObjectProvider<cn.slainc.modules.infra.service.RecycleBinService> recycleBinService) {
+                                       ObjectProvider<cn.slainc.modules.infra.service.recycle.RecycleBinService> recycleBinService) {
         return new NoticeService(jdbc, recycleBinService);
     }
 

@@ -1,6 +1,6 @@
 package cn.slainc.modules.audit.scheduler;
 
-import cn.slainc.modules.audit.service.AuditCleanupService;
+import cn.slainc.modules.audit.service.cleanup.AuditCleanupService;
 import cn.slainc.utils.thread.ThreadPoolUtils;
 
 import java.util.concurrent.ScheduledExecutorService;

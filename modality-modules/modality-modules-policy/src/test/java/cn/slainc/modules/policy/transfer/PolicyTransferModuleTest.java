@@ -1,5 +1,7 @@
 package cn.slainc.modules.policy.transfer;
 
+import cn.slainc.modules.policy.service.transfer.PolicyTransferService;
+
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.policy.PolicyModuleApplication;
 import cn.slainc.modules.policy.PolicyTestBodies;
@@ -35,7 +37,7 @@ class PolicyTransferModuleTest {
     private JdbcTemplate jdbc;
 
     @Autowired
-    private cn.slainc.modules.policy.service.PolicyTransferService transferService;
+    private cn.slainc.modules.policy.service.transfer.PolicyTransferService transferService;
 
     @LocalServerPort
     private int port;

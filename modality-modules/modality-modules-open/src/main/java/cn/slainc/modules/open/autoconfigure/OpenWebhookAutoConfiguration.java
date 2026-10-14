@@ -1,11 +1,11 @@
 package cn.slainc.modules.open.autoconfigure;
 
 import cn.slainc.modules.open.publisher.DefaultWebhookPublisher;
-import cn.slainc.modules.open.service.WebhookDeliveryAdminService;
-import cn.slainc.modules.open.service.WebhookSubscriptionAdminService;
+import cn.slainc.modules.open.service.webhook.WebhookDeliveryAdminService;
+import cn.slainc.modules.open.service.webhook.WebhookSubscriptionAdminService;
 import cn.slainc.modules.open.store.JdbcWebhookDeliveryStore;
 import cn.slainc.modules.open.store.JdbcWebhookSubscriptionStore;
-import cn.slainc.modules.open.web.WebhookController;
+import cn.slainc.modules.open.web.webhook.WebhookController;
 import cn.slainc.webhook.config.WebhookProperties;
 import cn.slainc.webhook.spi.WebhookPublisher;
 import cn.slainc.webhook.support.WebhookDeliveryDispatcher;

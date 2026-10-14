@@ -3,7 +3,7 @@ package cn.slainc.modules.workorder.excel;
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.workorder.entity.WorkOrderRecord;
-import cn.slainc.modules.workorder.service.WorkOrderService;
+import cn.slainc.modules.workorder.service.order.WorkOrderService;
 import cn.slainc.utils.date.DateUtils;
 import cn.slainc.web.http.DownloadResponses;
 import jakarta.servlet.http.HttpServletResponse;

@@ -3,7 +3,7 @@ package cn.slainc.modules.job.scheduler;
 import cn.slainc.modules.job.store.NodeRegistry;
 
 import cn.slainc.modules.job.autoconfigure.JobModuleProperties;
-import cn.slainc.modules.job.service.JobManageService;
+import cn.slainc.modules.job.service.task.JobManageService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;

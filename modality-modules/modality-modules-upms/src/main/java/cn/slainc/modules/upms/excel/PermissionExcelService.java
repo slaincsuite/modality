@@ -3,7 +3,7 @@ package cn.slainc.modules.upms.excel;
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.upms.entity.PermissionRecord;
-import cn.slainc.modules.upms.service.PermissionService;
+import cn.slainc.modules.upms.service.permission.PermissionService;
 
 import java.io.InputStream;
 import java.io.OutputStream;

@@ -1,7 +1,7 @@
 package cn.slainc.modules.infra.autoconfigure;
 
-import cn.slainc.modules.infra.service.SqlConsoleService;
-import cn.slainc.modules.infra.web.SqlConsoleController;
+import cn.slainc.modules.infra.service.console.SqlConsoleService;
+import cn.slainc.modules.infra.web.console.SqlConsoleController;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

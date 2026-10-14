@@ -1,14 +1,14 @@
 package cn.slainc.modules.infra.autoconfigure;
 
 import cn.slainc.modules.infra.context.CurrentUser;
-import cn.slainc.modules.infra.service.ChunkUploadService;
-import cn.slainc.modules.infra.service.FileManagerService;
+import cn.slainc.modules.infra.service.file.ChunkUploadService;
+import cn.slainc.modules.infra.service.file.FileManagerService;
 import cn.slainc.modules.infra.store.ChunkSessionStore;
 import cn.slainc.modules.infra.store.FileRecordStore;
 import cn.slainc.modules.infra.store.MemoryChunkSessionStore;
 import cn.slainc.modules.infra.store.RedisChunkSessionStore;
-import cn.slainc.modules.infra.service.FileUploadService;
-import cn.slainc.modules.infra.web.FileController;
+import cn.slainc.modules.infra.service.file.FileUploadService;
+import cn.slainc.modules.infra.web.file.FileController;
 import cn.slainc.storage.StorageTemplate;
 import cn.slainc.storage.preview.FilePreviewService;
 import org.springframework.beans.factory.ObjectProvider;

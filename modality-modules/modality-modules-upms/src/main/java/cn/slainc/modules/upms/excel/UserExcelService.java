@@ -4,7 +4,7 @@ import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.service.UserService;
+import cn.slainc.modules.upms.service.user.UserService;
 import cn.slainc.utils.date.DateUtils;
 import cn.slainc.utils.string.StringUtils;
 
