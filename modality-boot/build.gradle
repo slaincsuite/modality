@@ -61,6 +61,7 @@ dependencies {
     implementation project(':modality-library:modality-library-spring-boot-job')
     implementation project(':modality-library:modality-library-spring-boot-change-audit')
     implementation project(':modality-modules:modality-modules-job')
+    implementation project(':modality-services:modality-services-live-monitor')
 
     testImplementation libs.archunit.junit5
 

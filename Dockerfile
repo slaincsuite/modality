@@ -8,6 +8,7 @@ COPY settings.gradle build.gradle gradle.properties ./
 COPY buildSrc buildSrc
 COPY modality-library modality-library
 COPY modality-modules modality-modules
+COPY modality-services modality-services
 COPY modality-boot modality-boot
 
 RUN chmod +x gradlew \
