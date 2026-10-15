@@ -93,7 +93,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 
 ## 模块清单
 
-### 库模块（33）
+### 库模块（34）
 
 | 分层 | 模块 |
 | --- | --- |
@@ -236,15 +236,7 @@ docker run -d --name modality \
   registry.example.com/modality:1.0.0
 ```
 
-挂载外部配置文件（推荐，便于版本化管理）：
-
-```bash
-docker run -d --name modality \
-  -p 8080:8080 \
-  -v /etc/modality/application.properties:/app/config/application.properties:ro \
-  -e SPRING_CONFIG_ADDITIONAL_LOCATION=file:/app/config/application.properties \
-  registry.example.com/modality:1.0.0
-```
+配置文件可改为挂载以便版本化管理：`-v /etc/modality/application.properties:/app/config/application.properties:ro` 并加 `-e SPRING_CONFIG_ADDITIONAL_LOCATION=file:/app/config/application.properties`。
 
 ### 数据库与缓存要求
 
@@ -327,141 +319,41 @@ server {
 
 ## 使用示例
 
-所有业务接口返回统一报文：
+所有业务接口返回统一报文，账号体系通过请求头 `X-Login-Type` 指定（七套账号，缺省 `TENANT_USER`）：
 
 ```json
 { "code": 200, "message": "成功", "data": {}, "timestamp": 1791868741523 }
 ```
 
-账号体系通过请求头 `X-Login-Type` 指定（`PLATFORM_ADMIN` / `PLATFORM_USER` / `TENANT_ADMIN` / `TENANT_USER` / `APP` / `SERVICE` / `GUEST`），缺省为 `TENANT_USER`。
-
-### 1. 获取验证码并登录
+### 1. 登录并携带令牌
 
 ```bash
 # 取验证码（生产默认开启；dev profile 关闭）
-curl -s -X POST http://localhost:8080/captcha/generate \
-  -H 'Content-Type: application/json' \
-  -d '{"channel":"WEB"}'
+curl -s -X POST http://localhost:8080/captcha/generate -H 'Content-Type: application/json' -d '{"channel":"WEB"}'
 # => data.id 即 captchaId，data.imageBase64 为图片
 
 # 登录
 curl -s -X POST http://localhost:8080/auth/login \
-  -H 'Content-Type: application/json' \
-  -H 'X-Login-Type: TENANT_USER' \
-  -d '{
-        "username": "admin",
-        "password": "Admin@12345",
-        "captchaId": "<captchaId>",
-        "captchaCode": "<答案>",
-        "deviceType": "WEB"
-      }'
+  -H 'Content-Type: application/json' -H 'X-Login-Type: TENANT_USER' \
+  -d '{"username":"admin","password":"Admin@12345","captchaId":"<captchaId>","captchaCode":"<答案>","deviceType":"WEB"}'
 # => data.tokenName = "satoken"，data.tokenValue 即令牌
-```
 
-### 2. 携带令牌访问业务接口
-
-Sa-Token 默认从 `satoken` 请求头（或同名 Cookie）读取令牌：
-
-```bash
+# 携带令牌访问业务接口
 TOKEN=<上一步的 tokenValue>
-
-curl -s 'http://localhost:8080/upms/user/page?current=1&size=20' \
-  -H "satoken: $TOKEN" \
-  -H 'X-Login-Type: TENANT_USER'
+curl -s 'http://localhost:8080/upms/user/page?current=1&size=20' -H "satoken: $TOKEN"
 ```
 
-### 3. 令牌续期 / 吊销 / 校验
+### 2. 多租户调用
 
-```bash
-# 刷新（匿名可达）
-curl -s -X POST http://localhost:8080/auth/token/refresh \
-  -H 'Content-Type: application/json' \
-  -d '{"token":"<refreshToken>"}'
+平台租户 ID 为 `1`，三种传租户方式按可信度排序：参数 `?tenantId=2`（默认开启）→ 请求头 `X-Tenant-Id: 2`（需开启 `modality.tenant.resolver.header.enabled=true`）→ 域名子域（配置 `modality.tenant.resolver.domain.root-domain`）。声明租户与登录会话租户不一致时返回 403，客户端无法越权切换。
 
-# 校验（需要登录会话 + 客户端鉴权，符合 RFC 7662）
-curl -s -X POST http://localhost:8080/auth/token/introspect \
-  -H "satoken: $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"token":"<accessToken>","clientId":"<clientId>","clientSecret":"<clientSecret>"}'
+### 3. 令牌管理 / 开放平台 / 工单中心
 
-# 吊销（需要登录会话；服务端会先验签再吊销）
-curl -s -X POST http://localhost:8080/auth/token/revoke \
-  -H "satoken: $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"token":"<accessToken>"}'
+- 令牌：`POST /auth/token/refresh` 刷新（匿名）、`POST /auth/token/revoke` 吊销、`POST /auth/logout` 登出、`POST /auth/token/introspect` 校验（RFC 7662，需客户端鉴权）
+- OAuth2：`POST /oauth2/token`，支持 `authorization_code` / `implicit` / `password` / `client_credentials` / `refresh_token`；API Key 调用带 `X-API-Key` 请求头；请求签名见 `sign` 库
+- 工单中心：端点见 Swagger「工单中心」分组，编号按「前缀+日期+序号」自动生成，主链路「创建 → 分派 → 解决 → 关闭 → 重开」，流转类管理端点见 `WorkOrderFlowController`
 
-# 登出
-curl -s -X POST http://localhost:8080/auth/logout -H "satoken: $TOKEN"
-```
-
-### 4. 多租户调用
-
-平台租户 ID 为 `1`。三种传租户的方式按可信度排序：
-
-```bash
-# (a) 参数（默认开启，适合内部调用）
-curl -s 'http://localhost:8080/upms/user/page?tenantId=2' -H "satoken: $TOKEN"
-
-# (b) 请求头（默认关闭，需显式开启；开启后仍与登录会话租户做一致性校验）
-#     配置：modality.tenant.resolver.header.enabled=true
-curl -s http://localhost:8080/upms/user/page -H "satoken: $TOKEN" -H 'X-Tenant-Id: 2'
-
-# (c) 域名（多租户 SaaS 推荐）
-#     配置：modality.tenant.resolver.domain.root-domain=example.com
-curl -s https://acme.example.com/upms/user/page -H "satoken: $TOKEN"
-```
-
-> 请求声明的租户与登录会话租户不一致时返回 403，客户端无法通过改请求头读到别的租户数据。
-
-### 5. 开放平台
-
-```bash
-# 客户端凭证模式换取令牌（客户端需在开放平台注册并授权 client_credentials）
-curl -s -X POST http://localhost:8080/oauth2/token \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=client_credentials&client_id=<clientId>&client_secret=<clientSecret>'
-
-# API Key 调用（Header 名可配，默认 X-API-Key）
-curl -s http://localhost:8080/open/portal/apps -H 'X-API-Key: sk_xxxxxxxx'
-```
-
-支持的授权类型：`authorization_code`、`implicit`、`password`、`client_credentials`、`refresh_token`。签名方式调用见 `sign` 库（模块内 `modality.sign.keys[*]` 配置 appId 与密钥）。
-
-### 6. 工单中心
-
-以租户用户身份走通「创建 → 订阅 → 分派 → 解决 → 关闭 → 重开」全链路（管理端动作需要 `workorder:order:assign` / `workorder:order:close` 权限码）：
-
-```bash
-# 创建工单（编号按「前缀+日期+序号」自动生成）
-curl -s -X POST http://localhost:8080/workorder/my \
-  -H "satoken: $TOKEN" -H 'X-Login-Type: TENANT_USER' \
-  -H 'Content-Type: application/json' \
-  -d '{"title":"打印机故障","content":"卡纸严重","priority":"HIGH"}'
-
-# 订阅该工单（后续 assign / comment / close 事件会发站内通知）
-curl -s -X POST http://localhost:8080/workorder/my/$ORDER_ID/subscription -H "satoken: $TOKEN"
-
-# 管理端：分派（受理）→ 标记解决 → 关闭 → 重开
-curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/assign \
-  -H "satoken: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"assigneeId":202}'
-curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/resolve  -H "satoken: $ADMIN_TOKEN"
-curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/close    -H "satoken: $ADMIN_TOKEN"
-curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/reopen   -H "satoken: $ADMIN_TOKEN"
-
-# 评论与催办
-curl -s -X POST http://localhost:8080/workorder/my/$ORDER_ID/comments \
-  -H "satoken: $TOKEN" -H 'Content-Type: application/json' \
-  -d '{"content":"已补充故障现象"}'
-curl -s -X POST http://localhost:8080/workorder/manage/$ORDER_ID/urge \
-  -H "satoken: $ADMIN_TOKEN" -H 'Content-Type: application/json' -d '{"message":"请尽快处理"}'
-
-# 我的工单 / 我的订阅 / 我的通知
-curl -s http://localhost:8080/workorder/my/page -H "satoken: $TOKEN"
-curl -s http://localhost:8080/workorder/my/subscriptions -H "satoken: $TOKEN"
-curl -s http://localhost:8080/workorder/my/notifications -H "satoken: $TOKEN"
-```
-
-挂起 / 恢复 / 转派 / 升级 / 批量重开 / 流转预览等管理端点见 `WorkOrderFlowController`；全部端点在 Swagger 的「工单中心」分组下。
-
-### 7. 以库的方式引入
+### 4. 以库的方式引入
 
 如果只需要其中某项能力，可以只依赖对应库；版本由 BOM 统一收口：
 
@@ -518,11 +410,10 @@ modality.security.session.active-timeout=1800
 4. **包路径与模块一一对应**：`api-key` → `cn.slainc.apikey`，`open-api` → `cn.slainc.openapi`
 5. **分层方向不可逆**：`utils`/`crypto` 最底层，`core` 不依赖 `web`，库不依赖业务模块，业务模块之间禁止互相依赖（跨模块能力一律下沉为「接口 + 模型」SPI）
 6. **库与模块的包名互斥**：库内禁止出现 `service`、`web`、`dto`、`entity`、`mapper`、`model`、`impl`、`vo`、`form`、`controller`、`repository` 等模块独占包名（由 boot 的 ArchUnit 规则固化）；库内实现类放 `support`/`admin`/`loader`/`dao`/`domain`/`spi` 等技术词包，`cn.slainc.web` 库本体豁免
-7. **REST 控制器只存在于业务模块的 `web` 包**：库内不得出现 `@RestController`/`@Controller`（`@RestControllerAdvice` 与 Actuator `@Endpoint` 例外，归 `advice`/协议装配包）
+7. **库不注册端点**：`@RestController`/`@Controller` 只允许出现在业务模块的 `web` 包（`@RestControllerAdvice` 与 Actuator `@Endpoint` 例外，归 `advice`/协议装配包）；库只提供能力与服务，端点由使用方声明
 8. **业务模块统一目录样式**：必备 `autoconfigure`（装配）、`service`（业务服务，直接类禁止 impl 子包）、`web`（控制器）；按需 `config`/`dto`/`entity`/`mapper`/`store`（非 MP 存储）/`excel`/`listener`/`publisher`/`scheduler`/`aspect`/`filter`/`context` 及领域子包
-6. **库不注册端点**：`src/main/java` 下不得出现 `@RestController` / `@RequestMapping`，端点由使用方声明；只有 `@RestControllerAdvice` 与 Actuator `@Endpoint` 例外
-7. **自动配置**：类放 `autoconfigure` 包、每个 Bean 加 `@ConditionalOnMissingBean`、每项能力可用 `@ConditionalOnProperty` 关闭且 `matchIfMissing = true`；依赖 `compileOnly` 坐标时必须用 `@ConditionalOnClass(name = "...")` 独立注册
-8. **依赖**：版本只在 `gradle/libs.versions.toml` 维护，模块里禁止写版本号字面量；能 `implementation` 就不要 `api`
+9. **自动配置**：类放 `autoconfigure` 包、每个 Bean 加 `@ConditionalOnMissingBean`、每项能力可用 `@ConditionalOnProperty` 关闭且 `matchIfMissing = true`；依赖 `compileOnly` 坐标时必须用 `@ConditionalOnClass(name = "...")` 独立注册
+10. **依赖**：版本只在 `gradle/libs.versions.toml` 维护，模块里禁止写版本号字面量；能 `implementation` 就不要 `api`
 
 ### 提交规范
 
@@ -549,19 +440,12 @@ test(upms): 补角色成环校验用例
 
 #### 网页端操作示例：修复一个 bug（`fix/xxx` 分支）
 
-**第 1 步：从 `main` 创建 fix 分支**
+**第 1 步：创建 fix 分支并修改代码**
 
-1. 打开仓库首页，点击分支下拉框（显示 `main` 的位置）
-2. 输入框填 `fix/login-crash`，点击 **Create branch: fix/login-crash from main**
+1. 仓库首页分支下拉框输入 `fix/login-crash` → **Create branch: fix/login-crash from main**
+2. 浏览到要修改的文件，点击 **Edit**（铅笔图标）修改并 **Commit changes**，可多文件多次提交；按 `.` 键可进入网页版 VS Code 编辑
 
-**第 2 步：在 fix 分支上修改代码**
-
-1. 确认当前分支是 `fix/login-crash`
-2. 浏览到要修改的文件，点击 **Edit**（铅笔图标）
-3. 修改内容，填写提交信息，点击 **Commit changes**；可以多文件多次提交
-4. 也可以在仓库首页按 `.` 键，直接在网页版 VS Code 中编辑，体验更接近本地
-
-**第 3 步：提交 PR 到 `dev`**
+**第 2 步：提交 PR 到 `dev`**
 
 1. 切换到 **Pull requests** 标签 → **New pull request**
 2. 设置方向：`base: dev`，`compare: fix/login-crash`
@@ -569,13 +453,111 @@ test(upms): 补角色成环校验用例
 4. 等待审查（如果设了审批要求），通过后点击 **Merge pull request**
 5. 合并后点击 **Delete branch** 删除 fix 分支
 
-**第 4 步：`dev` 合并到 `main`**
+**第 3 步：`dev` 合并到 `main`**
 
 `dev` 分支积累了一批修改后：
 
 1. **Pull requests** → **New pull request**
 2. 设置方向：`base: main`，`compare: dev`
 3. 创建 PR → 审批 → **Merge**
+
+> 合并方式的选择（Rebase and merge / Create a merge commit）与 `main` 同步回 `dev` 的操作，见下方[「完整合并操作步骤」](#完整合并操作步骤dev-保留方案)。
+
+#### 完整合并操作步骤（dev 保留方案）
+
+**场景一：`fix/xxx` → `dev`（Rebase and merge）**
+
+**第 1 步：创建 PR**
+
+推完代码后，仓库首页顶部会出现黄色提示条 → 点 **Compare & pull request**（或者 **Pull requests** 标签 → **New pull request**）
+
+确认方向：
+
+```
+base: dev
+compare: fix/xxx
+```
+
+填写内容：
+
+| 字段 | 填什么 |
+|------|--------|
+| 标题 | 写清楚这个 PR 做了什么，如 `fix: 修复登录崩溃`（会显示在 PR 列表，不进提交历史） |
+| 描述 | 可选。写改动原因、涉及文件、注意事项，方便以后回看 |
+
+点 **Create pull request**
+
+**第 2 步：合并**
+
+1. 页面底部点合并按钮旁的小箭头 ▾，选 **Rebase and merge**
+2. 弹出的框不用改任何东西，直接点 **Rebase and merge** 确认
+3. 变紫色后，点 **Delete branch** 删除 `fix/xxx`
+
+`dev` 的历史就多了你 fix 分支上的每条提交，原样、无 merge 条目。
+
+**场景二：`dev` → `main`（Create a merge commit）**
+
+**第 1 步：创建 PR**
+
+1. **Pull requests** → **New pull request**
+2. 设置方向（⚠️ 注意别搞反）：
+
+```
+base: main
+compare: dev
+```
+
+填写内容：
+
+| 字段 | 填什么 |
+|------|--------|
+| 标题 | 这批改动的总结，如 `dev 合并：直播监控业务 + crypto 重构` |
+| 描述 | 建议列出本批包含的 fix/feat 清单，方便追溯 |
+
+**Create pull request**。页面会显示 `Commits: N`，确认就是本批要上线的那些提交。
+
+**第 2 步：合并**
+
+1. 合并按钮旁的小箭头 ▾，选 **Create a merge commit**（⚠️ 别选成 rebase）
+2. 弹出对话框，保持默认：
+
+```
+Commit message:    Merge pull request #X from xxx/dev
+Extended message:  （PR 标题和描述会自动填进来）
+```
+
+3. 不用改，直接点 **Confirm merge commit**
+4. **不要删 `dev` 分支（这条方案的核心）**
+
+`main` 历史 = 你原有的提交 + 1 条 merge 条目，commit 全部保留。
+
+**场景三：`main` 有更新，同步回 `dev`**
+
+什么时候做：你直接往 `main` 合了 hotfix，或别人动了 `main`，`dev` 落后了。
+
+1. **New pull request**
+2. 方向：
+
+```
+base: dev
+compare: main
+```
+
+3. 标题写 `sync: main 同步回 dev` 之类 → **Create**
+4. 合并方式：**Create a merge commit** → **Confirm merge**
+5. `dev` 不删
+
+同步后 `dev` 包含 `main` 的全部历史，两边一致，下一轮开发从 `dev` 拉 fix 分支不会冲突。
+
+**一页速查**
+
+| 操作 | base ← compare | 合并方式 | 之后 |
+|------|----------------|----------|------|
+| fix 合入 dev | `dev` ← `fix/xxx` | Rebase and merge | 删 fix 分支 |
+| dev 合入 main | `main` ← `dev` | Create a merge commit | 保留 dev |
+| main 同步回 dev | `dev` ← `main` | Create a merge commit | 保留 dev |
+
+> 弹出的 commit message 对话框全部保持默认即可，不需要手写任何东西——标题在创建 PR 时写好就够了。
 
 ### 报告安全问题
 
@@ -584,19 +566,5 @@ test(upms): 补角色成环校验用例
 ## 许可证
 
 本项目采用 **GNU General Public License v3.0** 发布，全文见 [LICENSE](LICENSE)。
-
-```
-Copyright (C) 2026 modality
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-```
 
 GPLv3 的核心含义：你可以自由使用、修改、分发本项目，但**分发衍生作品时必须同样以 GPLv3 开源并提供完整源码**。若需闭源商用，请联系维护者讨论商业授权。
