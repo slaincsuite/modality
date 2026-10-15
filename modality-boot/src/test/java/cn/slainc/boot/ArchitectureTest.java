@@ -46,7 +46,18 @@ class ArchitectureTest {
     @ArchTest
     static final ArchRule librariesMustNotDependOnBusinessModulesOrBoot = noClasses()
             .that().resideInAnyPackage(LAYERED_PACKAGES)
+            .should().dependOnClassesThat().resideInAnyPackage("..cn.slainc.modules..", "..cn.slainc.services..", "..cn.slainc.boot..");
+
+    // 业务服务与业务模块同层解耦：只依赖库，不得互相依赖或反向依赖启动器
+    @ArchTest
+    static final ArchRule servicesMustNotDependOnModulesOrBoot = noClasses()
+            .that().resideInAPackage("..cn.slainc.services..")
             .should().dependOnClassesThat().resideInAnyPackage("..cn.slainc.modules..", "..cn.slainc.boot..");
+
+    @ArchTest
+    static final ArchRule businessServicesMustNotDependOnEachOther = SlicesRuleDefinition.slices()
+            .matching("..cn.slainc.services.(*)..")
+            .should().notDependOnEachOther();
 
     @ArchTest
     static final ArchRule businessModulesMustNotDependOnEachOther = SlicesRuleDefinition.slices()
@@ -63,10 +74,11 @@ class ArchitectureTest {
                     "..service..", "..web..", "..dto..", "..entity..", "..mapper..", "..model..",
                     "..impl..", "..vo..", "..form..", "..controller..", "..repository..", "..api..", "..admin..");
 
-    // REST 控制器只允许出现在业务模块的 web 包
+    // REST 控制器只允许出现在业务模块与业务服务的 web 包
     @ArchTest
     static final ArchRule restControllersOnlyInModuleWebPackage = noClasses()
             .that().resideOutsideOfPackage("..cn.slainc.modules..web..")
+            .and().resideOutsideOfPackage("..cn.slainc.services..web..")
             .and().resideOutsideOfPackage("..cn.slainc.boot..")
             .should().beAnnotatedWith("org.springframework.web.bind.annotation.RestController")
             .orShould().beAnnotatedWith("org.springframework.web.bind.annotation.Controller");
