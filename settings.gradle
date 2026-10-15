@@ -73,3 +73,5 @@ include 'modality-modules:modality-modules-infra'
 include 'modality-modules:modality-modules-workorder'
 include 'modality-modules:modality-modules-tenant'
 include 'modality-modules:modality-modules-job'
+
+include 'modality-services:modality-services-live-monitor'
