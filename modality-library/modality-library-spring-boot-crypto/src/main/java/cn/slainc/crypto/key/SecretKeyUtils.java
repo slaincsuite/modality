@@ -40,18 +40,23 @@ public final class SecretKeyUtils {
         return new SecretKeySpec(bytes, "SM4");
     }
 
+    // DES 系入口与 DesUtils 同生命周期：弱算法仅保留显式开启的过渡能力，随 DesUtils 一并移除
+    @Deprecated(forRemoval = true)
     public static SecretKey desKey() {
         return DesUtils.generateKey();
     }
 
+    @Deprecated(forRemoval = true)
     public static SecretKey desKey(byte[] bytes) {
         return DesUtils.key(bytes);
     }
 
+    @Deprecated(forRemoval = true)
     public static SecretKey tripleDesKey() {
         return DesUtils.generateTripleDesKey();
     }
 
+    @Deprecated(forRemoval = true)
     public static SecretKey tripleDesKey(byte[] bytes) {
         return DesUtils.tripleKey(bytes);
     }
