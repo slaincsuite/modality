@@ -547,6 +547,36 @@ test(upms): 补角色成环校验用例
 4. 涉及表结构、配置默认值、安全策略的改动，必须说明升级与回滚方式
 5. 新增模块需同步三处：`settings.gradle` 的 `include`、模块自己的 `build.gradle`、`modality-boot` 的聚合依赖
 
+#### 网页端操作示例：修复一个 bug（`fix/xxx` 分支）
+
+**第 1 步：从 `main` 创建 fix 分支**
+
+1. 打开仓库首页，点击分支下拉框（显示 `main` 的位置）
+2. 输入框填 `fix/login-crash`，点击 **Create branch: fix/login-crash from main**
+
+**第 2 步：在 fix 分支上修改代码**
+
+1. 确认当前分支是 `fix/login-crash`
+2. 浏览到要修改的文件，点击 **Edit**（铅笔图标）
+3. 修改内容，填写提交信息，点击 **Commit changes**；可以多文件多次提交
+4. 也可以在仓库首页按 `.` 键，直接在网页版 VS Code 中编辑，体验更接近本地
+
+**第 3 步：提交 PR 到 `dev`**
+
+1. 切换到 **Pull requests** 标签 → **New pull request**
+2. 设置方向：`base: dev`，`compare: fix/login-crash`
+3. 填写标题（如 `fix: 修复登录崩溃`）和描述 → **Create pull request**
+4. 等待审查（如果设了审批要求），通过后点击 **Merge pull request**
+5. 合并后点击 **Delete branch** 删除 fix 分支
+
+**第 4 步：`dev` 合并到 `main`**
+
+`dev` 分支积累了一批修改后：
+
+1. **Pull requests** → **New pull request**
+2. 设置方向：`base: main`，`compare: dev`
+3. 创建 PR → 审批 → **Merge**
+
 ### 报告安全问题
 
 请不要公开提交 Issue。通过私有渠道联系维护者，附上复现步骤、影响面与建议修复方案；修复发布后会在版本说明中致谢。
