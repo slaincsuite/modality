@@ -7,4 +7,6 @@ public interface QrTicketStore {
     void save(QrTicket ticket, long ttlSeconds);
 
     Optional<QrTicket> find(String ticketId);
+
+    Optional<QrTicket> consume(String ticketId, QrTicket.Status expected);
 }

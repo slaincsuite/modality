@@ -56,7 +56,7 @@ public class ThirdAuthService {
         byte[] bytes = new byte[16];
         RANDOM.nextBytes(bytes);
         String ticketId = HexFormat.of().formatHex(bytes);
-        long ttl = properties.getQrTicketTtlSeconds();
+        long ttl = qrTicketTtlSeconds();
         QrTicket ticket = new QrTicket();
         ticket.setTicketId(ticketId);
         ticket.setPlatform(platform);
@@ -81,6 +81,15 @@ public class ThirdAuthService {
             expired.setStatus(QrTicket.Status.EXPIRED.name());
             return expired;
         });
+    }
+
+    public Optional<ThirdAuthLoginResult> consumeQr(String ticketId) {
+        return qrTicketStore.consume(ticketId, QrTicket.Status.CONFIRMED)
+                .map(ticket -> JsonUtils.parse(ticket.getPayload(), ThirdAuthLoginResult.class));
+    }
+
+    public long qrTicketTtlSeconds() {
+        return Math.max(1, properties.getQrTicketTtlSeconds());
     }
 
     public ThirdAuthLoginResult handleCallback(String platform, Map<String, String> params) {
