@@ -6,6 +6,7 @@ public class QrTicket {
 
     public enum Status {
         WAITING,
+        // 仅在显式调用 markScanned 时出现，当前第三方回调链路直接置 CONFIRMED
         SCANNED,
         CONFIRMED,
         EXPIRED
