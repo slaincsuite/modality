@@ -6,6 +6,7 @@ import cn.slainc.modules.auth.FakeFeishuProvider;
 import cn.slainc.modules.auth.TestAccountRegistry;
 import cn.slainc.security.spi.PasswordAccount;
 import cn.slainc.thirdauth.ThirdPartyPlatform;
+import cn.slainc.thirdauth.config.ThirdAuthKeys;
 import cn.slainc.thirdauth.ThirdPartyUser;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
@@ -279,6 +280,24 @@ class ThirdPartyLoginModuleTest {
         HttpResponse<String> exchange = post("/auth/third/feishu/qr/not-exist-ticket/exchange", "{}", null);
         assertThat(exchange.statusCode()).as(exchange.body()).isEqualTo(400);
         assertThat(exchange.body()).contains("已过期或不存在");
+    }
+
+    @Test
+    void unknownTicketStatusStaysPollableInsteadOfFailing() throws Exception {
+        String ticketId = "bogus-status-ticket";
+        long now = System.currentTimeMillis();
+        redis.opsForValue().set(ThirdAuthKeys.qrTicketKey(ticketId),
+                "{\"ticketId\":\"" + ticketId + "\",\"platform\":\"FEISHU\",\"status\":\"BROKEN\",\"createdAt\":"
+                        + now + ",\"expireAt\":" + (now + 300_000L) + "}");
+
+        HttpResponse<String> status = get("/auth/third/feishu/qr/" + ticketId, null);
+        assertThat(status.statusCode()).as(status.body()).isEqualTo(200);
+        assertThat(JsonPath.<String>read(status.body(), "$.data.status")).isEqualTo("BROKEN");
+        assertThat(JsonPath.<String>read(status.body(), "$.data.statusLabel")).isEqualTo("未知状态");
+
+        HttpResponse<String> exchange = post("/auth/third/feishu/qr/" + ticketId + "/exchange", "{}", null);
+        assertThat(exchange.statusCode()).as(exchange.body()).isEqualTo(400);
+        assertThat(exchange.body()).contains("尚未确认");
     }
 
     private String qrStatusOf(String ticketId) throws Exception {
