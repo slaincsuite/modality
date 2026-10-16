@@ -2,6 +2,7 @@ package cn.slainc.modules.auth.autoconfigure;
 
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.modules.auth.service.session.AuthSessionService;
+import cn.slainc.modules.auth.service.qrcode.QrImageService;
 import cn.slainc.modules.auth.store.AuthTicketStore;
 import cn.slainc.modules.auth.third.ThirdBindTicket;
 import cn.slainc.modules.auth.web.third.ThirdPartyLoginController;
@@ -47,9 +48,10 @@ public class AuthThirdAutoConfiguration {
                                                              AuthSessionService sessionService,
                                                              ObjectProvider<AccountAuthProvider> authProvider,
                                                              ObjectProvider<AccountLockService> lockService,
-                                                             ObjectProvider<XssSanitizer> sanitizer) {
+                                                             ObjectProvider<XssSanitizer> sanitizer,
+                                                             ObjectProvider<QrImageService> qrImageService) {
             return new ThirdPartyLoginService(thirdAuthService, bindStore, properties, sessionService, authProvider,
-                    lockService, sanitizer);
+                    lockService, sanitizer, qrImageService);
         }
     }
 }

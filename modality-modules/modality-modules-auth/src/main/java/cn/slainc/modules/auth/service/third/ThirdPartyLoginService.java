@@ -8,6 +8,7 @@ import cn.slainc.core.exception.BizException;
 import cn.slainc.crypto.hash.BCryptUtils;
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.modules.auth.service.session.AuthSessionService;
+import cn.slainc.modules.auth.service.qrcode.QrImageService;
 import cn.slainc.security.LoginTypes;
 import cn.slainc.security.lock.AccountLockService;
 import cn.slainc.security.login.LoginResult;
@@ -20,6 +21,7 @@ import cn.slainc.thirdauth.ThirdAuthService.ThirdAuthLoginResult;
 import cn.slainc.thirdauth.ThirdPartyPlatform;
 import cn.slainc.thirdauth.ThirdPartyUser;
 import cn.slainc.thirdauth.binding.ThirdAccountBinding;
+import cn.slainc.thirdauth.qr.QrTicket;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.security.SecureRandom;
@@ -44,11 +46,14 @@ public class ThirdPartyLoginService {
 
     private final ObjectProvider<XssSanitizer> sanitizer;
 
+    private final ObjectProvider<QrImageService> imageService;
+
     public ThirdPartyLoginService(ThirdAuthService thirdAuthService, AuthTicketStore<ThirdBindTicket> bindStore,
                                   AuthProperties properties, AuthSessionService sessionService,
                                   ObjectProvider<AccountAuthProvider> authProvider,
                                   ObjectProvider<AccountLockService> lockService,
-                                  ObjectProvider<XssSanitizer> sanitizer) {
+                                  ObjectProvider<XssSanitizer> sanitizer,
+                                  ObjectProvider<QrImageService> imageService) {
         this.thirdAuthService = thirdAuthService;
         this.bindStore = bindStore;
         this.properties = properties;
@@ -56,6 +61,7 @@ public class ThirdPartyLoginService {
         this.authProvider = authProvider;
         this.lockService = lockService;
         this.sanitizer = sanitizer;
+        this.imageService = imageService;
     }
 
     public record ThirdProfile(String platform, String openId, String unionId, String nickname, String avatar) {
@@ -67,6 +73,22 @@ public class ThirdPartyLoginService {
     }
 
     public record ThirdLoginView(boolean needBind, String bindTicketId, LoginResult login, ThirdProfile profile) {
+    }
+
+    public record QrCreateView(String ticketId, String content, String imageBase64, long ttlSeconds) {
+    }
+
+    public record QrStatusView(String ticketId, String status, String statusLabel, long expireAt) {
+
+        static QrStatusView of(QrTicket ticket) {
+            return new QrStatusView(ticket.getTicketId(), ticket.getStatus(), labelOf(ticket.getStatus()),
+                    ticket.getExpireAt());
+        }
+
+        static QrStatusView expired(String ticketId) {
+            return new QrStatusView(ticketId, QrTicket.Status.EXPIRED.name(),
+                    labelOf(QrTicket.Status.EXPIRED.name()), 0);
+        }
     }
 
     public ThirdAuthLoginContext authorizeUrl(String platform) {
@@ -83,6 +105,46 @@ public class ThirdPartyLoginService {
         }
         ThirdBindTicket ticket = issueBindTicket(result.user());
         return new ThirdLoginView(true, ticket.getTicketId(), null, profile);
+    }
+
+    public QrCreateView createQrLogin(String platform) {
+        ThirdAuthLoginContext context = thirdAuthService.beginQrLogin(resolve(platform));
+        QrImageService image = imageService.getIfAvailable();
+        return new QrCreateView(context.state(), context.authorizeUrl(),
+                image == null ? null : image.renderBase64(context.authorizeUrl()),
+                thirdAuthService.qrTicketTtlSeconds());
+    }
+
+    public QrStatusView qrLoginStatus(String platform, String ticketId) {
+        ThirdPartyPlatform resolved = resolve(platform);
+        QrTicket ticket = thirdAuthService.pollQr(ticketId);
+        if (ticket.getPlatform() != resolved || ticket.expired(System.currentTimeMillis())) {
+            return QrStatusView.expired(ticketId);
+        }
+        return QrStatusView.of(ticket);
+    }
+
+    public ThirdLoginView exchangeQrLogin(String platform, String ticketId, String deviceType, String deviceId) {
+        ThirdPartyPlatform resolved = resolve(platform);
+        QrTicket ticket = thirdAuthService.pollQr(ticketId);
+        if (ticket.getPlatform() != resolved || ticket.expired(System.currentTimeMillis())) {
+            throw new BizException("二维码已过期或不存在，请刷新后重试");
+        }
+        if (!QrTicket.Status.CONFIRMED.name().equals(ticket.getStatus())) {
+            throw new BizException("二维码尚未确认，请在" + resolved.label() + "扫码并完成授权后重试");
+        }
+        // 换取必须原子消费：不消费会为同一张二维码重复签发会话
+        ThirdAuthLoginResult result = thirdAuthService.consumeQr(ticketId)
+                .orElseThrow(() -> new BizException("二维码已被使用，请刷新后重试"));
+        ThirdProfile profile = ThirdProfile.of(result.user());
+        if (result.bound()) {
+            LoginType type = loginType();
+            String effectiveDeviceType = deviceType == null || deviceType.isBlank() ? "third" : deviceType;
+            return new ThirdLoginView(false, null, sessionService.establish(type, Long.parseLong(result.userId()),
+                    effectiveDeviceType, deviceId), profile);
+        }
+        ThirdBindTicket bindTicket = issueBindTicket(result.user());
+        return new ThirdLoginView(true, bindTicket.getTicketId(), null, profile);
     }
 
     public LoginResult bindWithPassword(String bindTicketId, LoginType type, String username, String password,
@@ -157,6 +219,15 @@ public class ThirdPartyLoginService {
 
     private LoginType loginType() {
         return LoginTypes.resolveOrDefault(properties.getThird().getLoginType(), LoginType.TENANT_USER.value());
+    }
+
+    private static String labelOf(String status) {
+        return switch (QrTicket.Status.valueOf(status)) {
+            case WAITING -> "等待扫码";
+            case SCANNED -> "已扫码";
+            case CONFIRMED -> "已确认";
+            case EXPIRED -> "已过期";
+        };
     }
 
     private ThirdPartyPlatform resolve(String platform) {
