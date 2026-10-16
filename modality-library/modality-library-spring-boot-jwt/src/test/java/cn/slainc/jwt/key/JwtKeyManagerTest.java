@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -207,6 +208,22 @@ class JwtKeyManagerTest {
         JwtKeyManager rebuilt = new JwtKeyManager(baseProperties(), persistence);
         assertThat(rebuilt.currentKid()).isEqualTo("persistent-kid");
         assertThat(rebuilt.findByKid(firstKid)).isNotNull();
+    }
+
+    @Test
+    void newestKeyWinsWhenCreatedAtTies() {
+        Instant sameMoment = Instant.now();
+        InMemoryJwtKeyPersistence persistence = new InMemoryJwtKeyPersistence();
+        persistence.saveAll(List.of(
+                new JwtKeyRecord("first-key", JwtAlgorithm.RS256.name(),
+                        KeyFixtures.rsaPrivateKeyPem(cn.slainc.crypto.asymmetric.RsaKeySize.RSA_2048), sameMoment),
+                new JwtKeyRecord("second-key", JwtAlgorithm.RS256.name(),
+                        KeyFixtures.rsaPrivateKeyPem(cn.slainc.crypto.asymmetric.RsaKeySize.RSA_2048), sameMoment)));
+
+        JwtKeyManager rebuilt = new JwtKeyManager(baseProperties(), persistence);
+
+        assertThat(rebuilt.currentKid()).isEqualTo("second-key");
+        assertThat(rebuilt.requireByKid("first-key").kid()).isEqualTo("first-key");
     }
 
     @Test
