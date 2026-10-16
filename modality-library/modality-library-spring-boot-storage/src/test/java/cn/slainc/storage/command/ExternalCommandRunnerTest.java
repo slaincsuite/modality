@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +40,7 @@ class ExternalCommandRunnerTest {
     @DisplayName("用假 ffmpeg 脚本验证命令构造与调用，转码/截图成功")
     void fakeFfmpegIsInvokedWithExpectedArguments() throws IOException {
         Path log = directory.resolve("ffmpeg-args.log");
-        Path fake = fakeScript("fake-ffmpeg.sh", log, "");
+        Path fake = ffmpegStub(log);
         Path input = Files.writeString(directory.resolve("in.mp4"), "fake video");
         Path output = directory.resolve("out.jpg");
 
@@ -87,7 +88,7 @@ class ExternalCommandRunnerTest {
         String json = "{\"streams\":[{\"codec_type\":\"audio\",\"codec_name\":\"aac\"},"
                 + "{\"codec_type\":\"video\",\"codec_name\":\"h264\",\"width\":1920,\"height\":1080}],"
                 + "\"format\":{\"duration\":\"12.500000\",\"bit_rate\":\"1500000\",\"format_name\":\"mov,mp4\"}}";
-        Path fake = fakeScript("fake-ffprobe.sh", directory.resolve("probe.log"), "echo '" + json + "'");
+        Path fake = ffprobeStub(directory.resolve("probe.log"), json);
         Path input = Files.writeString(directory.resolve("in.mp4"), "fake video");
 
         VideoMetadataReader reader = new VideoMetadataReader(new FfprobeCommandBuilder(fake.toString()),
@@ -104,7 +105,7 @@ class ExternalCommandRunnerTest {
     @Test
     @DisplayName("命令执行超时会被强制终止并标记超时")
     void timeoutIsReported() throws IOException {
-        Path fake = fakeScript("slow.sh", directory.resolve("slow.log"), "sleep 30");
+        Path fake = slowStub(directory.resolve("slow.log"));
         ExternalCommandRunner runner = new ExternalCommandRunner(Duration.ofSeconds(1));
         long start = System.currentTimeMillis();
         CommandResult result = runner.run(List.of(fake.toString()), Duration.ofSeconds(1));
@@ -113,15 +114,50 @@ class ExternalCommandRunnerTest {
         assertThat(System.currentTimeMillis() - start).isLessThan(20_000L);
     }
 
-    private Path fakeScript(String name, Path log, String extra) throws IOException {
+    // Windows 没有 /bin/sh 与 POSIX 权限：按平台生成 .cmd 或 .sh 假工具，断言口径保持一致
+    private Path ffmpegStub(Path log) throws IOException {
+        if (isWindows()) {
+            return windowsStub("fake-ffmpeg.cmd", log,
+                    List.of("for %%a in (%*) do set \"out=%%~a\"", ">\"%out%\" echo fake"));
+        }
+        return unixStub("fake-ffmpeg.sh", log,
+                List.of("for last in \"$@\"; do out=\"$last\"; done", "echo fake > \"$out\""));
+    }
+
+    private Path ffprobeStub(Path log, String json) throws IOException {
+        Path payload = Files.writeString(directory.resolve("ffprobe-payload.json"), json);
+        if (isWindows()) {
+            return windowsStub("fake-ffprobe.cmd", log, List.of("type \"" + payload + "\""));
+        }
+        return unixStub("fake-ffprobe.sh", log, List.of("cat \"" + payload + "\""));
+    }
+
+    private Path slowStub(Path log) throws IOException {
+        if (isWindows()) {
+            return windowsStub("slow.cmd", log, List.of("ping -n 31 127.0.0.1 > nul"));
+        }
+        return unixStub("slow.sh", log, List.of("sleep 30"));
+    }
+
+    private Path windowsStub(String name, Path log, List<String> body) throws IOException {
         Path script = directory.resolve(name);
-        String content = "#!/bin/sh\n"
-                + "echo \"$@\" >> " + log + "\n"
-                + (extra.isEmpty() ? "" : extra + "\n")
-                + "for last in \"$@\"; do out=\"$last\"; done\n"
-                + "echo fake > \"$out\"\n";
-        Files.writeString(script, content);
+        StringBuilder content = new StringBuilder("@echo off\r\n");
+        content.append(">>\"").append(log).append("\" echo %*\r\n");
+        body.forEach(line -> content.append(line).append("\r\n"));
+        return Files.writeString(script, content.toString());
+    }
+
+    private Path unixStub(String name, Path log, List<String> body) throws IOException {
+        Path script = directory.resolve(name);
+        StringBuilder content = new StringBuilder("#!/bin/sh\n");
+        content.append("echo \"$@\" >> ").append(log).append("\n");
+        body.forEach(line -> content.append(line).append("\n"));
+        Files.writeString(script, content.toString());
         Files.setPosixFilePermissions(script, PosixFilePermissions.fromString("rwxr-xr-x"));
         return script;
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
     }
 }
