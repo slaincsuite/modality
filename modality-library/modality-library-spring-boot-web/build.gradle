@@ -18,6 +18,8 @@ dependencies {
     testImplementation libs.spring.boot.starter.data.redis
     testRuntimeOnly libs.brotli4j
     testRuntimeOnly libs.brotli4j.native.osx.aarch64
+    testRuntimeOnly libs.brotli4j.native.osx.x64
     testRuntimeOnly libs.brotli4j.native.linux.x64
+    testRuntimeOnly libs.brotli4j.native.windows.x64
     testRuntimeOnly libs.springdoc.openapi.starter.webmvc.ui
 }
