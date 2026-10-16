@@ -36,9 +36,6 @@ public abstract class JustAuthProvider implements ThirdPartyAuthProvider {
 
     protected abstract AuthRequest createRequest(AuthConfig config);
 
-    protected void applyScene(AuthConfig.AuthConfigBuilder builder) {
-    }
-
     @Override
     public String getAuthorizeUrl(String state, String redirectUri) {
         AuthConfig config = buildConfig(redirectUri);
@@ -139,10 +136,6 @@ public abstract class JustAuthProvider implements ThirdPartyAuthProvider {
                 .clientId(config.getAppKey())
                 .clientSecret(config.getAppSecret())
                 .redirectUri(effectiveRedirect);
-        if (config.getAgentId() != null && !config.getAgentId().isBlank()) {
-            builder.agentId(config.getAgentId());
-        }
-        applyScene(builder);
         return builder.build();
     }
 

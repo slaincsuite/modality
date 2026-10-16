@@ -74,7 +74,7 @@ public class ThirdPartyLoginService {
     }
 
     public ThirdLoginView callback(String platform, Map<String, String> params) {
-        ThirdAuthLoginResult result = thirdAuthService.handleCallback(platform, params);
+        ThirdAuthLoginResult result = thirdAuthService.handleCallback(resolve(platform).code(), params);
         ThirdProfile profile = ThirdProfile.of(result.user());
         if (result.bound()) {
             LoginType type = loginType();
@@ -160,11 +160,11 @@ public class ThirdPartyLoginService {
     }
 
     private ThirdPartyPlatform resolve(String platform) {
-        ThirdPartyPlatform resolved = ThirdPartyPlatform.of(platform);
-        if (resolved == null) {
+        try {
+            return ThirdPartyPlatform.of(platform);
+        } catch (IllegalArgumentException exception) {
             throw new BizException("不支持的第三方平台：" + platform + "，支持：" + ThirdPartyPlatform.supported());
         }
-        return resolved;
     }
 
     private String clean(String nickname) {
