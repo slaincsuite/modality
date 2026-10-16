@@ -296,7 +296,8 @@ public class JwtKeyManager {
         String newest = null;
         Instant newestAt = Instant.MIN;
         for (JwtKeyEntry entry : entries.values()) {
-            if (newest == null || entry.createdAt().isAfter(newestAt)) {
+            // 时间相同时后写入者胜出：同一毫秒内完成轮换时，新密钥仍应是当前签发密钥
+            if (newest == null || !newestAt.isAfter(entry.createdAt())) {
                 newest = entry.kid();
                 newestAt = entry.createdAt();
             }
