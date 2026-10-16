@@ -1,6 +1,6 @@
 -- modality 首次部署播种脚本（幂等，可重复执行）
 -- 执行前提：应用已启动过一次，各模块已完成自动建表
--- 用法：docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" < deploy/seed-admin.sql
+-- 用法：docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" < db/seed-admin.sql
 -- 默认管理员：admin / Admin@12345（bcrypt 哈希由本项目 BCryptUtils 生成，登录后请立即修改口令）
 
 SET @now = UNIX_TIMESTAMP() * 1000;
