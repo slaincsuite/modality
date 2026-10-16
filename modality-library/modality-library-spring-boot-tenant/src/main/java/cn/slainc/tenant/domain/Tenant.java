@@ -37,7 +37,8 @@ public class Tenant extends MybatisBaseEntity {
     private String remark;
 
     public boolean isExpired(LocalDateTime moment) {
-        return expireAt != null && moment != null && expireAt.isBefore(moment);
+        // 恰好到点即视为过期：毫秒级时钟下用严格 before 判定会漏掉「到期时刻」那次请求
+        return expireAt != null && moment != null && !moment.isBefore(expireAt);
     }
 
     public boolean isUsable(LocalDateTime moment) {
