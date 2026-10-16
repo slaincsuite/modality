@@ -1,6 +1,4 @@
 HELP.md
-AGENTS.md
-.agents/
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
