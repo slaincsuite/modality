@@ -271,4 +271,29 @@ class JwtKeyManagerTest {
                 .isInstanceOf(JwtVerifyException.class)
                 .hasMessageContaining("不一致");
     }
+
+    @Test
+    void currentKeyIsTheNewestEvenWhenPersistenceReturnsUnorderedRecords() {
+        Instant earlier = Instant.now().minusSeconds(60);
+        Instant later = Instant.now();
+        JwtKeyPersistence unordered = new JwtKeyPersistence() {
+            @Override
+            public void saveAll(List<JwtKeyRecord> records) {
+            }
+
+            @Override
+            public List<JwtKeyRecord> loadAll() {
+                return List.of(
+                        new JwtKeyRecord("newer-key", JwtAlgorithm.RS256.name(),
+                                KeyFixtures.rsaPrivateKeyPem(cn.slainc.crypto.asymmetric.RsaKeySize.RSA_2048), later),
+                        new JwtKeyRecord("older-key", JwtAlgorithm.RS256.name(),
+                                KeyFixtures.rsaPrivateKeyPem(cn.slainc.crypto.asymmetric.RsaKeySize.RSA_2048), earlier));
+            }
+        };
+
+        JwtKeyManager manager = new JwtKeyManager(baseProperties(), unordered);
+
+        assertThat(manager.currentKid()).isEqualTo("newer-key");
+        assertThat(manager.allEntries()).hasSize(2);
+    }
 }
