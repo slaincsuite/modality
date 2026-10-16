@@ -73,10 +73,6 @@ public class ThirdAuthConfigRegistry {
         merged.setAppSecret(overlayString(platform, "app-secret", base.getAppSecret()));
         merged.setRedirectUri(overlayString(platform, "redirect-uri", base.getRedirectUri()));
         merged.setCallbackBase(overlayString(platform, "callback-base", base.getCallbackBase()));
-        merged.setAgentId(overlayString(platform, "agent-id", base.getAgentId()));
-        String scene = overlayString(platform, "scene", base.getScene() == null ? null : base.getScene().name());
-        merged.setScene(scene == null || scene.isBlank() ? ThirdAuthProperties.Platform.Scene.WEB
-                : ThirdAuthProperties.Platform.Scene.valueOf(scene.trim().toUpperCase()));
         return merged;
     }
 
