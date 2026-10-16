@@ -73,6 +73,13 @@ dependencies {
     runtimeOnly libs.springdoc.openapi.starter.webmvc.ui
     runtimeOnly libs.spring.boot.starter.actuator
     runtimeOnly libs.micrometer.registry.prometheus
+    // S3 对象存储与 Brotli 压缩在库内是 compileOnly，启动模块补齐运行时实现与各平台原生库
+    runtimeOnly libs.aws.sdk.s3
+    runtimeOnly libs.brotli4j
+    runtimeOnly libs.brotli4j.native.linux.x64
+    runtimeOnly libs.brotli4j.native.windows.x64
+    runtimeOnly libs.brotli4j.native.osx.aarch64
+    runtimeOnly libs.brotli4j.native.osx.x64
     runtimeOnly libs.lucene.core
     runtimeOnly libs.lucene.analysis.common
     runtimeOnly libs.lucene.queryparser
