@@ -11,6 +11,8 @@ dependencies {
 
     implementation libs.javers.core
     compileOnly libs.spring.boot.starter.jdbc
+    compileOnly libs.micrometer.core
     testImplementation libs.spring.boot.starter.jdbc
+    testImplementation libs.micrometer.core
     testImplementation libs.h2
 }

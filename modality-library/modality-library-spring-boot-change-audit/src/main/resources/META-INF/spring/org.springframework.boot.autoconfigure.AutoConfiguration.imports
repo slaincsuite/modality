@@ -1,2 +1,3 @@
 cn.slainc.changeaudit.autoconfigure.ChangeAuditAutoConfiguration
 cn.slainc.changeaudit.autoconfigure.ChangeAuditJdbcAutoConfiguration
+cn.slainc.changeaudit.autoconfigure.ChangeAuditMicrometerAutoConfiguration

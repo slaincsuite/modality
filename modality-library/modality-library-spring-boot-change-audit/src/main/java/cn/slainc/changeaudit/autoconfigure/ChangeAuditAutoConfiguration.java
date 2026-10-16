@@ -12,6 +12,8 @@ import cn.slainc.changeaudit.support.AsyncChangeRecorder;
 import cn.slainc.changeaudit.support.NoopChangeRecorder;
 import cn.slainc.changeaudit.support.SnapshotLoaderRegistry;
 import cn.slainc.core.config.DynamicConfigService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -28,6 +30,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 @EnableConfigurationProperties(ChangeAuditProperties.class)
 @ConditionalOnProperty(prefix = ChangeAuditProperties.PREFIX, name = "enabled", matchIfMissing = true)
 public class ChangeAuditAutoConfiguration {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChangeAuditAutoConfiguration.class);
 
     @Bean
     @ConditionalOnMissingBean
@@ -92,6 +96,8 @@ public class ChangeAuditAutoConfiguration {
                                                  ObjectProvider<ThreadPoolTaskExecutor> executorProvider) {
         ChangeRecorder recorder = recorderProvider.getIfAvailable();
         if (recorder == null) {
+            // 走到这里说明 store 非 jdbc 或缺少 JDBC 能力，必须留痕，避免审计静默失效
+            LOGGER.warn("变更审计未装配落库实现（store 非 jdbc 或缺少 JDBC 依赖），本次启动按空实现处理：不再写入变更记录");
             recorder = new NoopChangeRecorder();
         }
         if (!reader.async()) {
