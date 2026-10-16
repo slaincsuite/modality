@@ -15,6 +15,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -270,7 +271,14 @@ public class JwtKeyManager {
         }
         try {
             List<JwtKeyRecord> records = persistence.loadAll();
-            return records == null ? List.of() : records;
+            if (records == null || records.isEmpty()) {
+                return List.of();
+            }
+            // 稳定排序：顺序敏感的「并列取后写入者」由排序前的实现顺序保留
+            List<JwtKeyRecord> ordered = new ArrayList<>(records);
+            ordered.sort(Comparator.comparing(JwtKeyRecord::createdAt,
+                    Comparator.nullsFirst(Comparator.<Instant>naturalOrder())));
+            return ordered;
         } catch (RuntimeException exception) {
             log.warn("加载持久化 jwt 密钥失败，将按配置或自动生成重建密钥", exception);
             return List.of();
