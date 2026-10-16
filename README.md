@@ -39,7 +39,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 - 会话安全：默认 2 小时绝对有效期 + 30 分钟空闲超时，可按体系配置；Cookie `HttpOnly` + `Secure` + `SameSite`
 - 令牌安全：JWT 支持 HS256 / RS256 / ES256、密钥轮换、JWKS 发布；吊销前强制验签，吊销键 TTL 钳制，`introspect` 按 RFC 7662 要求客户端鉴权
 - 口令存储：BCrypt（cost 10）；字段级加密支持 SM4 / AES，等值查询自动加密参数
-- 传输与响应：默认 CSP、`X-Content-Type-Options: nosniff`、兜底异常不回显原始 message、CORS 默认空白名单
+- 传输与响应：默认 CSP、`X-Content-Type-Options: nosniff`、兜底异常不回显原始 message、CORS 默认空白名单、响应压缩（客户端接受时优先 Brotli，回退 gzip）
 - 弱算法（DES / ECB）默认禁用，需显式开启才能使用
 - **MFA / TOTP 二次验证**：RFC 6238 动态口令（自研实现无第三方依赖）、恢复码、失败锁定；开启后登录返回挑战而不是令牌，`POST /auth/mfa/verify` 换取正式登录态，仅对四类用户账号体系生效
 
@@ -90,7 +90,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 
 - 依赖与版本由 BOM 统一收口，模块间依赖按层分向，ArchUnit 固化分层规则
 - 每个库都可在使用方用 `@ConditionalOnMissingBean` 覆盖，每项能力都能用 `@ConditionalOnProperty` 单独关闭
-- JaCoCo 覆盖率报告、CycloneDX SBOM、许可证报告、OWASP 依赖漏洞扫描（侧车脚本，默认不影响构建）
+- JaCoCo 覆盖率报告默认随 `build` 生成；CycloneDX SBOM、许可证报告与 OWASP 依赖漏洞扫描走侧车脚本、不影响常规构建：`./gradlew -I gradle/governance.init.gradle cyclonedxBom generateLicenseReport`，OWASP 扫描再加 `-PenableOwasp`（聚合任务 `dependencyCheckAggregate`）
 
 ## 模块清单
 
@@ -202,7 +202,7 @@ docker compose logs -f app
 # 等待应用启动完成、建表结束后执行
 set -a && . ./.env && set +a
 docker compose exec -T mysql \
-  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" < deploy/seed-admin.sql
+  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" < db/seed-admin.sql
 ```
 
 脚本会创建：
