@@ -10,4 +10,7 @@ dependencies {
     api libs.jackson.databind
 
     implementation libs.javers.core
+    compileOnly libs.spring.boot.starter.jdbc
+    testImplementation libs.spring.boot.starter.jdbc
+    testImplementation libs.h2
 }

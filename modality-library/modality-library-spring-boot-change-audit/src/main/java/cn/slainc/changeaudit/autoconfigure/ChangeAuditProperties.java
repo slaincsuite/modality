@@ -24,6 +24,8 @@ public class ChangeAuditProperties {
 
     public static final String KEY_DIFF_ENGINE = PREFIX + ".diff-engine";
 
+    public static final String KEY_STORE = PREFIX + ".store";
+
     private boolean enabled = true;
 
     private int maxValueLength = 512;
@@ -38,6 +40,33 @@ public class ChangeAuditProperties {
     private int maxExportRows = 5000;
 
     private String diffEngine = "builtin";
+
+    private String store = "jdbc";
+
+    private final Jdbc jdbc = new Jdbc();
+
+    public static class Jdbc {
+
+        private String tableName = "t_change_audit_record";
+
+        private boolean autoCreateTable = true;
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public void setTableName(String tableName) {
+            this.tableName = tableName;
+        }
+
+        public boolean isAutoCreateTable() {
+            return autoCreateTable;
+        }
+
+        public void setAutoCreateTable(boolean autoCreateTable) {
+            this.autoCreateTable = autoCreateTable;
+        }
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -93,5 +122,17 @@ public class ChangeAuditProperties {
 
     public void setDiffEngine(String diffEngine) {
         this.diffEngine = diffEngine;
+    }
+
+    public String getStore() {
+        return store;
+    }
+
+    public void setStore(String store) {
+        this.store = store;
+    }
+
+    public Jdbc getJdbc() {
+        return jdbc;
     }
 }
