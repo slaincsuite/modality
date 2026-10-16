@@ -24,15 +24,15 @@ class ThirdAuthQrFlowTest {
 
     @BeforeEach
     void setUp() {
-        FakeProvider provider = new FakeProvider(ThirdPartyPlatform.WECHAT);
+        FakeProvider provider = new FakeProvider(ThirdPartyPlatform.FEISHU);
         ThirdAuthProperties properties = new ThirdAuthProperties();
         properties.setQrTicketTtlSeconds(300);
         ThirdAuthProperties.Platform config = new ThirdAuthProperties.Platform();
         config.setEnabled(true);
-        config.setAppKey("wx_app");
+        config.setAppKey("cli_app");
         config.setAppSecret("secret");
-        config.setRedirectUri("https://cb.example.com/thirdauth/callback/wechat");
-        properties.getPlatform().put(ThirdPartyPlatform.WECHAT.code(), config);
+        config.setRedirectUri("https://cb.example.com/thirdauth/callback/feishu");
+        properties.getPlatform().put(ThirdPartyPlatform.FEISHU.code(), config);
         qrTicketStore = new MemoryQrTicketStore();
         service = new ThirdAuthService(new ThirdAuthConfigRegistry(properties, null), List.of(provider),
                 new MemoryStateStore(), qrTicketStore,
@@ -41,7 +41,7 @@ class ThirdAuthQrFlowTest {
 
     @Test
     void qrFullFlowWaitingScanConfirmLoop() {
-        ThirdAuthService.ThirdAuthLoginContext context = service.beginQrLogin(ThirdPartyPlatform.WECHAT);
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginQrLogin(ThirdPartyPlatform.FEISHU);
         String ticketId = context.state();
         assertTrue(context.authorizeUrl().contains(ticketId));
         assertEquals(QrTicket.Status.WAITING.name(), service.pollQr(ticketId).getStatus());
@@ -49,7 +49,7 @@ class ThirdAuthQrFlowTest {
         service.markScanned(ticketId);
         assertEquals(QrTicket.Status.SCANNED.name(), service.pollQr(ticketId).getStatus());
 
-        ThirdAuthService.ThirdAuthLoginResult result = service.handleCallback("wechat",
+        ThirdAuthService.ThirdAuthLoginResult result = service.handleCallback("feishu",
                 Map.of("code", "code-qr", "state", ticketId));
         assertTrue(result.needBinding());
 
@@ -61,14 +61,14 @@ class ThirdAuthQrFlowTest {
 
     @Test
     void qrCallbackWritesBindingIntoTicket() {
-        ThirdAuthService.ThirdAuthLoginContext context = service.beginQrLogin(ThirdPartyPlatform.WECHAT);
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginQrLogin(ThirdPartyPlatform.FEISHU);
         String ticketId = context.state();
-        ThirdAuthService.ThirdAuthLoginResult first = service.handleCallback("wechat",
+        ThirdAuthService.ThirdAuthLoginResult first = service.handleCallback("feishu",
                 Map.of("code", "code-1", "state", ticketId));
         service.bind(first.user(), "6001");
 
-        ThirdAuthService.ThirdAuthLoginContext second = service.beginQrLogin(ThirdPartyPlatform.WECHAT);
-        ThirdAuthService.ThirdAuthLoginResult bound = service.handleCallback("wechat",
+        ThirdAuthService.ThirdAuthLoginContext second = service.beginQrLogin(ThirdPartyPlatform.FEISHU);
+        ThirdAuthService.ThirdAuthLoginResult bound = service.handleCallback("feishu",
                 Map.of("code", "code-2", "state", second.state()));
         assertTrue(bound.bound());
         QrTicket confirmed = service.pollQr(second.state());

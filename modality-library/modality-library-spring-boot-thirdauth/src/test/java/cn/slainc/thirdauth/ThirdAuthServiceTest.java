@@ -21,9 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ThirdAuthServiceTest {
 
-    private FakeProvider wechat;
-
-    private FakeProvider wechatWork;
+    private FakeProvider feishu;
 
     private ThirdAuthService service;
 
@@ -31,17 +29,9 @@ class ThirdAuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        wechat = new FakeProvider(ThirdPartyPlatform.WECHAT);
-        wechatWork = new FakeProvider(ThirdPartyPlatform.WECHAT_WORK);
+        feishu = new FakeProvider(ThirdPartyPlatform.FEISHU);
         ThirdAuthProperties properties = new ThirdAuthProperties();
-        properties.getPlatform().put(ThirdPartyPlatform.WECHAT.code(), enabledPlatform());
-        ThirdAuthProperties.Platform workConfig = new ThirdAuthProperties.Platform();
-        workConfig.setEnabled(true);
-        workConfig.setAppKey("corp_app");
-        workConfig.setAppSecret("secret");
-        workConfig.setRedirectUri("https://cb.example.com/thirdauth/callback/wechat_work");
-        properties.getPlatform().put(ThirdPartyPlatform.WECHAT_WORK.code(), workConfig);
-        ThirdAuthConfigRegistry registry = new ThirdAuthConfigRegistry(properties, null);
+        properties.getPlatform().put(ThirdPartyPlatform.FEISHU.code(), enabledPlatform());
         InMemoryThirdAccountBindingStore bindingStore = new InMemoryThirdAccountBindingStore() {
             @Override
             public ThirdAccountBinding save(ThirdAccountBinding binding) {
@@ -49,22 +39,22 @@ class ThirdAuthServiceTest {
                 return lastBinding;
             }
         };
-        service = new ThirdAuthService(registry, List.of(wechat, wechatWork), new MemoryStateStore(),
-                new MemoryQrTicketStore(), bindingStore, properties);
+        service = new ThirdAuthService(new ThirdAuthConfigRegistry(properties, null), List.of(feishu),
+                new MemoryStateStore(), new MemoryQrTicketStore(), bindingStore, properties);
     }
 
     private ThirdAuthProperties.Platform enabledPlatform() {
         ThirdAuthProperties.Platform config = new ThirdAuthProperties.Platform();
         config.setEnabled(true);
-        config.setAppKey("wx_app");
+        config.setAppKey("cli_app");
         config.setAppSecret("secret");
-        config.setRedirectUri("https://cb.example.com/thirdauth/callback/wechat");
+        config.setRedirectUri("https://cb.example.com/thirdauth/callback/feishu");
         return config;
     }
 
     @Test
     void beginLoginReturnsAuthorizeUrlAndState() {
-        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.WECHAT);
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.FEISHU);
         assertTrue(context.authorizeUrl().contains("https://fake.example.com/oauth/authorize"));
         assertNotNull(context.state());
         assertEquals(32, context.state().length());
@@ -72,70 +62,75 @@ class ThirdAuthServiceTest {
 
     @Test
     void firstCallbackRequiresBinding() {
-        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.WECHAT);
-        ThirdAuthService.ThirdAuthLoginResult result = service.handleCallback("wechat",
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.FEISHU);
+        ThirdAuthService.ThirdAuthLoginResult result = service.handleCallback("feishu",
                 Map.of("code", "code-1", "state", context.state()));
         assertTrue(result.needBinding());
         assertNotNull(result.user().getOpenId());
-        assertEquals("code-1", wechat.lastCode());
+        assertEquals("code-1", feishu.lastCode());
     }
 
     @Test
     void stateIsOneShotAndReplayRejected() {
-        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.WECHAT);
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.FEISHU);
         Map<String, String> params = Map.of("code", "code-1", "state", context.state());
-        service.handleCallback("wechat", params);
+        service.handleCallback("feishu", params);
         ThirdPartyException exception = assertThrows(ThirdPartyException.class,
-                () -> service.handleCallback("wechat", params));
+                () -> service.handleCallback("feishu", params));
         assertTrue(exception.getMessage().contains("state 无效或已过期"));
     }
 
     @Test
     void forgedStateRejected() {
         ThirdPartyException exception = assertThrows(ThirdPartyException.class,
-                () -> service.handleCallback("wechat", Map.of("code", "c", "state", "forged")));
+                () -> service.handleCallback("feishu", Map.of("code", "c", "state", "forged")));
         assertTrue(exception.getMessage().contains("state 无效或已过期"));
     }
 
     @Test
     void platformErrorAndMissingParamsGiveChineseError() {
         ThirdPartyException platformError = assertThrows(ThirdPartyException.class,
-                () -> service.handleCallback("wechat",
+                () -> service.handleCallback("feishu",
                         Map.of("errcode", "40029", "errmsg", "invalid code")));
         assertTrue(platformError.getMessage().contains("40029"));
 
         ThirdPartyException noCode = assertThrows(ThirdPartyException.class,
-                () -> service.handleCallback("wechat", Map.of("state", "x")));
+                () -> service.handleCallback("feishu", Map.of("state", "x")));
         assertTrue(noCode.getMessage().contains("缺少授权码"));
 
         ThirdPartyException noState = assertThrows(ThirdPartyException.class,
-                () -> service.handleCallback("wechat", Map.of("code", "c")));
+                () -> service.handleCallback("feishu", Map.of("code", "c")));
         assertTrue(noState.getMessage().contains("缺少 state"));
+    }
 
-        assertThrows(IllegalArgumentException.class,
-                () -> service.handleCallback("twitter", Map.of()));
+    @Test
+    void pausedPlatformInCallbackGivesChineseError() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.handleCallback("wechat", Map.of("code", "c", "state", "s")));
+        assertTrue(exception.getMessage().contains("不支持的第三方平台"));
+        assertTrue(exception.getMessage().contains("feishu"));
     }
 
     @Test
     void callbackHitsLocalAccountAfterBinding() {
-        wechat.nextUser(FakeProvider.userOf(ThirdPartyPlatform.WECHAT, "open-wechat", null));
-        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.WECHAT);
-        ThirdAuthService.ThirdAuthLoginResult first = service.handleCallback("wechat",
+        feishu.nextUser(FakeProvider.userOf(ThirdPartyPlatform.FEISHU, "open-feishu", null));
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.FEISHU);
+        ThirdAuthService.ThirdAuthLoginResult first = service.handleCallback("feishu",
                 Map.of("code", "code-1", "state", context.state()));
         service.bind(first.user(), "2001");
 
-        ThirdAuthService.ThirdAuthLoginContext second = service.beginLogin(ThirdPartyPlatform.WECHAT);
-        ThirdAuthService.ThirdAuthLoginResult bound = service.handleCallback("wechat",
+        ThirdAuthService.ThirdAuthLoginContext second = service.beginLogin(ThirdPartyPlatform.FEISHU);
+        ThirdAuthService.ThirdAuthLoginResult bound = service.handleCallback("feishu",
                 Map.of("code", "code-2", "state", second.state()));
         assertTrue(bound.bound());
         assertEquals("2001", bound.userId());
         assertNotNull(lastBinding.getLastLoginAt());
-        assertEquals("昵称open-wechat", lastBinding.getNickname());
+        assertEquals("昵称open-feishu", lastBinding.getNickname());
     }
 
     @Test
     void bindingConflictAndRebindingSameUser() {
-        ThirdPartyUser user = FakeProvider.userOf(ThirdPartyPlatform.WECHAT, "open-777", "union-777");
+        ThirdPartyUser user = FakeProvider.userOf(ThirdPartyPlatform.FEISHU, "open-777", "union-777");
         service.bind(user, "2001");
         ThirdPartyException conflict = assertThrows(ThirdPartyException.class,
                 () -> service.bind(user, "2002"));
@@ -145,47 +140,60 @@ class ThirdAuthServiceTest {
 
     @Test
     void oneUserCanBindMultipleThirdAccounts() {
-        service.bind(FakeProvider.userOf(ThirdPartyPlatform.WECHAT, "open-a", "union-a"), "3001");
-        service.bind(FakeProvider.userOf(ThirdPartyPlatform.WECHAT, "open-b", "union-b"), "3001");
+        service.bind(FakeProvider.userOf(ThirdPartyPlatform.FEISHU, "open-a", "union-a"), "3001");
+        service.bind(FakeProvider.userOf(ThirdPartyPlatform.FEISHU, "open-b", "union-b"), "3001");
         assertEquals(2, service.listBindings("3001").size());
     }
 
     @Test
     void unbindThenCallbackRequiresBindingAgain() {
-        service.bind(FakeProvider.userOf(ThirdPartyPlatform.WECHAT, "open-999", "union-999"), "4001");
+        service.bind(FakeProvider.userOf(ThirdPartyPlatform.FEISHU, "open-999", "union-999"), "4001");
         ThirdPartyException wrongUser = assertThrows(ThirdPartyException.class,
-                () -> service.unbind(ThirdPartyPlatform.WECHAT, "open-999", "other"));
+                () -> service.unbind(ThirdPartyPlatform.FEISHU, "open-999", "other"));
         assertTrue(wrongUser.getMessage().contains("无权解绑"));
 
-        service.unbind(ThirdPartyPlatform.WECHAT, "open-999", "4001");
+        service.unbind(ThirdPartyPlatform.FEISHU, "open-999", "4001");
         assertEquals(0, service.listBindings("4001").size());
 
-        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.WECHAT);
-        wechat.nextUser(FakeProvider.userOf(ThirdPartyPlatform.WECHAT, "open-999", "union-999"));
-        ThirdAuthService.ThirdAuthLoginResult result = service.handleCallback("wechat",
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginLogin(ThirdPartyPlatform.FEISHU);
+        feishu.nextUser(FakeProvider.userOf(ThirdPartyPlatform.FEISHU, "open-999", "union-999"));
+        ThirdAuthService.ThirdAuthLoginResult result = service.handleCallback("feishu",
                 Map.of("code", "c", "state", context.state()));
         assertTrue(result.needBinding());
     }
 
     @Test
     void queryCrossAppIdentityByUnionId() {
-        service.bind(FakeProvider.userOf(ThirdPartyPlatform.WECHAT, "open-u1", "union-shared"), "5001");
-        assertTrue(service.findByUnionId(ThirdPartyPlatform.WECHAT, "union-shared").isPresent());
-        assertFalse(service.findByUnionId(ThirdPartyPlatform.WECHAT, "union-missing").isPresent());
-        assertFalse(service.findByUnionId(ThirdPartyPlatform.FEISHU, "union-shared").isPresent());
+        service.bind(FakeProvider.userOf(ThirdPartyPlatform.FEISHU, "open-u1", "union-shared"), "5001");
+        assertTrue(service.findByUnionId(ThirdPartyPlatform.FEISHU, "union-shared").isPresent());
+        assertFalse(service.findByUnionId(ThirdPartyPlatform.FEISHU, "union-missing").isPresent());
     }
 
     @Test
-    void disabledPlatformGivesChineseError() {
+    void unwiredPlatformGivesChineseError() {
+        ThirdAuthProperties properties = new ThirdAuthProperties();
+        ThirdAuthService unwired = new ThirdAuthService(new ThirdAuthConfigRegistry(properties, null), List.of(),
+                new MemoryStateStore(), new MemoryQrTicketStore(), new InMemoryThirdAccountBindingStore(), properties);
         ThirdPartyException exception = assertThrows(ThirdPartyException.class,
-                () -> service.beginLogin(ThirdPartyPlatform.DINGTALK));
+                () -> unwired.beginLogin(ThirdPartyPlatform.FEISHU));
         assertTrue(exception.getMessage().contains("平台未启用"));
+    }
+
+    @Test
+    void unconfiguredPlatformGivesChineseError() {
+        ThirdAuthProperties properties = new ThirdAuthProperties();
+        ThirdAuthService unconfigured = new ThirdAuthService(new ThirdAuthConfigRegistry(properties, null),
+                List.of(feishu), new MemoryStateStore(), new MemoryQrTicketStore(),
+                new InMemoryThirdAccountBindingStore(), properties);
+        ThirdPartyException exception = assertThrows(ThirdPartyException.class,
+                () -> unconfigured.beginLogin(ThirdPartyPlatform.FEISHU));
+        assertTrue(exception.getMessage().contains("平台未配置"));
     }
 
     @Test
     void refreshUnsupportedPlatformGivesChineseError() {
         ThirdPartyException exception = assertThrows(ThirdPartyException.class,
-                () -> service.refresh(ThirdPartyPlatform.WECHAT_WORK, "rt"));
+                () -> service.refresh(ThirdPartyPlatform.FEISHU, "rt"));
         assertTrue(exception.getMessage().contains("不支持刷新"));
     }
 
@@ -198,11 +206,11 @@ class ThirdAuthServiceTest {
             }
         };
         ThirdAuthProperties properties = new ThirdAuthProperties();
-        properties.getPlatform().put(ThirdPartyPlatform.WECHAT.code(), enabledPlatform());
+        properties.getPlatform().put(ThirdPartyPlatform.FEISHU.code(), enabledPlatform());
         ThirdAuthService strict = new ThirdAuthService(
-                new ThirdAuthConfigRegistry(properties, null), List.of(wechat),
+                new ThirdAuthConfigRegistry(properties, null), List.of(feishu),
                 stateStore, new MemoryQrTicketStore(), new InMemoryThirdAccountBindingStore(), properties);
         assertThrows(ThirdPartyException.class,
-                () -> strict.handleCallback("wechat", Map.of("code", "c", "state", "expired")));
+                () -> strict.handleCallback("feishu", Map.of("code", "c", "state", "expired")));
     }
 }

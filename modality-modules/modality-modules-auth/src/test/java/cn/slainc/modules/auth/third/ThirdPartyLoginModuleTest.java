@@ -2,7 +2,7 @@ package cn.slainc.modules.auth.third;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.modules.auth.AuthModuleApplication;
-import cn.slainc.modules.auth.FakeWechatProvider;
+import cn.slainc.modules.auth.FakeFeishuProvider;
 import cn.slainc.modules.auth.TestAccountRegistry;
 import cn.slainc.security.spi.PasswordAccount;
 import cn.slainc.thirdauth.ThirdPartyPlatform;
@@ -34,7 +34,7 @@ class ThirdPartyLoginModuleTest {
     private TestAccountRegistry registry;
 
     @Autowired
-    private FakeWechatProvider fakeProvider;
+    private FakeFeishuProvider fakeProvider;
 
     @Autowired
     private StringRedisTemplate redis;
@@ -75,12 +75,12 @@ class ThirdPartyLoginModuleTest {
         PasswordAccount user = createUser("binduser");
         fakeProvider.nextUser(userOf("open-100", "union-100"));
 
-        HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null);
+        HttpResponse<String> authorize = get("/auth/third/feishu/authorize-url", null);
         assertThat(authorize.statusCode()).as(authorize.body()).isEqualTo(200);
         String state = JsonPath.<String>read(authorize.body(), "$.data.state");
         assertThat(JsonPath.<String>read(authorize.body(), "$.data.authorizeUrl")).contains(state);
 
-        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=auth-code-1&state=" + state, null);
+        HttpResponse<String> callback = get("/auth/third/callback/feishu?code=auth-code-1&state=" + state, null);
         assertThat(callback.statusCode()).as(callback.body()).isEqualTo(200);
         assertThat((Boolean) JsonPath.<Boolean>read(callback.body(), "$.data.needBind")).isTrue();
         String bindTicket = JsonPath.<String>read(callback.body(), "$.data.bindTicketId");
@@ -103,7 +103,7 @@ class ThirdPartyLoginModuleTest {
         assertThat(bindings.body()).contains("open-100");
 
         HttpResponse<String> unbind = http.send(HttpRequest.newBuilder(
-                                URI.create("http://127.0.0.1:" + port + "/auth/third/bindings/wechat/open-100"))
+                                URI.create("http://127.0.0.1:" + port + "/auth/third/bindings/feishu/open-100"))
                         .header("satoken", token)
                         .DELETE()
                         .build(),
@@ -117,7 +117,7 @@ class ThirdPartyLoginModuleTest {
         fakeProvider.nextUser(userOf("open-200", "union-200"));
         String state = stateOf();
 
-        HttpResponse<String> first = get("/auth/third/callback/wechat?code=code-a&state=" + state, null);
+        HttpResponse<String> first = get("/auth/third/callback/feishu?code=code-a&state=" + state, null);
         assertThat(first.statusCode()).as(first.body()).isEqualTo(200);
         String bindTicket = JsonPath.<String>read(first.body(), "$.data.bindTicketId");
         HttpResponse<String> bind = post("/auth/third/bind",
@@ -126,7 +126,7 @@ class ThirdPartyLoginModuleTest {
         assertThat(bind.statusCode()).as(bind.body()).isEqualTo(200);
 
         String secondState = stateOf();
-        HttpResponse<String> second = get("/auth/third/callback/wechat?code=code-b&state=" + secondState, null);
+        HttpResponse<String> second = get("/auth/third/callback/feishu?code=code-b&state=" + secondState, null);
         assertThat(second.statusCode()).as(second.body()).isEqualTo(200);
         assertThat((Boolean) JsonPath.<Boolean>read(second.body(), "$.data.needBind")).isFalse();
         String token = JsonPath.<String>read(second.body(), "$.data.login.tokenValue");
@@ -138,7 +138,7 @@ class ThirdPartyLoginModuleTest {
         createUser("victim");
         fakeProvider.nextUser(userOf("open-300", "union-300"));
         String state = stateOf();
-        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=code-c&state=" + state, null);
+        HttpResponse<String> callback = get("/auth/third/callback/feishu?code=code-c&state=" + state, null);
         String bindTicket = JsonPath.<String>read(callback.body(), "$.data.bindTicketId");
 
         HttpResponse<String> wrongPassword = post("/auth/third/bind",
@@ -163,7 +163,7 @@ class ThirdPartyLoginModuleTest {
     void restrictedAccountCannotLoginByThirdCallback() throws Exception {
         createUser("restricted-third");
         fakeProvider.nextUser(userOf("open-400", "union-400"));
-        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=code-d&state=" + stateOf(), null);
+        HttpResponse<String> callback = get("/auth/third/callback/feishu?code=code-d&state=" + stateOf(), null);
         String bindTicket = JsonPath.<String>read(callback.body(), "$.data.bindTicketId");
         HttpResponse<String> bind = post("/auth/third/bind",
                 "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"restricted-third\",\"password\":\""
@@ -172,23 +172,45 @@ class ThirdPartyLoginModuleTest {
 
         registry.restrict("restricted-third", java.util.List.of("该账号已被禁止登录"));
 
-        HttpResponse<String> second = get("/auth/third/callback/wechat?code=code-e&state=" + stateOf(), null);
+        HttpResponse<String> second = get("/auth/third/callback/feishu?code=code-e&state=" + stateOf(), null);
         assertThat(second.statusCode()).as(second.body()).isEqualTo(400);
         assertThat(second.body()).contains("该账号已被禁止登录");
     }
 
+    @Test
+    void platformsEndpointListsFeishuOnly() throws Exception {
+        HttpResponse<String> platforms = get("/auth/third/platforms", null);
+        assertThat(platforms.statusCode()).as(platforms.body()).isEqualTo(200);
+        assertThat(platforms.body()).contains("feishu");
+        assertThat(platforms.body()).contains("飞书");
+        assertThat(platforms.body()).doesNotContain("wechat");
+        assertThat(platforms.body()).doesNotContain("dingtalk");
+    }
+
+    @Test
+    void pausedPlatformsRejectedOnLoginEntries() throws Exception {
+        HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null);
+        assertThat(authorize.statusCode()).as(authorize.body()).isEqualTo(400);
+        assertThat(authorize.body()).contains("不支持的第三方平台");
+        assertThat(authorize.body()).contains("feishu");
+
+        HttpResponse<String> callback = get("/auth/third/callback/dingtalk?code=c&state=s", null);
+        assertThat(callback.statusCode()).as(callback.body()).isEqualTo(400);
+        assertThat(callback.body()).contains("不支持的第三方平台");
+    }
+
     private ThirdPartyUser userOf(String openId, String unionId) {
         ThirdPartyUser user = new ThirdPartyUser();
-        user.setPlatform(ThirdPartyPlatform.WECHAT);
+        user.setPlatform(ThirdPartyPlatform.FEISHU);
         user.setOpenId(openId);
         user.setUnionId(unionId);
-        user.setNickname("微信昵称" + openId);
+        user.setNickname("飞书昵称" + openId);
         user.setAvatar("https://cdn.example.com/" + openId + ".png");
         return user;
     }
 
     private String stateOf() throws Exception {
-        HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null);
+        HttpResponse<String> authorize = get("/auth/third/feishu/authorize-url", null);
         assertThat(authorize.statusCode()).as(authorize.body()).isEqualTo(200);
         return JsonPath.<String>read(authorize.body(), "$.data.state");
     }

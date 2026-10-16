@@ -16,14 +16,11 @@ class ThirdAuthWiringTest {
                     ThirdAuthJdbcAutoConfiguration.class));
 
     @Test
-    void defaultWiringProvidesInMemoryStoreAndFourProviders() {
+    void defaultWiringProvidesInMemoryStoreAndFeishuProvider() {
         runner.run(context -> {
             assertThat(context).hasSingleBean(ThirdAuthService.class);
-            assertThat(context).hasBean("wechatAuthProvider");
-            assertThat(context).hasBean("wechatWorkAuthProvider");
             assertThat(context).hasBean("feishuAuthProvider");
-            assertThat(context).hasBean("dingtalkAuthProvider");
-            assertThat(context.getBeansOfType(ThirdPartyAuthProvider.class)).hasSize(4);
+            assertThat(context.getBeansOfType(ThirdPartyAuthProvider.class)).hasSize(1);
         });
     }
 
@@ -35,12 +32,12 @@ class ThirdAuthWiringTest {
 
     @Test
     void customProviderOverridesBuiltIn() {
-        FakeProvider custom = new FakeProvider(ThirdPartyPlatform.WECHAT);
-        runner.withBean("wechatAuthProvider", cn.slainc.thirdauth.provider.ThirdPartyAuthProvider.class,
+        FakeProvider custom = new FakeProvider(ThirdPartyPlatform.FEISHU);
+        runner.withBean("feishuAuthProvider", cn.slainc.thirdauth.provider.ThirdPartyAuthProvider.class,
                         () -> custom)
                 .run(context -> {
-                    assertThat(context.getBean("wechatAuthProvider")).isSameAs(custom);
-                    assertThat(context.getBeansOfType(ThirdPartyAuthProvider.class)).hasSize(4);
+                    assertThat(context.getBean("feishuAuthProvider")).isSameAs(custom);
+                    assertThat(context.getBeansOfType(ThirdPartyAuthProvider.class)).hasSize(1);
                 });
     }
 }

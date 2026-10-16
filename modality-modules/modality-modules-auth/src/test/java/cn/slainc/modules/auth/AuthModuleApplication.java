@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthModuleApplication {
 
     @Bean
-    public FakeWechatProvider wechatAuthProvider() {
-        return new FakeWechatProvider();
+    public FakeFeishuProvider feishuAuthProvider() {
+        return new FakeFeishuProvider();
     }
 
     @Bean
