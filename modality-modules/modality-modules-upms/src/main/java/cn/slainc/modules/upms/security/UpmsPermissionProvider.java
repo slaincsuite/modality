@@ -16,7 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-// RBAC 权限数据源：角色链权限码 + PUBLIC 系统 access 码 + PRIVATE 授权 access 码，供 security 的缓存合并策略来源使用
+// RBAC 权限数据源：角色链权限码 + PUBLIC 系统 access 码 + PRIVATE 授权 access 码，供 security 的权限缓存合并来源使用
 public class UpmsPermissionProvider implements SecurityPermissionProvider {
 
     private static final Logger log = LoggerFactory.getLogger(UpmsPermissionProvider.class);
