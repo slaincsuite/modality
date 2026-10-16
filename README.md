@@ -70,7 +70,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 - 审计中心：登录日志、操作日志、API 访问日志、策略评估日志，统计全部 SQL 聚合下推，导出限流限长
 - 策略引擎：基于属性的访问控制，deny 优先、无 allow 即默认拒；支持仿真推演、版本管理、导入导出、测试用例
 - 告警与通知：站内信 + Webhook（钉钉 / 飞书 / 企业微信 / 自定义），Webhook 地址做 SSRF 校验，失败退避重试
-- **字段级变更审计**：`@ChangeAudited(type, id=SpEL)` 切面采集 before/after，JaVers 逐字段差异（内置回退引擎）、敏感字段自动掩码、事务提交后异步落库（`ChangeRecorder` SPI）
+- **字段级变更审计**：`@ChangeAudited(type, id=SpEL)` 切面采集 before/after，JaVers 逐字段差异（内置回退引擎）、敏感字段自动掩码、事务提交后落库（内置 JDBC 表 `t_change_audit_record`，`modality.change-audit.store=noop` 可关闭，`ChangeRecorder` SPI 可替换）
 - **定时任务中心**：Quartz 内核（cron / misfire / 重试退避）+ 任务定义、手动触发、执行日志、节点注册管理端点；分布式锁用平台 Redisson，集群存储表自动建表
 
 ### 基础设施
