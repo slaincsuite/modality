@@ -42,37 +42,37 @@ class JdbcThirdAccountBindingStoreTest {
 
     @Test
     void findActiveByPlatformAndOpenId() {
-        ThirdAccountBinding binding = ThirdAccountBinding.create(ThirdPartyPlatform.WECHAT, "open-jdbc", "union-jdbc",
+        ThirdAccountBinding binding = ThirdAccountBinding.create(ThirdPartyPlatform.FEISHU, "open-jdbc", "union-jdbc",
                 "7001");
         binding.setNickname("张三");
         store.save(binding);
 
-        Optional<ThirdAccountBinding> found = store.findActive(ThirdPartyPlatform.WECHAT, "open-jdbc");
+        Optional<ThirdAccountBinding> found = store.findActive(ThirdPartyPlatform.FEISHU, "open-jdbc");
         assertTrue(found.isPresent());
         assertEquals("7001", found.get().getUserId());
         assertEquals("张三", found.get().getNickname());
-        assertEquals(ThirdPartyPlatform.WECHAT, found.get().getPlatform());
-        assertTrue(store.findActive(ThirdPartyPlatform.FEISHU, "open-jdbc").isEmpty());
+        assertEquals(ThirdPartyPlatform.FEISHU, found.get().getPlatform());
+        assertTrue(store.findActive(ThirdPartyPlatform.FEISHU, "open-missing").isEmpty());
     }
 
     @Test
     void unboundExcludedFromQueries() {
-        ThirdAccountBinding binding = ThirdAccountBinding.create(ThirdPartyPlatform.DINGTALK, "open-unbind",
+        ThirdAccountBinding binding = ThirdAccountBinding.create(ThirdPartyPlatform.FEISHU, "open-unbind",
                 null, "7002");
         store.save(binding);
         binding.setStatus(ThirdAccountBinding.Status.UNBOUND.name());
         store.save(binding);
 
-        assertTrue(store.findActive(ThirdPartyPlatform.DINGTALK, "open-unbind").isEmpty());
+        assertTrue(store.findActive(ThirdPartyPlatform.FEISHU, "open-unbind").isEmpty());
         assertEquals(0, store.listByUser("7002").size());
     }
 
     @Test
     void queryByUnionIdAndUser() {
-        store.save(ThirdAccountBinding.create(ThirdPartyPlatform.WECHAT, "open-u1", "union-shared", "7003"));
-        store.save(ThirdAccountBinding.create(ThirdPartyPlatform.WECHAT, "open-u2", "union-other", "7003"));
+        store.save(ThirdAccountBinding.create(ThirdPartyPlatform.FEISHU, "open-u1", "union-shared", "7003"));
+        store.save(ThirdAccountBinding.create(ThirdPartyPlatform.FEISHU, "open-u2", "union-other", "7003"));
 
-        Optional<ThirdAccountBinding> byUnion = store.findByUnionId(ThirdPartyPlatform.WECHAT, "union-shared");
+        Optional<ThirdAccountBinding> byUnion = store.findByUnionId(ThirdPartyPlatform.FEISHU, "union-shared");
         assertTrue(byUnion.isPresent());
         assertEquals("7003", byUnion.get().getUserId());
 

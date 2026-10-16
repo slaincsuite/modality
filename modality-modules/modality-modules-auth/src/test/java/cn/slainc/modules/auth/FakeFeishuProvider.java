@@ -4,7 +4,7 @@ import cn.slainc.thirdauth.ThirdPartyPlatform;
 import cn.slainc.thirdauth.ThirdPartyUser;
 import cn.slainc.thirdauth.provider.ThirdPartyAuthProvider;
 
-public class FakeWechatProvider implements ThirdPartyAuthProvider {
+public class FakeFeishuProvider implements ThirdPartyAuthProvider {
 
     private ThirdPartyUser nextUser;
 
@@ -14,12 +14,12 @@ public class FakeWechatProvider implements ThirdPartyAuthProvider {
 
     @Override
     public ThirdPartyPlatform getPlatform() {
-        return ThirdPartyPlatform.WECHAT;
+        return ThirdPartyPlatform.FEISHU;
     }
 
     @Override
     public String getAuthorizeUrl(String state, String redirectUri) {
-        return "https://fake.weixin.example.com/connect/qrconnect?appid=wx-key&state=" + state
+        return "https://fake.feishu.example.com/open-apis/authen/v1/index?app_id=cli-key&state=" + state
                 + "&redirect_uri=" + redirectUri;
     }
 
@@ -29,10 +29,10 @@ public class FakeWechatProvider implements ThirdPartyAuthProvider {
             return nextUser;
         }
         ThirdPartyUser user = new ThirdPartyUser();
-        user.setPlatform(ThirdPartyPlatform.WECHAT);
+        user.setPlatform(ThirdPartyPlatform.FEISHU);
         user.setOpenId("open-default");
         user.setUnionId("union-default");
-        user.setNickname("默认微信用户");
+        user.setNickname("默认飞书用户");
         user.setAvatar("https://cdn.example.com/a.png");
         return user;
     }

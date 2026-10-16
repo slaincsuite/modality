@@ -26,13 +26,21 @@ class ThirdAuthConfigRegistryTest {
     @Test
     void explicitRedirectUriTakesPrecedence() {
         ThirdAuthProperties properties = new ThirdAuthProperties();
-        properties.getPlatform().put("feishu", platform("cli_1", "https://explicit.example.com/cb", null));
-        properties.getPlatform().put("wechat", platform("wx_1", null, "https://base.example.com/"));
+        properties.getPlatform().put("feishu", platform("cli_1", "https://explicit.example.com/cb",
+                "https://base.example.com/"));
         ThirdAuthConfigRegistry registry = new ThirdAuthConfigRegistry(properties, null);
 
         assertEquals("https://explicit.example.com/cb", registry.redirectUriOf(ThirdPartyPlatform.FEISHU));
-        assertEquals("https://base.example.com/thirdauth/callback/wechat",
-                registry.redirectUriOf(ThirdPartyPlatform.WECHAT));
+    }
+
+    @Test
+    void callbackBaseBuildsDefaultRedirectUri() {
+        ThirdAuthProperties properties = new ThirdAuthProperties();
+        properties.getPlatform().put("feishu", platform("cli_1", null, "https://base.example.com/"));
+        ThirdAuthConfigRegistry registry = new ThirdAuthConfigRegistry(properties, null);
+
+        assertEquals("https://base.example.com/thirdauth/callback/feishu",
+                registry.redirectUriOf(ThirdPartyPlatform.FEISHU));
     }
 
     @Test
@@ -47,35 +55,32 @@ class ThirdAuthConfigRegistryTest {
     }
 
     @Test
-    void hotConfigOverridesAppKeyAndScene() {
+    void hotConfigOverridesAppKey() {
         FakeConfigService configService = new FakeConfigService();
         ThirdAuthProperties properties = new ThirdAuthProperties();
-        properties.getPlatform().put("wechat", platform("wx_old", null, "https://base.example.com"));
+        properties.getPlatform().put("feishu", platform("cli_old", null, "https://base.example.com"));
         ThirdAuthConfigRegistry registry = new ThirdAuthConfigRegistry(properties, new SingleProvider<>(configService));
 
-        assertEquals("wx_old", registry.find(ThirdPartyPlatform.WECHAT).orElseThrow().getAppKey());
-        configService.put("modality.thirdauth.platform.wechat.app-key", "wx_hot");
-        configService.put("modality.thirdauth.platform.wechat.scene", "SCAN");
-        ThirdAuthProperties.Platform overlaid = registry.find(ThirdPartyPlatform.WECHAT).orElseThrow();
-        assertEquals("wx_hot", overlaid.getAppKey());
-        assertEquals(ThirdAuthProperties.Platform.Scene.SCAN, overlaid.getScene());
+        assertEquals("cli_old", registry.find(ThirdPartyPlatform.FEISHU).orElseThrow().getAppKey());
+        configService.put("modality.thirdauth.platform.feishu.app-key", "cli_hot");
+        assertEquals("cli_hot", registry.find(ThirdPartyPlatform.FEISHU).orElseThrow().getAppKey());
     }
 
     @Test
     void hotConfigCanDisablePlatform() {
         FakeConfigService configService = new FakeConfigService();
         ThirdAuthProperties properties = new ThirdAuthProperties();
-        properties.getPlatform().put("dingtalk", platform("ding_1", null, "https://base.example.com"));
+        properties.getPlatform().put("feishu", platform("cli_1", null, "https://base.example.com"));
         ThirdAuthConfigRegistry registry = new ThirdAuthConfigRegistry(properties, new SingleProvider<>(configService));
 
-        assertTrue(registry.enabled(ThirdPartyPlatform.DINGTALK));
-        configService.put("modality.thirdauth.platform.dingtalk.enabled", "false");
-        assertFalse(registry.enabled(ThirdPartyPlatform.DINGTALK));
+        assertTrue(registry.enabled(ThirdPartyPlatform.FEISHU));
+        configService.put("modality.thirdauth.platform.feishu.enabled", "false");
+        assertFalse(registry.enabled(ThirdPartyPlatform.FEISHU));
     }
 
     @Test
-    void unknownPlatformReturnsEmpty() {
+    void unconfiguredPlatformReturnsEmpty() {
         ThirdAuthConfigRegistry registry = new ThirdAuthConfigRegistry(new ThirdAuthProperties(), null);
-        assertEquals(Optional.empty(), registry.find(ThirdPartyPlatform.DINGTALK));
+        assertEquals(Optional.empty(), registry.find(ThirdPartyPlatform.FEISHU));
     }
 }
