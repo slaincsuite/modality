@@ -1,1 +1,2 @@
 cn.slainc.changeaudit.autoconfigure.ChangeAuditAutoConfiguration
+cn.slainc.changeaudit.autoconfigure.ChangeAuditJdbcAutoConfiguration
