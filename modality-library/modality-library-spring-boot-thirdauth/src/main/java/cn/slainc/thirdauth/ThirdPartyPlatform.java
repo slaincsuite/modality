@@ -2,13 +2,7 @@ package cn.slainc.thirdauth;
 
 public enum ThirdPartyPlatform {
 
-    WECHAT("wechat", "微信"),
-
-    WECHAT_WORK("wechat_work", "企业微信"),
-
-    FEISHU("feishu", "飞书"),
-
-    DINGTALK("dingtalk", "钉钉");
+    FEISHU("feishu", "飞书");
 
     private final String code;
 

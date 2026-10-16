@@ -49,6 +49,8 @@ public class ThirdAuthProperties {
 
         private boolean enabled;
 
+        private boolean suspended;
+
         private String appKey;
 
         private String appSecret;
@@ -57,21 +59,20 @@ public class ThirdAuthProperties {
 
         private String callbackBase;
 
-        private String agentId;
-
-        private Scene scene = Scene.WEB;
-
-        public enum Scene {
-            WEB,
-            SCAN
-        }
-
         public boolean isEnabled() {
             return enabled;
         }
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+
+        public boolean isSuspended() {
+            return suspended;
+        }
+
+        public void setSuspended(boolean suspended) {
+            this.suspended = suspended;
         }
 
         public String getAppKey() {
@@ -104,22 +105,6 @@ public class ThirdAuthProperties {
 
         public void setCallbackBase(String callbackBase) {
             this.callbackBase = callbackBase;
-        }
-
-        public String getAgentId() {
-            return agentId;
-        }
-
-        public void setAgentId(String agentId) {
-            this.agentId = agentId;
-        }
-
-        public Scene getScene() {
-            return scene;
-        }
-
-        public void setScene(Scene scene) {
-            this.scene = scene;
         }
     }
 

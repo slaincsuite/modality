@@ -6,11 +6,8 @@ import cn.slainc.thirdauth.binding.InMemoryThirdAccountBindingStore;
 import cn.slainc.thirdauth.binding.ThirdAccountBindingStore;
 import cn.slainc.thirdauth.config.ThirdAuthConfigRegistry;
 import cn.slainc.thirdauth.config.ThirdAuthProperties;
-import cn.slainc.thirdauth.provider.DingtalkAuthProvider;
 import cn.slainc.thirdauth.provider.FeishuAuthProvider;
 import cn.slainc.thirdauth.provider.ThirdPartyAuthProvider;
-import cn.slainc.thirdauth.provider.WechatAuthProvider;
-import cn.slainc.thirdauth.provider.WechatWorkAuthProvider;
 import cn.slainc.thirdauth.qr.MemoryQrTicketStore;
 import cn.slainc.thirdauth.qr.QrTicketStore;
 import cn.slainc.thirdauth.qr.RedisQrTicketStore;
@@ -60,27 +57,9 @@ public class ThirdAuthAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(name = "wechatAuthProvider")
-    public WechatAuthProvider wechatAuthProvider(ThirdAuthConfigRegistry configRegistry) {
-        return new WechatAuthProvider(configRegistry);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(name = "wechatWorkAuthProvider")
-    public WechatWorkAuthProvider wechatWorkAuthProvider(ThirdAuthConfigRegistry configRegistry) {
-        return new WechatWorkAuthProvider(configRegistry);
-    }
-
-    @Bean
     @ConditionalOnMissingBean(name = "feishuAuthProvider")
     public FeishuAuthProvider feishuAuthProvider(ThirdAuthConfigRegistry configRegistry) {
         return new FeishuAuthProvider(configRegistry);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(name = "dingtalkAuthProvider")
-    public DingtalkAuthProvider dingtalkAuthProvider(ThirdAuthConfigRegistry configRegistry) {
-        return new DingtalkAuthProvider(configRegistry);
     }
 
     @Bean
