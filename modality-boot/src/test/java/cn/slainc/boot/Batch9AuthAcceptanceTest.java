@@ -45,10 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 // 批次 9 整机验收：登录全链路（密码+验证码、扫码、第三方回调、OAuth2 授权确认、Token 生命周期、登出、注销、二次认证）
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "modality.auth.captcha.enabled=true",
-        "modality.thirdauth.platform.wechat.enabled=true",
-        "modality.thirdauth.platform.wechat.app-key=wx-boot-key",
-        "modality.thirdauth.platform.wechat.app-secret=wx-boot-secret",
-        "modality.thirdauth.platform.wechat.callback-base=https://cb.boot.example.com",
+        "modality.thirdauth.platform.feishu.enabled=true",
+        "modality.thirdauth.platform.feishu.app-key=cli-boot-key",
+        "modality.thirdauth.platform.feishu.app-secret=feishu-boot-secret",
+        "modality.thirdauth.platform.feishu.callback-base=https://cb.boot.example.com",
         "modality.oauth2.scopes[0].name=openid",
         "modality.oauth2.scopes[0].description=OIDC \\u57fa\\u7840\\u8eab\\u4efd\\u6807\\u8bc6",
         "modality.oauth2.scopes[0].risk-level=LOW",
@@ -82,7 +82,7 @@ class Batch9AuthAcceptanceTest {
     private cn.slainc.jwt.issue.JwtTokenService jwtTokenService;
 
     @Autowired
-    private Batch9WechatFakeProvider fakeProvider;
+    private Batch9FeishuFakeProvider fakeProvider;
 
     @Autowired
     private StringRedisTemplate redis;
@@ -106,12 +106,12 @@ class Batch9AuthAcceptanceTest {
         }
 
         @Bean
-        public Batch9WechatFakeProvider wechatAuthProvider() {
-            return new Batch9WechatFakeProvider();
+        public Batch9FeishuFakeProvider feishuAuthProvider() {
+            return new Batch9FeishuFakeProvider();
         }
     }
 
-    static class Batch9WechatFakeProvider implements ThirdPartyAuthProvider {
+    static class Batch9FeishuFakeProvider implements ThirdPartyAuthProvider {
 
         private ThirdPartyUser nextUser;
 
@@ -121,12 +121,12 @@ class Batch9AuthAcceptanceTest {
 
         @Override
         public ThirdPartyPlatform getPlatform() {
-            return ThirdPartyPlatform.WECHAT;
+            return ThirdPartyPlatform.FEISHU;
         }
 
         @Override
         public String getAuthorizeUrl(String state, String redirectUri) {
-            return "https://fake.weixin.example.com/connect/qrconnect?appid=wx-boot-key&state=" + state;
+            return "https://fake.feishu.example.com/open-apis/authen/v1/index?app_id=cli-boot-key&state=" + state;
         }
 
         @Override
@@ -135,10 +135,10 @@ class Batch9AuthAcceptanceTest {
                 return nextUser;
             }
             ThirdPartyUser user = new ThirdPartyUser();
-            user.setPlatform(ThirdPartyPlatform.WECHAT);
+            user.setPlatform(ThirdPartyPlatform.FEISHU);
             user.setOpenId("open-boot");
             user.setUnionId("union-boot");
-            user.setNickname("微信用户");
+            user.setNickname("飞书用户");
             return user;
         }
     }
@@ -243,13 +243,13 @@ class Batch9AuthAcceptanceTest {
     @Test
     void thirdPartyCallbackBindsAccountAndLogsIn() throws Exception {
         createUser("batch9third", PASSWORD);
-        fakeProvider.nextUser(wechatUser("open-b9", "union-b9"));
+        fakeProvider.nextUser(feishuUser("open-b9", "union-b9"));
 
-        HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null, null);
+        HttpResponse<String> authorize = get("/auth/third/feishu/authorize-url", null, null);
         assertThat(authorize.statusCode()).as(authorize.body()).isEqualTo(200);
         String state = JsonPath.<String>read(authorize.body(), "$.data.state");
 
-        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=wx-code&state=" + state, null, null);
+        HttpResponse<String> callback = get("/auth/third/callback/feishu?code=fs-code&state=" + state, null, null);
         assertThat(callback.statusCode()).as(callback.body()).isEqualTo(200);
         assertThat((Boolean) JsonPath.<Boolean>read(callback.body(), "$.data.needBind")).isTrue();
         String bindTicket = JsonPath.<String>read(callback.body(), "$.data.bindTicketId");
@@ -265,11 +265,29 @@ class Batch9AuthAcceptanceTest {
         assertThat(bindings.body()).contains("open-b9");
 
         String secondState = JsonPath.<String>read(
-                get("/auth/third/wechat/authorize-url", null, null).body(), "$.data.state");
-        HttpResponse<String> second = get("/auth/third/callback/wechat?code=wx-code-2&state=" + secondState, null,
+                get("/auth/third/feishu/authorize-url", null, null).body(), "$.data.state");
+        HttpResponse<String> second = get("/auth/third/callback/feishu?code=fs-code-2&state=" + secondState, null,
                 null);
         assertThat((Boolean) JsonPath.<Boolean>read(second.body(), "$.data.needBind")).isFalse();
         assertThat(JsonPath.<String>read(second.body(), "$.data.login.tokenValue")).isNotBlank();
+    }
+
+    @Test
+    void pausedPlatformsRejectedOnAuthEntryPoints() throws Exception {
+        HttpResponse<String> authorize = get("/auth/third/wechat/authorize-url", null, null);
+        assertThat(authorize.statusCode()).as(authorize.body()).isEqualTo(400);
+        assertThat(authorize.body()).contains("不支持的第三方平台");
+        assertThat(authorize.body()).contains("feishu");
+
+        HttpResponse<String> callback = get("/auth/third/callback/wechat?code=wx-code&state=wx-state", null, null);
+        assertThat(callback.statusCode()).as(callback.body()).isEqualTo(400);
+        assertThat(callback.body()).contains("不支持的第三方平台");
+
+        HttpResponse<String> platforms = get("/auth/third/platforms", null, null);
+        assertThat(platforms.statusCode()).as(platforms.body()).isEqualTo(200);
+        assertThat(platforms.body()).contains("feishu");
+        assertThat(platforms.body()).doesNotContain("wechat");
+        assertThat(platforms.body()).doesNotContain("dingtalk");
     }
 
     @Test
@@ -424,12 +442,12 @@ class Batch9AuthAcceptanceTest {
                 "batch9");
     }
 
-    private ThirdPartyUser wechatUser(String openId, String unionId) {
+    private ThirdPartyUser feishuUser(String openId, String unionId) {
         ThirdPartyUser user = new ThirdPartyUser();
-        user.setPlatform(ThirdPartyPlatform.WECHAT);
+        user.setPlatform(ThirdPartyPlatform.FEISHU);
         user.setOpenId(openId);
         user.setUnionId(unionId);
-        user.setNickname("微信昵称" + openId);
+        user.setNickname("飞书昵称" + openId);
         return user;
     }
 

@@ -37,24 +37,15 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "modality.security.filter.exclude-patterns=/actuator/**,/v3/api-docs/**,/swagger-ui/**,/swagger-ui.html,"
                 + "/webjars/**,/favicon.ico,/error,/captcha/**,/auth/login,/auth/logout,/oauth2/jwks,"
                 + "/batch6/**",
-        "modality.thirdauth.platform.wechat.app-key=wx-boot-key",
-        "modality.thirdauth.platform.wechat.app-secret=wx-boot-secret",
-        "modality.thirdauth.platform.wechat.callback-base=http://127.0.0.1:18080",
-        "modality.thirdauth.platform.wechat-work.app-key=corp-boot-key",
-        "modality.thirdauth.platform.wechat-work.app-secret=corp-boot-secret",
-        "modality.thirdauth.platform.wechat-work.agent-id=1000002",
-        "modality.thirdauth.platform.wechat-work.callback-base=http://127.0.0.1:18080",
         "modality.thirdauth.platform.feishu.app-key=cli-boot-key",
         "modality.thirdauth.platform.feishu.app-secret=feishu-boot-secret",
-        "modality.thirdauth.platform.feishu.callback-base=http://127.0.0.1:18080",
-        "modality.thirdauth.platform.dingtalk.app-key=ding-boot-key",
-        "modality.thirdauth.platform.dingtalk.app-secret=ding-boot-secret",
-        "modality.thirdauth.platform.dingtalk.callback-base=http://127.0.0.1:18080"
+        "modality.thirdauth.platform.feishu.callback-base=http://127.0.0.1:18080"
 })
 @ActiveProfiles("dev")
 class Batch6ModelAcceptanceTest {
@@ -163,35 +154,34 @@ class Batch6ModelAcceptanceTest {
     }
 
     @Test
-    void fourPlatformAuthorizeUrlsGeneratedCorrectly() {
-        ThirdAuthService.ThirdAuthLoginContext wechat = thirdAuthService.beginLogin(ThirdPartyPlatform.WECHAT);
-        assertThat(URI.create(wechat.authorizeUrl()).getHost()).isEqualTo("open.weixin.qq.com");
-        assertThat(wechat.authorizeUrl()).contains("wx-boot-key");
-        assertThat(wechat.state()).hasSize(32);
-
-        ThirdAuthService.ThirdAuthLoginContext work = thirdAuthService.beginLogin(ThirdPartyPlatform.WECHAT_WORK);
-        assertThat(URI.create(work.authorizeUrl()).getHost()).isEqualTo("open.weixin.qq.com");
-        assertThat(work.authorizeUrl()).contains("agentid=1000002");
-
+    void feishuAuthorizeUrlGeneratedAndPausedPlatformsRejected() {
         ThirdAuthService.ThirdAuthLoginContext feishu = thirdAuthService.beginLogin(ThirdPartyPlatform.FEISHU);
         assertThat(URI.create(feishu.authorizeUrl()).getHost()).isEqualTo("open.feishu.cn");
+        assertThat(feishu.authorizeUrl()).contains("cli-boot-key");
+        assertThat(feishu.state()).hasSize(32);
 
-        ThirdAuthService.ThirdAuthLoginContext dingtalk = thirdAuthService.beginLogin(ThirdPartyPlatform.DINGTALK);
-        assertThat(URI.create(dingtalk.authorizeUrl()).getHost()).isEqualTo("login.dingtalk.com");
+        assertThat(ThirdPartyPlatform.values()).hasSize(1);
+        assertThat(ThirdPartyPlatform.supported()).isEqualTo("feishu");
+        assertThatThrownBy(() -> ThirdPartyPlatform.of("wechat"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("不支持的第三方平台");
+        assertThatThrownBy(() -> thirdAuthService.handleCallback("dingtalk", Map.of("code", "c", "state", "s")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("不支持的第三方平台");
     }
 
     @Test
     void forgedStateBlocked() {
         ThirdPartyException exception = org.junit.jupiter.api.Assertions.assertThrows(
                 ThirdPartyException.class,
-                () -> thirdAuthService.handleCallback("wechat", Map.of("code", "c", "state", "forged-state")));
+                () -> thirdAuthService.handleCallback("feishu", Map.of("code", "c", "state", "forged-state")));
         assertThat(exception.getMessage()).contains("state 无效或已过期");
     }
 
     @Test
     void bindingPersistedAndQrTicketLoop() {
         ThirdPartyUser user = new ThirdPartyUser();
-        user.setPlatform(ThirdPartyPlatform.WECHAT);
+        user.setPlatform(ThirdPartyPlatform.FEISHU);
         user.setOpenId("open-batch6-" + System.nanoTime());
         user.setUnionId("union-batch6");
         user.setNickname("批次六用户");
@@ -202,7 +192,7 @@ class Batch6ModelAcceptanceTest {
                 Long.class);
         assertThat(rows).isEqualTo(1L);
         assertThat(thirdAuthService.listBindings("2001")).isNotEmpty();
-        assertThat(thirdAuthService.findByUnionId(ThirdPartyPlatform.WECHAT, "union-batch6")).isPresent();
+        assertThat(thirdAuthService.findByUnionId(ThirdPartyPlatform.FEISHU, "union-batch6")).isPresent();
 
         ThirdAuthService.ThirdAuthLoginContext qr = thirdAuthService.beginQrLogin(ThirdPartyPlatform.FEISHU);
         QrTicket ticket = thirdAuthService.pollQr(qr.state());
