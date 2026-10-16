@@ -24,8 +24,6 @@ public class ChangeAuditProperties {
 
     public static final String KEY_DIFF_ENGINE = PREFIX + ".diff-engine";
 
-    public static final String KEY_STORE = PREFIX + ".store";
-
     private boolean enabled = true;
 
     private int maxValueLength = 512;

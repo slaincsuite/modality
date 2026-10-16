@@ -35,6 +35,12 @@ public class ChangeAuditJdbcAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(ChangeAuditStoreValidator.class)
+    public ChangeAuditStoreValidator changeAuditStoreValidator(ChangeAuditProperties properties) {
+        return new ChangeAuditStoreValidator(properties.getStore());
+    }
+
+    @Bean
     @ConditionalOnMissingBean(ChangeRecorder.class)
     @ConditionalOnProperty(prefix = ChangeAuditProperties.PREFIX, name = "store", havingValue = "jdbc",
             matchIfMissing = true)
