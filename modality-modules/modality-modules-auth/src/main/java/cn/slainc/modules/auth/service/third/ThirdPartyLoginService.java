@@ -222,12 +222,20 @@ public class ThirdPartyLoginService {
     }
 
     private static String labelOf(String status) {
-        return switch (QrTicket.Status.valueOf(status)) {
-            case WAITING -> "等待扫码";
-            case SCANNED -> "已扫码";
-            case CONFIRMED -> "已确认";
-            case EXPIRED -> "已过期";
-        };
+        if (status == null) {
+            return "未知状态";
+        }
+        try {
+            return switch (QrTicket.Status.valueOf(status)) {
+                case WAITING -> "等待扫码";
+                case SCANNED -> "已扫码";
+                case CONFIRMED -> "已确认";
+                case EXPIRED -> "已过期";
+            };
+        } catch (IllegalArgumentException exception) {
+            // 票据来自存储，状态被写脏时状态查询不能直接 500
+            return "未知状态";
+        }
     }
 
     private ThirdPartyPlatform resolve(String platform) {
