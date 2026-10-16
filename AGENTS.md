@@ -51,6 +51,7 @@ buildSrc/            Gradle 约定插件（java / spring-library / spring-boot-a
 - **注释极少**：Java 只允许 `//` 单行注释；只在反直觉常量、绕坑、顺序敏感处写一行；配置文件零注释
 - **文案全中文**：异常消息、日志、断言提示、枚举描述全中文；算法名、MIME、协议头、字符集保留原文
 - **类名不带项目前缀**，直接表达能力（`TenantAutoConfiguration`）
+- **授权术语口径**：权限骨架称 RBAC（用户 / 角色 / 权限码 / 数据范围），细粒度判定称「策略文档型 ABAC」（策略语义对齐 AWS IAM Policy / 腾讯云 CAM 策略，自研实现）；文档、注释与提交信息统一按此口径，不写成「接入云 CAM/IAM」
 - **依赖**：版本只在 `gradle/libs.versions.toml` 维护，模块里禁止版本字面量；能 `implementation` 就不 `api`
 - **新表 fail-closed**：平台级表必须登记租户忽略集（`TenantIgnoreTables.merge`，模式见 `UpmsTableWhitelist`）；租户业务表必须带 `tenant_id`；漏登记要么直接报错、要么越权，没有中间态（[modality-new-table](.agents/skills/modality-new-table/SKILL.md)）
 - **安全默认收紧**：CORS 空白名单、Cookie `Secure`、异常不回显原始 message、弱算法默认禁用；dev 放宽只许留在 dev 配置
