@@ -199,6 +199,94 @@ class ThirdPartyLoginModuleTest {
         assertThat(callback.body()).contains("不支持的第三方平台");
     }
 
+    @Test
+    void feishuQrLoginCreatesTicketThenExchangeIssuesBindTicket() throws Exception {
+        createUser("qruser");
+        fakeProvider.nextUser(userOf("open-qr-1", "union-qr-1"));
+
+        HttpResponse<String> create = post("/auth/third/feishu/qr", "{}", null);
+        assertThat(create.statusCode()).as(create.body()).isEqualTo(200);
+        String ticketId = JsonPath.<String>read(create.body(), "$.data.ticketId");
+        assertThat(JsonPath.<String>read(create.body(), "$.data.content")).contains(ticketId);
+        assertThat(JsonPath.<String>read(create.body(), "$.data.imageBase64")).isNotBlank();
+        assertThat(qrStatusOf(ticketId)).isEqualTo("WAITING");
+
+        HttpResponse<String> early = post("/auth/third/feishu/qr/" + ticketId + "/exchange",
+                "{\"deviceType\":\"PC\",\"deviceId\":\"qr-pc\"}", null);
+        assertThat(early.statusCode()).as(early.body()).isEqualTo(400);
+        assertThat(early.body()).contains("尚未确认");
+        assertThat(qrStatusOf(ticketId)).isEqualTo("WAITING");
+
+        // 模拟手机在飞书完成授权：回调携带 state=票据号
+        HttpResponse<String> callback = get("/auth/third/callback/feishu?code=qr-code&state=" + ticketId, null);
+        assertThat(callback.statusCode()).as(callback.body()).isEqualTo(200);
+        assertThat(qrStatusOf(ticketId)).isEqualTo("CONFIRMED");
+
+        HttpResponse<String> exchange = post("/auth/third/feishu/qr/" + ticketId + "/exchange",
+                "{\"deviceType\":\"PC\",\"deviceId\":\"qr-pc\"}", null);
+        assertThat(exchange.statusCode()).as(exchange.body()).isEqualTo(200);
+        assertThat((Boolean) JsonPath.<Boolean>read(exchange.body(), "$.data.needBind")).isTrue();
+        String bindTicket = JsonPath.<String>read(exchange.body(), "$.data.bindTicketId");
+        assertThat(bindTicket).isNotBlank();
+
+        HttpResponse<String> replay = post("/auth/third/feishu/qr/" + ticketId + "/exchange",
+                "{\"deviceType\":\"PC\",\"deviceId\":\"qr-pc\"}", null);
+        assertThat(replay.statusCode()).as(replay.body()).isEqualTo(400);
+        assertThat(replay.body()).contains("已过期或不存在");
+
+        HttpResponse<String> bind = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"qruser\",\"password\":\"" + PASSWORD
+                        + "\"}", null);
+        assertThat(bind.statusCode()).as(bind.body()).isEqualTo(200);
+        assertThat(get("/auth/test/me", JsonPath.<String>read(bind.body(), "$.data.tokenValue")).statusCode())
+                .isEqualTo(200);
+    }
+
+    @Test
+    void boundUserQrExchangeEstablishesSessionDirectly() throws Exception {
+        createUser("qrbound");
+        fakeProvider.nextUser(userOf("open-qr-2", "union-qr-2"));
+        HttpResponse<String> first = get("/auth/third/callback/feishu?code=code-bind&state=" + stateOf(), null);
+        String bindTicket = JsonPath.<String>read(first.body(), "$.data.bindTicketId");
+        assertThat(post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"qrbound\",\"password\":\"" + PASSWORD
+                        + "\"}", null).statusCode()).isEqualTo(200);
+
+        HttpResponse<String> create = post("/auth/third/feishu/qr", "{}", null);
+        String ticketId = JsonPath.<String>read(create.body(), "$.data.ticketId");
+        assertThat(get("/auth/third/callback/feishu?code=code-qr-2&state=" + ticketId, null).statusCode())
+                .isEqualTo(200);
+
+        HttpResponse<String> exchange = post("/auth/third/feishu/qr/" + ticketId + "/exchange",
+                "{\"deviceType\":\"PC\",\"deviceId\":\"qr-pc-2\"}", null);
+        assertThat(exchange.statusCode()).as(exchange.body()).isEqualTo(200);
+        assertThat((Boolean) JsonPath.<Boolean>read(exchange.body(), "$.data.needBind")).isFalse();
+        String token = JsonPath.<String>read(exchange.body(), "$.data.login.tokenValue");
+        assertThat(get("/auth/test/me", token).statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void qrEndpointsRejectUnknownPlatformAndMissingTicket() throws Exception {
+        HttpResponse<String> unknown = post("/auth/third/wechat/qr", "{}", null);
+        assertThat(unknown.statusCode()).as(unknown.body()).isEqualTo(400);
+        assertThat(unknown.body()).contains("不支持的第三方平台");
+
+        HttpResponse<String> missing = get("/auth/third/feishu/qr/not-exist-ticket", null);
+        assertThat(missing.statusCode()).as(missing.body()).isEqualTo(200);
+        assertThat(missing.body()).contains("EXPIRED");
+        assertThat(missing.body()).contains("已过期");
+
+        HttpResponse<String> exchange = post("/auth/third/feishu/qr/not-exist-ticket/exchange", "{}", null);
+        assertThat(exchange.statusCode()).as(exchange.body()).isEqualTo(400);
+        assertThat(exchange.body()).contains("已过期或不存在");
+    }
+
+    private String qrStatusOf(String ticketId) throws Exception {
+        HttpResponse<String> status = get("/auth/third/feishu/qr/" + ticketId, null);
+        assertThat(status.statusCode()).as(status.body()).isEqualTo(200);
+        return JsonPath.<String>read(status.body(), "$.data.status");
+    }
+
     private ThirdPartyUser userOf(String openId, String unionId) {
         ThirdPartyUser user = new ThirdPartyUser();
         user.setPlatform(ThirdPartyPlatform.FEISHU);

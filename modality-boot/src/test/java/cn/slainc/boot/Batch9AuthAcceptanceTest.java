@@ -283,11 +283,54 @@ class Batch9AuthAcceptanceTest {
         assertThat(callback.statusCode()).as(callback.body()).isEqualTo(400);
         assertThat(callback.body()).contains("不支持的第三方平台");
 
+        HttpResponse<String> qr = post("/auth/third/dingtalk/qr", "{}", null, null);
+        assertThat(qr.statusCode()).as(qr.body()).isEqualTo(400);
+        assertThat(qr.body()).contains("不支持的第三方平台");
+
         HttpResponse<String> platforms = get("/auth/third/platforms", null, null);
         assertThat(platforms.statusCode()).as(platforms.body()).isEqualTo(200);
         assertThat(platforms.body()).contains("feishu");
         assertThat(platforms.body()).doesNotContain("wechat");
         assertThat(platforms.body()).doesNotContain("dingtalk");
+    }
+
+    @Test
+    void thirdPartyQrLoginBindsAccountAndExchangesSession() throws Exception {
+        createUser("batch9qrthird", PASSWORD);
+        fakeProvider.nextUser(feishuUser("open-b9-qr", "union-b9-qr"));
+
+        HttpResponse<String> create = post("/auth/third/feishu/qr", "{}", null, null);
+        assertThat(create.statusCode()).as(create.body()).isEqualTo(200);
+        String ticketId = JsonPath.<String>read(create.body(), "$.data.ticketId");
+        assertThat(JsonPath.<String>read(create.body(), "$.data.content")).contains(ticketId);
+        assertThat(JsonPath.<String>read(create.body(), "$.data.imageBase64")).isNotBlank();
+
+        HttpResponse<String> waiting = get("/auth/third/feishu/qr/" + ticketId, null, null);
+        assertThat(waiting.statusCode()).as(waiting.body()).isEqualTo(200);
+        assertThat((String) JsonPath.<String>read(waiting.body(), "$.data.status")).isEqualTo("WAITING");
+        assertThat(waiting.body()).contains("等待扫码");
+
+        HttpResponse<String> callback = get("/auth/third/callback/feishu?code=fs-qr&state=" + ticketId, null, null);
+        assertThat(callback.statusCode()).as(callback.body()).isEqualTo(200);
+        HttpResponse<String> confirmed = get("/auth/third/feishu/qr/" + ticketId, null, null);
+        assertThat((String) JsonPath.<String>read(confirmed.body(), "$.data.status")).isEqualTo("CONFIRMED");
+
+        HttpResponse<String> exchange = post("/auth/third/feishu/qr/" + ticketId + "/exchange",
+                "{\"deviceType\":\"PC\",\"deviceId\":\"batch9-qr\"}", null, null);
+        assertThat(exchange.statusCode()).as(exchange.body()).isEqualTo(200);
+        assertThat((Boolean) JsonPath.<Boolean>read(exchange.body(), "$.data.needBind")).isTrue();
+        String bindTicket = JsonPath.<String>read(exchange.body(), "$.data.bindTicketId");
+
+        HttpResponse<String> bind = post("/auth/third/bind",
+                "{\"bindTicketId\":\"" + bindTicket + "\",\"username\":\"batch9qrthird\",\"password\":\"" + PASSWORD
+                        + "\"}", null, null);
+        assertThat(bind.statusCode()).as(bind.body()).isEqualTo(200);
+        assertThat(get("/batch4/me", tokenOf(bind), null).statusCode()).isEqualTo(200);
+
+        HttpResponse<String> replay = post("/auth/third/feishu/qr/" + ticketId + "/exchange",
+                "{\"deviceType\":\"PC\",\"deviceId\":\"batch9-qr\"}", null, null);
+        assertThat(replay.statusCode()).as(replay.body()).isEqualTo(400);
+        assertThat(replay.body()).contains("已过期或不存在");
     }
 
     @Test

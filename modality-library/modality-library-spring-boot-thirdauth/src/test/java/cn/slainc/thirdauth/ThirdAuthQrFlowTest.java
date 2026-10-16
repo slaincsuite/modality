@@ -82,6 +82,22 @@ class ThirdAuthQrFlowTest {
     }
 
     @Test
+    void confirmedTicketConsumedExactlyOnce() {
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginQrLogin(ThirdPartyPlatform.FEISHU);
+        String ticketId = context.state();
+        assertTrue(service.consumeQr(ticketId).isEmpty(), "未确认的票据不可消费");
+        assertEquals(QrTicket.Status.WAITING.name(), service.pollQr(ticketId).getStatus(), "状态不符不应消费掉票据");
+
+        ThirdAuthService.ThirdAuthLoginResult confirmed = service.handleCallback("feishu",
+                Map.of("code", "code-consume", "state", ticketId));
+        ThirdAuthService.ThirdAuthLoginResult consumed = service.consumeQr(ticketId).orElseThrow();
+        assertEquals(confirmed.user().getOpenId(), consumed.user().getOpenId());
+
+        assertTrue(service.consumeQr(ticketId).isEmpty(), "已确认票据只能被消费一次");
+        assertEquals(QrTicket.Status.EXPIRED.name(), service.pollQr(ticketId).getStatus());
+    }
+
+    @Test
     void expiredTicketReturnsExpiredStatus() {
         QrTicket expired = new QrTicket();
         expired.setTicketId("expired-ticket");
