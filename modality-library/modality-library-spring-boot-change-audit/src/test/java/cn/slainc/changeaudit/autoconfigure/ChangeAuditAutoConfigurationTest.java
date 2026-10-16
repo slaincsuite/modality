@@ -10,10 +10,13 @@ import cn.slainc.changeaudit.spi.SnapshotLoader;
 import cn.slainc.changeaudit.support.AsyncChangeRecorder;
 import cn.slainc.changeaudit.support.NoopChangeRecorder;
 import cn.slainc.changeaudit.support.SnapshotLoaderRegistry;
+import cn.slainc.changeaudit.dao.JdbcChangeRecorder;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,6 +25,17 @@ class ChangeAuditAutoConfigurationTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(ChangeAuditAutoConfiguration.class));
+
+    private final ApplicationContextRunner jdbcRunner = new ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(ChangeAuditAutoConfiguration.class,
+                    ChangeAuditJdbcAutoConfiguration.class))
+            .withBean("changeAuditTestDataSource", SimpleDriverDataSource.class, ChangeAuditAutoConfigurationTest::dataSource)
+            .withBean(JdbcTemplate.class, () -> new JdbcTemplate(dataSource()));
+
+    private static SimpleDriverDataSource dataSource() {
+        return new SimpleDriverDataSource(new org.h2.Driver(),
+                "jdbc:h2:mem:change-audit-autoconfig;MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+    }
 
     @Test
     void registersTheChangeAuditBeans() {
@@ -108,5 +122,47 @@ class ChangeAuditAutoConfigurationTest {
 
     private static Object effectiveRecorder(ApplicationContext context) {
         return ReflectionTestUtils.getField(context.getBean(ChangeAuditAspect.class), "changeRecorder");
+    }
+
+    @Test
+    void fallsBackToTheJdbcRecorderAndCreatesTheTableByDefault() {
+        jdbcRunner.run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).hasSingleBean(JdbcChangeRecorder.class);
+            assertThat(context).hasBean("changeAuditSchemaInitializer");
+            assertThat(effectiveRecorder(context)).isInstanceOf(JdbcChangeRecorder.class);
+            Integer rows = context.getBean(JdbcTemplate.class)
+                    .queryForObject("SELECT COUNT(*) FROM t_change_audit_record", Integer.class);
+            assertThat(rows).isZero();
+        });
+    }
+
+    @Test
+    void storeNoopKeepsTheNoopRecorder() {
+        jdbcRunner.withPropertyValues("modality.change-audit.store=noop").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).doesNotHaveBean(JdbcChangeRecorder.class);
+            assertThat(effectiveRecorder(context)).isInstanceOf(NoopChangeRecorder.class);
+        });
+    }
+
+    @Test
+    void customRecorderWinsOverTheJdbcRecorder() {
+        ChangeRecorder recorder = change -> {
+        };
+        jdbcRunner.withBean(ChangeRecorder.class, () -> recorder).run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).doesNotHaveBean(JdbcChangeRecorder.class);
+            assertThat(effectiveRecorder(context)).isSameAs(recorder);
+        });
+    }
+
+    @Test
+    void autoCreateTableCanBeDisabled() {
+        jdbcRunner.withPropertyValues("modality.change-audit.jdbc.auto-create-table=false").run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).doesNotHaveBean("changeAuditSchemaInitializer");
+            assertThat(context).hasSingleBean(JdbcChangeRecorder.class);
+        });
     }
 }
