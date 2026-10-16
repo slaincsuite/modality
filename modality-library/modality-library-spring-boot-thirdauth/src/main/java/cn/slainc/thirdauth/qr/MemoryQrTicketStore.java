@@ -25,4 +25,14 @@ public class MemoryQrTicketStore implements QrTicketStore {
         }
         return Optional.of(ticket);
     }
+
+    @Override
+    public Optional<QrTicket> consume(String ticketId, QrTicket.Status expected) {
+        QrTicket ticket = tickets.get(ticketId);
+        if (ticket == null || ticket.expired(System.currentTimeMillis())
+                || !expected.name().equals(ticket.getStatus())) {
+            return Optional.empty();
+        }
+        return tickets.remove(ticketId, ticket) ? Optional.of(ticket) : Optional.empty();
+    }
 }
