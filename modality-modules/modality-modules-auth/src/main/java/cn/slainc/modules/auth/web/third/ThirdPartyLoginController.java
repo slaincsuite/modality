@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "第三方登录", description = "第三方平台登录与回调")
+@Tag(name = "第三方登录", description = "第三方平台登录、扫码与回调")
 @RestController
 @RequestMapping("/auth/third")
 public class ThirdPartyLoginController {
@@ -40,6 +40,9 @@ public class ThirdPartyLoginController {
 
     public record BindBody(String bindTicketId, String username, String password, String deviceType,
                            String deviceId) {
+    }
+
+    public record QrExchangeBody(String deviceType, String deviceId) {
     }
 
     public record PlatformView(String code, String label) {
@@ -73,6 +76,26 @@ public class ThirdPartyLoginController {
             }
         });
         return Result.ok(loginService.callback(platform, merged));
+    }
+
+    @PostMapping("/{platform}/qr")
+    public Result<ThirdPartyLoginService.QrCreateView> qrCreate(@PathVariable String platform) {
+        return Result.ok(loginService.createQrLogin(platform));
+    }
+
+    @GetMapping("/{platform}/qr/{ticketId}")
+    public Result<ThirdPartyLoginService.QrStatusView> qrStatus(@PathVariable String platform,
+                                                               @PathVariable String ticketId) {
+        return Result.ok(loginService.qrLoginStatus(platform, ticketId));
+    }
+
+    @PostMapping("/{platform}/qr/{ticketId}/exchange")
+    public Result<ThirdPartyLoginService.ThirdLoginView> qrExchange(@PathVariable String platform,
+                                                                    @PathVariable String ticketId,
+                                                                    @RequestBody(required = false)
+                                                                    QrExchangeBody body) {
+        QrExchangeBody payload = body == null ? new QrExchangeBody(null, null) : body;
+        return Result.ok(loginService.exchangeQrLogin(platform, ticketId, payload.deviceType(), payload.deviceId()));
     }
 
     @PostMapping("/bind")
