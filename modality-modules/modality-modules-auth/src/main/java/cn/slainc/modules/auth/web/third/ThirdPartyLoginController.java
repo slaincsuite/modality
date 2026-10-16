@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "第三方登录", description = "第三方平台登录、扫码与回调")
@@ -78,17 +79,20 @@ public class ThirdPartyLoginController {
         return Result.ok(loginService.callback(platform, merged));
     }
 
+    @Operation(summary = "发起第三方扫码登录")
     @PostMapping("/{platform}/qr")
     public Result<ThirdPartyLoginService.QrCreateView> qrCreate(@PathVariable String platform) {
         return Result.ok(loginService.createQrLogin(platform));
     }
 
+    @Operation(summary = "轮询第三方扫码状态")
     @GetMapping("/{platform}/qr/{ticketId}")
     public Result<ThirdPartyLoginService.QrStatusView> qrStatus(@PathVariable String platform,
                                                                @PathVariable String ticketId) {
         return Result.ok(loginService.qrLoginStatus(platform, ticketId));
     }
 
+    @Operation(summary = "兑换第三方扫码登录态")
     @PostMapping("/{platform}/qr/{ticketId}/exchange")
     public Result<ThirdPartyLoginService.ThirdLoginView> qrExchange(@PathVariable String platform,
                                                                     @PathVariable String ticketId,
