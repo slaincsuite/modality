@@ -14,6 +14,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JdbcChangeRecorderTest {
@@ -77,5 +78,30 @@ class JdbcChangeRecorderTest {
         JdbcChangeRecorder broken = new JdbcChangeRecorder(jdbcTemplate, "t_change_audit_missing");
         assertDoesNotThrow(() -> broken.record(new ChangeRecord("TENANT_USER", "7003", null, "UPDATE", "[]", 0,
                 null, null, null, null, "SYSTEM", LocalDateTime.now(), null)));
+    }
+
+    @Test
+    @DisplayName("表名不是普通标识符时直接拒绝，避免拼出危险 SQL")
+    void rejectsIllegalTableName() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new JdbcChangeRecorder(jdbcTemplate, "t_change_audit_record; DROP TABLE t_user"));
+        assertThrows(IllegalArgumentException.class, () -> new JdbcChangeRecorder(jdbcTemplate, null));
+        assertDoesNotThrow(() -> new JdbcChangeRecorder(jdbcTemplate, "audit.t_change_audit_record"));
+    }
+
+    @Test
+    @DisplayName("落库成功与失败分别计数，失败可经指标暴露")
+    void countsSuccessAndFailure() {
+        JdbcChangeRecorder healthy = new JdbcChangeRecorder(jdbcTemplate, "t_change_audit_record");
+        healthy.record(new ChangeRecord("TENANT_USER", "7004", null, "UPDATE", "[]", 0, null, null, null, null,
+                "SYSTEM", LocalDateTime.now(), null));
+        assertEquals(1, healthy.metrics().recorded());
+        assertEquals(0, healthy.metrics().failed());
+
+        JdbcChangeRecorder broken = new JdbcChangeRecorder(jdbcTemplate, "t_change_audit_missing");
+        broken.record(new ChangeRecord("TENANT_USER", "7005", null, "UPDATE", "[]", 0, null, null, null, null,
+                "SYSTEM", LocalDateTime.now(), null));
+        assertEquals(0, broken.metrics().recorded());
+        assertEquals(1, broken.metrics().failed());
     }
 }

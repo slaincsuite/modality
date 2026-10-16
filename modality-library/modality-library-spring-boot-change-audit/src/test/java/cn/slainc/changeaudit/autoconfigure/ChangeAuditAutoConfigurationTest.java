@@ -11,6 +11,8 @@ import cn.slainc.changeaudit.support.AsyncChangeRecorder;
 import cn.slainc.changeaudit.support.NoopChangeRecorder;
 import cn.slainc.changeaudit.support.SnapshotLoaderRegistry;
 import cn.slainc.changeaudit.dao.JdbcChangeRecorder;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -164,5 +166,26 @@ class ChangeAuditAutoConfigurationTest {
             assertThat(context).doesNotHaveBean("changeAuditSchemaInitializer");
             assertThat(context).hasSingleBean(JdbcChangeRecorder.class);
         });
+    }
+
+    @Test
+    void unknownStoreValueFailsFast() {
+        jdbcRunner.withPropertyValues("modality.change-audit.store=JDBC").run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).getRootCause()
+                    .hasMessageContaining("不支持的变更审计存储类型");
+        });
+    }
+
+    @Test
+    void bindsRecordGaugesWhenMeterRegistryIsPresent() {
+        jdbcRunner.withConfiguration(AutoConfigurations.of(ChangeAuditMicrometerAutoConfiguration.class))
+                .withBean(MeterRegistry.class, SimpleMeterRegistry::new)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    MeterRegistry registry = context.getBean(MeterRegistry.class);
+                    assertThat(registry.find("modality.change-audit.record.success").gauge()).isNotNull();
+                    assertThat(registry.find("modality.change-audit.record.failure").gauge()).isNotNull();
+                });
     }
 }
