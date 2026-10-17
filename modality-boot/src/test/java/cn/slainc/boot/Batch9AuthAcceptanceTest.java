@@ -191,11 +191,11 @@ class Batch9AuthAcceptanceTest {
         assertThat((Boolean) JsonPath.<Boolean>read(loginResponse.body(), "$.data.mustChangePassword"))
                 .as("新用户未改过密码不应强制").isFalse();
 
-        userService.update(user.getId(), null, null, null, null, null, null, null, "10.77.0.1", null, null);
+        userService.update(user.getId(), null, null, null, null, null, null, null, "10.77.0.1", null, null, null);
         HttpResponse<String> restricted = loginRaw("batch9pwd", PASSWORD);
         assertThat(restricted.statusCode()).as(restricted.body()).isEqualTo(400);
         assertThat(restricted.body()).contains("不在账号允许的 IP");
-        userService.update(user.getId(), null, null, null, null, null, null, null, "", null, null);
+        userService.update(user.getId(), null, null, null, null, null, null, null, "", null, null, null);
 
         String token = tokenOf(loginResponse);
         HttpResponse<String> me = get("/batch4/me", token, null);
