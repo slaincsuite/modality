@@ -3,18 +3,25 @@ package cn.slainc.modules.upms.service.permission;
 import cn.slainc.modules.upms.service.common.SubtreeUtils;
 
 import cn.slainc.core.exception.BizException;
+import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.upms.UpmsKeys;
+import cn.slainc.modules.upms.entity.MenuRecord;
 import cn.slainc.modules.upms.entity.PermissionRecord;
 import cn.slainc.modules.upms.entity.RolePermissionRecord;
+import cn.slainc.modules.upms.entity.RoleRecord;
 import cn.slainc.modules.upms.entity.UserRoleRecord;
+import cn.slainc.modules.upms.mapper.MenuMapper;
 import cn.slainc.modules.upms.mapper.PermissionMapper;
 import cn.slainc.modules.upms.mapper.RolePermissionMapper;
+import cn.slainc.modules.upms.mapper.RoleMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,15 +32,22 @@ public class PermissionService {
 
     private final RolePermissionMapper rolePermissionMapper;
 
+    private final RoleMapper roleMapper;
+
+    private final MenuMapper menuMapper;
+
     private final UserRoleMapper userRoleMapper;
 
     private final UpmsPermissionCacheInvalidator cacheInvalidator;
 
     public PermissionService(PermissionMapper permissionMapper, RolePermissionMapper rolePermissionMapper,
-                             UserRoleMapper userRoleMapper, UpmsPermissionCacheInvalidator cacheInvalidator) {
+                             UserRoleMapper userRoleMapper, RoleMapper roleMapper, MenuMapper menuMapper,
+                             UpmsPermissionCacheInvalidator cacheInvalidator) {
         this.permissionMapper = permissionMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.userRoleMapper = userRoleMapper;
+        this.roleMapper = roleMapper;
+        this.menuMapper = menuMapper;
         this.cacheInvalidator = cacheInvalidator;
     }
 
@@ -124,7 +138,60 @@ public class PermissionService {
     }
 
     public List<PermissionRecord> tree() {
-        return childrenOf(search(null, null), 0L);
+        return childrenOf(search(null, null), 0L, new HashSet<>());
+    }
+
+    public PageResult<PermissionRecord> page(String keyword, String type, long current, long size) {
+        String safeKeyword = keyword == null ? null : keyword.trim();
+        LambdaQueryWrapper<PermissionRecord> wrapper = new LambdaQueryWrapper<>();
+        if (safeKeyword != null && !safeKeyword.isBlank()) {
+            wrapper.and(query -> query.like(PermissionRecord::getCode, safeKeyword)
+                    .or().like(PermissionRecord::getName, safeKeyword));
+        }
+        wrapper.eq(type != null && !type.isBlank(), PermissionRecord::getType, type);
+        Page<PermissionRecord> page = permissionMapper.selectPage(
+                Page.of(Math.max(1, current), Math.min(Math.max(1, size), 200)),
+                wrapper.orderByAsc(PermissionRecord::getSort).orderByAsc(PermissionRecord::getId));
+        return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    public List<RoleRecord> rolesOf(Long permissionId) {
+        require(permissionId);
+        List<Long> roleIds = rolePermissionMapper.selectList(new LambdaQueryWrapper<RolePermissionRecord>()
+                        .eq(RolePermissionRecord::getPermissionId, permissionId))
+                .stream().map(RolePermissionRecord::getRoleId).distinct().toList();
+        if (roleIds.isEmpty()) {
+            return List.of();
+        }
+        return roleMapper.selectList(new LambdaQueryWrapper<RoleRecord>().in(RoleRecord::getId, roleIds)
+                .orderByAsc(RoleRecord::getSort).orderByAsc(RoleRecord::getId));
+    }
+
+    public List<MenuRecord> menusOf(Long permissionId) {
+        PermissionRecord permission = require(permissionId);
+        return menuMapper.selectList(new LambdaQueryWrapper<MenuRecord>()
+                .eq(MenuRecord::getPermissionCode, permission.getCode())
+                .orderByAsc(MenuRecord::getSort).orderByAsc(MenuRecord::getId));
+    }
+
+    public List<RoleRecord> rolesOfCodes(List<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        List<Long> permissionIds = permissionMapper.selectList(new LambdaQueryWrapper<PermissionRecord>()
+                        .in(PermissionRecord::getCode, codes))
+                .stream().map(PermissionRecord::getId).toList();
+        if (permissionIds.isEmpty()) {
+            return List.of();
+        }
+        List<Long> roleIds = rolePermissionMapper.selectList(new LambdaQueryWrapper<RolePermissionRecord>()
+                        .in(RolePermissionRecord::getPermissionId, permissionIds))
+                .stream().map(RolePermissionRecord::getRoleId).distinct().toList();
+        if (roleIds.isEmpty()) {
+            return List.of();
+        }
+        return roleMapper.selectList(new LambdaQueryWrapper<RoleRecord>().in(RoleRecord::getId, roleIds)
+                .orderByAsc(RoleRecord::getSort).orderByAsc(RoleRecord::getId));
     }
 
     public PermissionRecord require(Long id) {
@@ -160,10 +227,12 @@ public class PermissionService {
                 .stream().map(PermissionRecord::getId).toList());
     }
 
-    private List<PermissionRecord> childrenOf(List<PermissionRecord> all, Long parentId) {
+    private List<PermissionRecord> childrenOf(List<PermissionRecord> all, Long parentId, Set<Long> visited) {
         List<PermissionRecord> children = new ArrayList<>();
         for (PermissionRecord permission : all) {
-            if (parentId.equals(permission.getParentId() == null ? 0L : permission.getParentId())) {
+            if (parentId.equals(permission.getParentId() == null ? 0L : permission.getParentId())
+                    && visited.add(permission.getId())) {
+                permission.setChildren(childrenOf(all, permission.getId(), visited));
                 children.add(permission);
             }
         }

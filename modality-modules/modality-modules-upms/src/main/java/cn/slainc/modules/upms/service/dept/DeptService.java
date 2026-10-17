@@ -15,6 +15,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -94,7 +95,7 @@ public class DeptService {
     public List<DeptRecord> tree() {
         List<DeptRecord> all = deptMapper.selectList(new LambdaQueryWrapper<DeptRecord>()
                 .orderByAsc(DeptRecord::getSort).orderByAsc(DeptRecord::getId));
-        return childrenOf(all, 0L);
+        return childrenOf(all, 0L, new HashSet<>());
     }
 
     public PageResult<UserRecord> usersOf(Long deptId, boolean includeChildren, long current, long size) {
@@ -125,10 +126,12 @@ public class DeptService {
         return dept;
     }
 
-    private List<DeptRecord> childrenOf(List<DeptRecord> all, Long parentId) {
+    private List<DeptRecord> childrenOf(List<DeptRecord> all, Long parentId, Set<Long> visited) {
         List<DeptRecord> children = new ArrayList<>();
         for (DeptRecord dept : all) {
-            if (parentId.equals(dept.getParentId() == null ? 0L : dept.getParentId())) {
+            if (parentId.equals(dept.getParentId() == null ? 0L : dept.getParentId())
+                    && visited.add(dept.getId())) {
+                dept.setChildren(childrenOf(all, dept.getId(), visited));
                 children.add(dept);
             }
         }

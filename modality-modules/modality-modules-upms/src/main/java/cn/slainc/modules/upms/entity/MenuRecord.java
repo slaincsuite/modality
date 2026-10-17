@@ -2,8 +2,11 @@ package cn.slainc.modules.upms.entity;
 
 import cn.slainc.modules.upms.UpmsKeys;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.util.List;
 
 @TableName(MenuRecord.TABLE_NAME)
 public class MenuRecord {
@@ -44,6 +47,9 @@ public class MenuRecord {
     private Long createTime;
 
     private Long updateTime;
+
+    @TableField(exist = false)
+    private List<MenuRecord> children;
 
     public boolean enabled() {
         return UpmsKeys.STATUS_ENABLED.equals(status);
@@ -151,5 +157,13 @@ public class MenuRecord {
 
     public void setUpdateTime(Long updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public List<MenuRecord> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<MenuRecord> children) {
+        this.children = children;
     }
 }

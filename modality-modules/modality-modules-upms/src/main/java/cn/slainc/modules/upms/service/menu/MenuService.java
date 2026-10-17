@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -104,9 +105,12 @@ public class MenuService {
     }
 
     public List<MenuRecord> tree() {
-        List<MenuRecord> all = menuMapper.selectList(new LambdaQueryWrapper<MenuRecord>()
+        return childrenOf(list(), 0L, new HashSet<>());
+    }
+
+    public List<MenuRecord> list() {
+        return menuMapper.selectList(new LambdaQueryWrapper<MenuRecord>()
                 .orderByAsc(MenuRecord::getSort).orderByAsc(MenuRecord::getId));
-        return childrenOf(all, 0L);
     }
 
     // 用户可见菜单 = 权限码命中的菜单 + 其祖先目录；目录必须依赖可见子项，无码的页面类菜单全员可见
@@ -136,7 +140,7 @@ public class MenuService {
         List<MenuRecord> visible = all.stream()
                 .filter(menu -> visibleIds.contains(menu.getId()))
                 .toList();
-        return childrenOf(visible, 0L);
+        return childrenOf(visible, 0L, new HashSet<>());
     }
 
     public Set<Long> collectSubtreeIds(Long menuId) {
@@ -162,10 +166,12 @@ public class MenuService {
         return null;
     }
 
-    private List<MenuRecord> childrenOf(List<MenuRecord> all, Long parentId) {
+    private List<MenuRecord> childrenOf(List<MenuRecord> all, Long parentId, Set<Long> visited) {
         List<MenuRecord> children = new ArrayList<>();
         for (MenuRecord menu : all) {
-            if (parentId.equals(menu.getParentId() == null ? 0L : menu.getParentId())) {
+            if (parentId.equals(menu.getParentId() == null ? 0L : menu.getParentId())
+                    && visited.add(menu.getId())) {
+                menu.setChildren(childrenOf(all, menu.getId(), visited));
                 children.add(menu);
             }
         }

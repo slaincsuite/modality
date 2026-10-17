@@ -2,8 +2,11 @@ package cn.slainc.modules.upms.entity;
 
 import cn.slainc.modules.upms.UpmsKeys;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.util.List;
 
 @TableName(PermissionRecord.TABLE_NAME)
 public class PermissionRecord {
@@ -38,6 +41,9 @@ public class PermissionRecord {
     private Long createTime;
 
     private Long updateTime;
+
+    @TableField(exist = false)
+    private List<PermissionRecord> children;
 
     public boolean enabled() {
         return UpmsKeys.STATUS_ENABLED.equals(status);
@@ -121,5 +127,13 @@ public class PermissionRecord {
 
     public void setUpdateTime(Long updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public List<PermissionRecord> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<PermissionRecord> children) {
+        this.children = children;
     }
 }

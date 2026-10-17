@@ -3,11 +3,16 @@ package cn.slainc.modules.upms.web.role;
 import cn.slainc.modules.upms.UpmsKeys;
 
 import cn.slainc.modules.upms.dto.DataScopeRequest;
+import cn.slainc.modules.upms.dto.RoleDataScopeView;
 import cn.slainc.modules.upms.dto.RoleCreateRequest;
+import cn.slainc.modules.upms.dto.RoleGroupsRequest;
+import cn.slainc.modules.upms.dto.RolePermissionSourceView;
 import cn.slainc.modules.upms.dto.RolePermissionRequest;
 import cn.slainc.modules.upms.dto.RoleUpdateRequest;
+import cn.slainc.modules.upms.dto.RoleUserBindingView;
 import cn.slainc.modules.upms.dto.RoleUsersRequest;
 import cn.slainc.modules.upms.entity.RoleRecord;
+import cn.slainc.modules.upms.entity.UserGroupRecord;
 import cn.slainc.modules.upms.service.role.RoleService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -71,6 +76,12 @@ public class RoleManageController {
         return roleService.search(name, code, status, current, size);
     }
 
+    @GetMapping("/{id}")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_QUERY)
+    public RoleRecord get(@PathVariable Long id) {
+        return roleService.require(id);
+    }
+
     @GetMapping("/list")
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_QUERY)
     public List<RoleRecord> list() {
@@ -118,6 +129,39 @@ public class RoleManageController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_QUERY)
     public List<Long> users(@PathVariable Long id) {
         return roleService.userIdsOf(id);
+    }
+
+    @GetMapping("/{id}/user-bindings")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_QUERY)
+    public List<RoleUserBindingView> userBindings(@PathVariable Long id) {
+        return roleService.userBindingsOf(id);
+    }
+
+    @GetMapping("/{id}/groups")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_QUERY)
+    public List<UserGroupRecord> groups(@PathVariable Long id) {
+        return roleService.groupsOf(id);
+    }
+
+    @PutMapping("/{id}/groups")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_ASSIGN_USER)
+    @AuditLog(value = "分配角色用户组", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "upms")
+    public void assignGroups(@PathVariable Long id, @RequestBody RoleGroupsRequest request) {
+        roleService.assignGroups(id, request.groupIds());
+    }
+
+    @GetMapping("/{id}/permission-sources")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_QUERY)
+    public RolePermissionSourceView permissionSources(@PathVariable Long id) {
+        return roleService.permissionSourcesOf(id);
+    }
+
+    @GetMapping("/{id}/data-scope")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_ROLE_QUERY)
+    public RoleDataScopeView dataScope(@PathVariable Long id) {
+        RoleRecord role = roleService.require(id);
+        return new RoleDataScopeView(role.getDataScope(), roleService.customDeptIdsOf(id));
     }
 
     @PutMapping("/{id}/data-scope")

@@ -4,17 +4,27 @@ import cn.slainc.modules.upms.service.user.UserPasswordService;
 
 import cn.slainc.modules.upms.UpmsKeys;
 
+import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.context.UserContext;
 import cn.slainc.core.enums.LoginType;
+import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.upms.dto.AvatarRequest;
 import cn.slainc.modules.upms.dto.ChangePasswordRequest;
+import cn.slainc.modules.upms.dto.PermissionBoundaryRequest;
+import cn.slainc.modules.upms.dto.PermissionBoundaryView;
 import cn.slainc.modules.upms.dto.ResetPasswordRequest;
 import cn.slainc.modules.upms.dto.RoleAssignRequest;
 import cn.slainc.modules.upms.dto.UserCreateRequest;
+import cn.slainc.modules.upms.dto.UserDeptRequest;
+import cn.slainc.modules.upms.dto.UserGroupBindingView;
+import cn.slainc.modules.upms.dto.UserToggleRequest;
 import cn.slainc.modules.upms.dto.UserUpdateRequest;
 import cn.slainc.modules.upms.entity.UserLoginRecordRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.excel.UserExcelService;
+import cn.slainc.modules.upms.service.group.UserGroupService;
+import cn.slainc.modules.upms.service.settings.UserSettingsService;
+import cn.slainc.modules.upms.service.user.UserPermissionBoundaryService;
 import cn.slainc.modules.upms.service.user.UserService;
 import cn.slainc.security.annotation.RequirePermission;
 import cn.slainc.security.handler.SecurityForbiddenException;
@@ -51,26 +61,46 @@ public class UserManageController {
 
     private final UserExcelService userExcelService;
 
+    private final UserGroupService groupService;
+
+    private final UserSettingsService settingsService;
+
+    private final UserPermissionBoundaryService permissionBoundaryService;
+
     public UserManageController(UserService userService,
                                 cn.slainc.modules.upms.service.user.UserPasswordService passwordService,
-                                UserExcelService userExcelService) {
+                                UserExcelService userExcelService, UserGroupService groupService,
+                                UserSettingsService settingsService,
+                                UserPermissionBoundaryService permissionBoundaryService) {
         this.userService = userService;
         this.passwordService = passwordService;
         this.userExcelService = userExcelService;
+        this.groupService = groupService;
+        this.settingsService = settingsService;
+        this.permissionBoundaryService = permissionBoundaryService;
     }
 
     @PostMapping
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_CREATE)
     @AuditLog(value = "创建用户", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
-            module = "upms")
+            module = "upms", recordParams = false)
     public UserRecord create(@RequestBody UserCreateRequest request) {
+        var settings = settingsService.current();
         LoginType type = request.loginType() == null || request.loginType().isBlank()
-                ? LoginType.TENANT_USER : LoginType.of(request.loginType());
+                ? LoginType.of(settings.getDefaultLoginType()) : LoginType.of(request.loginType());
         if (type == null) {
-            throw new IllegalArgumentException("非法的账号体系: " + request.loginType());
+            throw new BizException("非法的账号体系: " + request.loginType());
         }
-        return userService.create(request.username(), request.nickname(), request.password(), request.email(),
-                request.phone(), request.deptId(), type, request.tenantId(), UserContext.username());
+        Boolean mustChangePassword = request.mustChangePassword() == null
+                ? settings.getForceChangePassword() : request.mustChangePassword();
+        UserRecord user = userService.create(request.username(), request.nickname(), request.password(),
+                request.email(), request.phone(), request.deptId(), type, request.tenantId(), request.remark(),
+                mustChangePassword, UserContext.username());
+        if (settings.getDefaultRoleId() != null && user.getTenantId().equals(TenantContext.getOrDefault())
+                && userService.roleIdsOf(user.getId()).isEmpty()) {
+            userService.assignRoles(user.getId(), List.of(settings.getDefaultRoleId()));
+        }
+        return user;
     }
 
     @PutMapping("/{id}")
@@ -80,7 +110,7 @@ public class UserManageController {
     public UserRecord update(@PathVariable Long id, @RequestBody UserUpdateRequest request) {
         return userService.update(id, request.nickname(), request.email(), request.phone(), request.deptId(),
                 request.avatarUrl(), request.tags(), request.extJson(), request.allowedIps(),
-                request.allowedTimeRange(), request.allowedDevices());
+                request.allowedTimeRange(), request.allowedDevices(), request.remark());
     }
 
     @GetMapping("/{id}")
@@ -93,6 +123,7 @@ public class UserManageController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_QUERY)
     public Object page(@RequestParam(required = false) String username, @RequestParam(required = false) String nickname,
                        @RequestParam(required = false) String phone, @RequestParam(required = false) String email,
+                       @RequestParam(required = false) String keyword,
                        @RequestParam(required = false) String status, @RequestParam(required = false) Long deptId,
                        @RequestParam(required = false) Long roleId, @RequestParam(required = false) Long groupId,
                        @RequestParam(required = false) String loginType,
@@ -101,7 +132,7 @@ public class UserManageController {
                        @RequestParam(defaultValue = "1") long current,
                        @RequestParam(defaultValue = "10") long size) {
         return userService.search(username, nickname, phone, email, status, deptId, roleId, groupId, loginType,
-                createdFrom, createdTo, current, size);
+                createdFrom, createdTo, keyword, current, size);
     }
 
     @GetMapping("/{id}/detail")
@@ -207,11 +238,76 @@ public class UserManageController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_EXPORT)
     public void export(@RequestParam(required = false) String username, @RequestParam(required = false) String status,
                        @RequestParam(required = false) Long deptId, @RequestParam(required = false) Long roleId,
-                       @RequestParam(required = false) Long groupId, HttpServletResponse response) {
+                       @RequestParam(required = false) Long groupId, @RequestParam(required = false) String keyword,
+                       HttpServletResponse response) {
         List<UserRecord> users = userService.search(username, null, null, null, status, deptId, roleId, groupId,
-                null, null, null, 1, 100000).records();
+                null, null, null, keyword, 1, 100000).records();
         userExcelService.export(DownloadResponses.attachmentStream(response, "users.xlsx",
                 DownloadResponses.CONTENT_TYPE_EXCEL), users);
+    }
+
+    @PutMapping("/{id}/dept")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_UPDATE)
+    @AuditLog(value = "调整用户部门", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "upms")
+    public UserRecord updateDept(@PathVariable Long id, @RequestBody UserDeptRequest request) {
+        return userService.updateDept(id, request.deptId());
+    }
+
+    @PutMapping("/{id}/console-access")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_SECURITY)
+    @AuditLog(value = "修改控制台访问", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "upms")
+    public UserRecord changeConsoleAccess(@PathVariable Long id,
+                                          @RequestBody(required = false) UserToggleRequest request,
+                                          @RequestParam(required = false) Boolean enabled) {
+        Boolean target = request == null ? enabled : request.resolve();
+        if (target == null) {
+            target = enabled;
+        }
+        if (target == null) {
+            throw new BizException("控制台访问开关不能为空");
+        }
+        return userService.changeConsoleAccess(id, target);
+    }
+
+    @PutMapping("/{id}/must-change-password")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_SECURITY)
+    @AuditLog(value = "修改强制改密状态", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "upms")
+    public UserRecord changeMustChangePassword(@PathVariable Long id,
+                                               @RequestBody(required = false) UserToggleRequest request,
+                                               @RequestParam(required = false) Boolean required) {
+        Boolean target = request == null ? required : request.resolve();
+        if (target == null) {
+            target = required;
+        }
+        if (target == null) {
+            throw new BizException("强制改密开关不能为空");
+        }
+        return userService.changeMustChangePassword(id, target);
+    }
+
+    @GetMapping("/{id}/groups")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_QUERY)
+    public List<UserGroupBindingView> groups(@PathVariable Long id) {
+        userService.get(id);
+        return groupService.groupBindingsOf(id);
+    }
+
+    @GetMapping("/{id}/permission-boundary")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_QUERY)
+    public PermissionBoundaryView permissionBoundary(@PathVariable Long id) {
+        return permissionBoundaryService.get(id);
+    }
+
+    @PutMapping("/{id}/permission-boundary")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_USER_PERMISSION_BOUNDARY)
+    @AuditLog(value = "配置用户权限边界", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "upms")
+    public PermissionBoundaryView updatePermissionBoundary(@PathVariable Long id,
+                                                           @RequestBody PermissionBoundaryRequest request) {
+        return permissionBoundaryService.update(id, request);
     }
 
     @PostMapping("/import")

@@ -4,9 +4,11 @@ import cn.slainc.modules.upms.UpmsKeys;
 import cn.slainc.sensitive.annotation.Sensitive;
 import cn.slainc.sensitive.annotation.SensitiveType;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @TableName(UserRecord.TABLE_NAME)
 public class UserRecord {
@@ -57,6 +59,14 @@ public class UserRecord {
 
     private Long mergedTo;
 
+    private String remark;
+
+    private Boolean consoleAccess = true;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @TableField(exist = false)
+    private String initialPassword;
+
     private Boolean deleted = false;
 
     private Long createTime;
@@ -64,7 +74,7 @@ public class UserRecord {
     private Long updateTime;
 
     public boolean enabled() {
-        return UpmsKeys.STATUS_ENABLED.equals(status);
+        return UpmsKeys.STATUS_ENABLED.equals(status) && !Boolean.FALSE.equals(consoleAccess);
     }
 
     public Long getId() {
@@ -217,6 +227,30 @@ public class UserRecord {
 
     public void setMergedTo(Long mergedTo) {
         this.mergedTo = mergedTo;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
+    public Boolean getConsoleAccess() {
+        return consoleAccess;
+    }
+
+    public void setConsoleAccess(Boolean consoleAccess) {
+        this.consoleAccess = consoleAccess;
+    }
+
+    public String getInitialPassword() {
+        return initialPassword;
+    }
+
+    public void setInitialPassword(String initialPassword) {
+        this.initialPassword = initialPassword;
     }
 
     public Boolean getDeleted() {

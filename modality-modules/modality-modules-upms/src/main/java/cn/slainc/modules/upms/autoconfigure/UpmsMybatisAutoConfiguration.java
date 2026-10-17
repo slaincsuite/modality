@@ -27,7 +27,8 @@ import java.util.List;
 public class UpmsMybatisAutoConfiguration {
 
     private static final List<String> GLOBAL_TABLES = List.of(UpmsKeys.PERMISSION_TABLE, UpmsKeys.MENU_TABLE,
-            UpmsKeys.SYSTEM_REGISTRY_TABLE, UpmsKeys.OPERATION_LOG_TABLE, UpmsKeys.LOGIN_RECORD_TABLE);
+            UpmsKeys.SYSTEM_REGISTRY_TABLE, UpmsKeys.OPERATION_LOG_TABLE, UpmsKeys.LOGIN_RECORD_TABLE,
+            UpmsKeys.USER_SETTINGS_TABLE, UpmsKeys.USER_SETTINGS_HISTORY_TABLE);
 
     @Bean
     @ConditionalOnMissingBean(UpmsTableWhitelist.class)

@@ -2,6 +2,7 @@ package cn.slainc.modules.upms.web.user;
 
 import cn.slainc.modules.upms.UpmsKeys;
 
+import cn.slainc.modules.upms.dto.ActiveUserView;
 import cn.slainc.modules.upms.service.user.UserStatsService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,5 +41,11 @@ public class UserStatsController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_STATS_QUERY)
     public List<Map<String, Object>> roleDistribution() {
         return statsService.roleDistribution();
+    }
+
+    @GetMapping("/active-users")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_STATS_QUERY)
+    public List<ActiveUserView> activeUsers(@RequestParam(defaultValue = "30") int days) {
+        return statsService.activeUsers(days);
     }
 }

@@ -5,7 +5,9 @@ import cn.slainc.modules.upms.UpmsKeys;
 import cn.slainc.core.context.UserContext;
 import cn.slainc.modules.upms.dto.MenuRequest;
 import cn.slainc.modules.upms.entity.MenuRecord;
+import cn.slainc.modules.upms.entity.RoleRecord;
 import cn.slainc.modules.upms.service.menu.MenuService;
+import cn.slainc.modules.upms.service.permission.PermissionService;
 import cn.slainc.modules.upms.service.self.RecentVisitService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,9 +36,13 @@ public class MenuManageController {
 
     private final RecentVisitService recentVisitService;
 
-    public MenuManageController(MenuService menuService, RecentVisitService recentVisitService) {
+    private final PermissionService permissionService;
+
+    public MenuManageController(MenuService menuService, RecentVisitService recentVisitService,
+                                PermissionService permissionService) {
         this.menuService = menuService;
         this.recentVisitService = recentVisitService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("/hot")
@@ -75,6 +81,22 @@ public class MenuManageController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_QUERY)
     public List<MenuRecord> tree() {
         return menuService.tree();
+    }
+
+    @GetMapping("/list")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_QUERY)
+    public List<MenuRecord> list() {
+        return menuService.list();
+    }
+
+    @GetMapping("/{id}/roles")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_MENU_QUERY)
+    public List<RoleRecord> roles(@PathVariable Long id) {
+        MenuRecord menu = menuService.require(id);
+        if (menu.getPermissionCode() == null || menu.getPermissionCode().isBlank()) {
+            return List.of();
+        }
+        return permissionService.rolesOfCodes(List.of(menu.getPermissionCode()));
     }
 
     @GetMapping("/my-menus")

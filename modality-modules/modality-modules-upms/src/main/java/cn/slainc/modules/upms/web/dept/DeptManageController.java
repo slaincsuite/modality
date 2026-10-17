@@ -4,7 +4,9 @@ import cn.slainc.modules.upms.UpmsKeys;
 
 import cn.slainc.modules.upms.dto.DeptRequest;
 import cn.slainc.modules.upms.entity.DeptRecord;
+import cn.slainc.modules.upms.entity.RoleRecord;
 import cn.slainc.modules.upms.service.dept.DeptService;
+import cn.slainc.modules.upms.service.role.RoleService;
 import cn.slainc.security.annotation.RequirePermission;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,8 +31,11 @@ public class DeptManageController {
 
     private final DeptService deptService;
 
-    public DeptManageController(DeptService deptService) {
+    private final RoleService roleService;
+
+    public DeptManageController(DeptService deptService, RoleService roleService) {
         this.deptService = deptService;
+        this.roleService = roleService;
     }
 
     @PostMapping
@@ -62,6 +67,19 @@ public class DeptManageController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_DEPT_QUERY)
     public List<DeptRecord> tree() {
         return deptService.tree();
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_DEPT_QUERY)
+    public DeptRecord get(@PathVariable Long id) {
+        return deptService.require(id);
+    }
+
+    @GetMapping("/{id}/roles")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_DEPT_QUERY)
+    public List<RoleRecord> roles(@PathVariable Long id) {
+        deptService.require(id);
+        return roleService.rolesOfDept(id);
     }
 
     @GetMapping("/{id}/users")
