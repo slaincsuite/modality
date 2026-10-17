@@ -8,7 +8,9 @@ public enum PolicySubjectType {
 
     ROLE("role"),
 
-    USER("user");
+    USER("user"),
+
+    GROUP("group");
 
     private final String code;
 
@@ -26,6 +28,6 @@ public enum PolicySubjectType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("非法的策略作用对象: " + code + "，只允许 global、tenant、role、user");
+        throw new IllegalArgumentException("非法的策略作用对象: " + code + "，只允许 global、tenant、role、user、group");
     }
 }

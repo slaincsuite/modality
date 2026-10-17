@@ -29,7 +29,12 @@ public class PolicyDocument {
         if (json == null || json.isBlank()) {
             throw new BizException(ResultCode.PARAM_MISSING, "策略文档内容不能为空");
         }
-        PolicyDocument document = JsonUtils.parse(json, PolicyDocument.class);
+        PolicyDocument document;
+        try {
+            document = JsonUtils.parse(json, PolicyDocument.class);
+        } catch (RuntimeException exception) {
+            throw new BizException(ResultCode.PARAM_TYPE_MISMATCH, "策略文档不是合法的 JSON");
+        }
         if (document == null) {
             throw new BizException(ResultCode.PARAM_TYPE_MISMATCH, "策略文档不是合法的 JSON 对象");
         }

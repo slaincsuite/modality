@@ -52,6 +52,7 @@ public class InMemoryPolicyBindingStore implements PolicyBindingStore {
         copied.setId(binding.getId());
         copied.setTenantId(binding.getTenantId());
         copied.setPolicyId(binding.getPolicyId());
+        copied.setSourcePolicyId(binding.getSourcePolicyId());
         copied.setSubjectType(binding.getSubjectType());
         copied.setSubjectId(binding.getSubjectId());
         copied.setOperator(binding.getOperator());

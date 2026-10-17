@@ -183,6 +183,9 @@ public class PolicyEngine {
         if (policy.getSubjectType() == PolicySubjectType.ROLE) {
             return request.getRoles() != null && request.getRoles().contains(policy.getSubjectId());
         }
+        if (policy.getSubjectType() == PolicySubjectType.GROUP) {
+            return request.getGroups() != null && request.getGroups().contains(policy.getSubjectId());
+        }
         return request.getUserId() != null && policy.getSubjectId().equals(request.getUserId());
     }
 
@@ -240,6 +243,7 @@ public class PolicyEngine {
         identity.put("loginType", request.getLoginType());
         identity.put("tenantId", request.getTenantId());
         identity.put("roles", request.getRoles() == null ? List.of() : request.getRoles().stream().sorted().toList());
+        identity.put("groups", request.getGroups() == null ? List.of() : request.getGroups().stream().sorted().toList());
         identity.put("action", request.getAction());
         identity.put("resource", request.getResource());
         identity.put("env", ordered);

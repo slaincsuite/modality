@@ -9,6 +9,8 @@ import cn.slainc.policy.bridge.PolicySecurityBridge;
 import cn.slainc.policy.config.PolicyProperties;
 import cn.slainc.policy.engine.PolicyEngine;
 import cn.slainc.policy.simulate.PolicySimulator;
+import cn.slainc.policy.spi.PolicyGroupProvider;
+import cn.slainc.policy.storage.PolicyBindingOriginStore;
 import cn.slainc.policy.storage.InMemoryPolicyBindingStore;
 import cn.slainc.policy.storage.InMemoryPolicyStore;
 import cn.slainc.policy.storage.PolicyBindingStore;
@@ -62,8 +64,9 @@ public class PolicyAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public PolicyBindingService policyBindingService(PolicyBindingStore bindingStore,
-                                                     PolicyAdminService policyAdminService) {
-        return new PolicyBindingService(bindingStore, policyAdminService);
+                                                     PolicyAdminService policyAdminService,
+                                                     ObjectProvider<PolicyBindingOriginStore> originStore) {
+        return new PolicyBindingService(bindingStore, policyAdminService, originStore);
     }
 
     @Bean
@@ -97,8 +100,9 @@ public class PolicyAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean(cn.slainc.security.spi.SecurityPolicyProvider.class)
         @ConditionalOnProperty(prefix = "modality.policy", name = "security-bridge-enabled", matchIfMissing = true)
-        public PolicySecurityBridge policySecurityBridge(PolicyEngine policyEngine) {
-            return new PolicySecurityBridge(policyEngine);
+        public PolicySecurityBridge policySecurityBridge(PolicyEngine policyEngine,
+                                                          ObjectProvider<PolicyGroupProvider> groupProvider) {
+            return new PolicySecurityBridge(policyEngine, groupProvider);
         }
     }
 }
