@@ -44,6 +44,8 @@ class PolicyEvaluationLogModuleTest {
 
     private String token;
 
+    private String restrictedToken;
+
     private String denyPolicyId;
 
     @BeforeEach
@@ -51,7 +53,8 @@ class PolicyEvaluationLogModuleTest {
         TenantContext.set(1L);
         http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
         jdbc.execute("DELETE FROM t_audit_policy_log");
-        token = loginToken();
+        token = loginToken(null);
+        restrictedToken = loginToken(91002L);
         http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
         denyPolicyId = adminService.create("审计禁写策略", PolicySubjectType.GLOBAL, null, null,
                 PolicyDocument.of(statement(Effect.DENY, List.of("modality:audit-test:write"), List.of("*"))),
@@ -117,9 +120,53 @@ class PolicyEvaluationLogModuleTest {
         assertThat((int) com.jayway.jsonpath.JsonPath.read(page.body(), "$.data.total")).isGreaterThanOrEqualTo(1);
     }
 
-    private String loginToken() throws Exception {
+    @Test
+    void keywordMatchesAccountActionOrResource() throws Exception {
+        long now = System.currentTimeMillis();
+        insertPolicyLog("alpha", "order:read", "/orders/1", now);
+        insertPolicyLog("beta", "invoice:write", "/invoices/1", now);
+        insertPolicyLog("gamma", "report:read", "/reports/1", now);
+
+        assertThat(policyPageTotal("keyword=alpha")).isEqualTo(1);
+        assertThat(policyPageTotal("keyword=invoice")).isEqualTo(1);
+        assertThat(policyPageTotal("keyword=reports")).isEqualTo(1);
+    }
+
+    @Test
+    void exportsPolicyLogsAndRejectsRestrictedExport() throws Exception {
+        long now = System.currentTimeMillis();
+        insertPolicyLog("delta", "order:read", "/orders/2", now);
+
+        HttpResponse<byte[]> exported = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/audit/policy-logs/export?keyword=delta"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<String> restricted = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/audit/policy-logs/export"))
+                .header("satoken", restrictedToken).GET().build(), HttpResponse.BodyHandlers.ofString());
+
+        assertThat(exported.statusCode()).isEqualTo(200);
+        assertThat(exported.body()[0]).isEqualTo((byte) 'P');
+        assertThat(restricted.statusCode()).isEqualTo(403);
+    }
+
+    private int policyPageTotal(String query) throws Exception {
+        HttpResponse<String> page = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/audit/policy-logs/page?" + query))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertThat(page.statusCode()).isEqualTo(200);
+        return com.jayway.jsonpath.JsonPath.read(page.body(), "$.data.total");
+    }
+
+    private void insertPolicyLog(String loginId, String action, String resource, long createTime) {
+        jdbc.update("INSERT INTO t_audit_policy_log(login_id, login_type, tenant_id, action, resource, decision,"
+                        + " reason, client_ip, request_path, create_time) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                loginId, "TENANT_USER", 1L, action, resource, "ALLOW", "测试", "127.0.0.1", resource, createTime);
+    }
+
+    private String loginToken(Long userId) throws Exception {
+        String path = userId == null ? "/audit-test/login" : "/audit-test/login/" + userId;
         HttpResponse<String> response = http.send(
-                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/audit-test/login")).GET().build(),
+                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
         return com.jayway.jsonpath.JsonPath.read(response.body(), "$.data");
     }

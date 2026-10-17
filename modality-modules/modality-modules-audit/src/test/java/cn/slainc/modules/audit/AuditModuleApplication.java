@@ -37,6 +37,12 @@ public class AuditModuleApplication {
             return Result.ok(StpKit.tenantUser().getTokenValue());
         }
 
+        @GetMapping("/audit-test/login/{userId}")
+        public Result<String> login(@org.springframework.web.bind.annotation.PathVariable Long userId) {
+            StpKit.tenantUser().login(userId);
+            return Result.ok(StpKit.tenantUser().getTokenValue());
+        }
+
         @GetMapping("/audit-test/annotated")
         @AuditLog(value = "演示操作", operation = AuditOperation.EXPORT, category = AuditCategory.DATA,
                 recordResult = true)
@@ -81,7 +87,7 @@ public class AuditModuleApplication {
 
             @Override
             public List<String> getPermissionList(Object loginId, String loginType) {
-                return List.of("*");
+                return "91002".equals(String.valueOf(loginId)) ? List.of() : List.of("*");
             }
 
             @Override

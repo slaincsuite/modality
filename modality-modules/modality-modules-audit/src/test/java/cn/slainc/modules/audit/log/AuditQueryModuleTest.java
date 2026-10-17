@@ -34,6 +34,8 @@ class AuditQueryModuleTest {
 
     private String token;
 
+    private String restrictedToken;
+
     @BeforeEach
     void setUp() throws Exception {
         TenantContext.set(1L);
@@ -44,7 +46,8 @@ class AuditQueryModuleTest {
                 + " (?,?,?,?,?,?,?,?,?,?,?,?)",
                 "aid-1", "LOGIN", "LOGIN", "INFO", "auth", "用户登录成功", true, "auditor", "TENANT_USER", 1L,
                 "127.0.0.1", System.currentTimeMillis());
-        token = loginToken();
+        token = loginToken(null);
+        restrictedToken = loginToken(91002L);
     }
 
     @Test
@@ -61,6 +64,23 @@ class AuditQueryModuleTest {
         assertThat((int) com.jayway.jsonpath.JsonPath.read(response.body(), "$.data.records.length()"))
                 .isGreaterThanOrEqualTo(1);
         assertThat((int) com.jayway.jsonpath.JsonPath.read(response.body(), "$.data.total")).isEqualTo(1);
+    }
+
+    @Test
+    void pageCombinesDescriptionAndUsername() throws Exception {
+        jdbc.update("INSERT INTO t_audit_log(audit_id, category, operation, level, module, description, success,"
+                        + " username, login_type, tenant_id, client_ip, create_time) VALUES"
+                        + " (?,?,?,?,?,?,?,?,?,?,?,?)",
+                "aid-2", "DATA", "DELETE", "INFO", "tenant", "删除租户 acme", true, "operator-a",
+                "TENANT_USER", 1L, "127.0.0.1", System.currentTimeMillis());
+
+        HttpResponse<String> response = send("GET",
+                "/audit/logs/page?username=operator-a&description=租户", token);
+        HttpResponse<String> mismatch = send("GET",
+                "/audit/logs/page?username=auditor&description=租户", token);
+
+        assertThat((int) com.jayway.jsonpath.JsonPath.read(response.body(), "$.data.total")).isEqualTo(1);
+        assertThat((int) com.jayway.jsonpath.JsonPath.read(mismatch.body(), "$.data.total")).isZero();
     }
 
     @Test
@@ -86,6 +106,15 @@ class AuditQueryModuleTest {
         assertThat(body[1]).isEqualTo((byte) 'K');
     }
 
+    @Test
+    void restrictedAccountCannotQueryOrExport() throws Exception {
+        HttpResponse<String> page = send("GET", "/audit/logs/page", restrictedToken);
+        HttpResponse<String> export = send("GET", "/audit/logs/export", restrictedToken);
+
+        assertThat(page.statusCode()).isEqualTo(403);
+        assertThat(export.statusCode()).isEqualTo(403);
+    }
+
     private HttpResponse<String> send(String method, String path, String tokenValue) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path));
         if (tokenValue != null) {
@@ -95,9 +124,10 @@ class AuditQueryModuleTest {
                 HttpResponse.BodyHandlers.ofString());
     }
 
-    private String loginToken() throws Exception {
+    private String loginToken(Long userId) throws Exception {
+        String path = userId == null ? "/audit-test/login" : "/audit-test/login/" + userId;
         HttpResponse<String> response = http.send(
-                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/audit-test/login")).GET().build(),
+                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
         return com.jayway.jsonpath.JsonPath.read(response.body(), "$.data");
     }
