@@ -85,4 +85,10 @@ class PolicyDocumentTest {
         assertThrows(BizException.class, () -> PolicyDocument.parse(null));
         assertThrows(BizException.class, () -> PolicyDocument.parse("  "));
     }
+
+    @Test
+    void parsingMalformedJsonGivesChineseError() {
+        BizException exception = assertThrows(BizException.class, () -> PolicyDocument.parse("{not-json"));
+        assertTrue(exception.getMessage().contains("不是合法的 JSON"));
+    }
 }

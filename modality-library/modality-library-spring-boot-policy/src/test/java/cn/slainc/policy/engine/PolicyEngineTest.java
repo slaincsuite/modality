@@ -130,6 +130,13 @@ class PolicyEngineTest {
     }
 
     @Test
+    void groupSubjectFiltersByGroupList() {
+        createPolicy(PolicySubjectType.GROUP, "team-a", Effect.ALLOW, List.of("modality:*:*"), List.of("*"), null);
+        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r").groups(List.of("team-a"))).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r").groups(List.of("team-b"))).allowed());
+    }
+
+    @Test
     void loginTypeRestrictionBlocksOtherSystems() {
         PolicyStatement statement = new PolicyStatement();
         statement.setEffect(Effect.ALLOW);
