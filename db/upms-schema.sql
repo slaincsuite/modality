@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS t_user (
     tags VARCHAR(512),
     ext_json TEXT,
     merged_to BIGINT,
+    remark VARCHAR(256),
+    console_access TINYINT NOT NULL DEFAULT 1,
     deleted TINYINT NOT NULL DEFAULT 0,
     create_time BIGINT NOT NULL,
     update_time BIGINT NOT NULL,
@@ -127,6 +129,16 @@ CREATE TABLE IF NOT EXISTS t_role_data_scope (
     CONSTRAINT uk_role_scope_dept UNIQUE (role_id, dept_id)
 );
 
+CREATE TABLE IF NOT EXISTS t_role_group (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    role_id BIGINT NOT NULL,
+    group_id BIGINT NOT NULL,
+    create_time BIGINT NOT NULL,
+    CONSTRAINT uk_role_group UNIQUE (role_id, group_id),
+    KEY idx_role_group_group (group_id)
+);
+
 CREATE TABLE IF NOT EXISTS t_system_registry (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(64) NOT NULL,
@@ -231,4 +243,58 @@ CREATE TABLE IF NOT EXISTS t_recent_visit (
     update_time BIGINT NOT NULL,
     CONSTRAINT uk_recent_visit_user_target UNIQUE (user_id, target_type, target_key),
     KEY idx_recent_visit_user_time (user_id, visited_at)
+);
+
+CREATE TABLE IF NOT EXISTS t_user_preferences (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    user_id BIGINT NOT NULL,
+    scene VARCHAR(64) NOT NULL,
+    settings_json TEXT NOT NULL,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_user_preferences UNIQUE (user_id, scene)
+);
+
+CREATE TABLE IF NOT EXISTS t_user_permission_boundary (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL DEFAULT 1,
+    user_id BIGINT NOT NULL,
+    effect VARCHAR(16) NOT NULL,
+    permission_code VARCHAR(128) NOT NULL,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_user_permission_boundary UNIQUE (user_id, effect, permission_code),
+    KEY idx_user_permission_boundary_user (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS t_user_settings (
+    id BIGINT PRIMARY KEY,
+    password_min_length INT NOT NULL DEFAULT 8,
+    password_require_classes INT NOT NULL DEFAULT 3,
+    password_expire_days INT NOT NULL DEFAULT 90,
+    password_allow_self_reset TINYINT NOT NULL DEFAULT 0,
+    default_login_type VARCHAR(32) NOT NULL DEFAULT 'TENANT_USER',
+    default_role_id BIGINT,
+    send_initial_password_email TINYINT NOT NULL DEFAULT 1,
+    force_change_password TINYINT NOT NULL DEFAULT 1,
+    login_failure_threshold INT NOT NULL DEFAULT 5,
+    login_lock_minutes INT NOT NULL DEFAULT 30,
+    idle_timeout_minutes INT NOT NULL DEFAULT 30,
+    max_session_minutes INT NOT NULL DEFAULT 120,
+    restrict_idle_users TINYINT NOT NULL DEFAULT 0,
+    idle_user_days INT NOT NULL DEFAULT 90,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS t_user_settings_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(64) NOT NULL,
+    before_json TEXT,
+    after_json TEXT,
+    operator VARCHAR(64),
+    create_time BIGINT NOT NULL,
+    KEY idx_user_settings_history_time (create_time),
+    KEY idx_user_settings_history_key (setting_key, create_time)
 );

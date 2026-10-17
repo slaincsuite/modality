@@ -97,6 +97,60 @@ CREATE TABLE IF NOT EXISTS t_infra_notify_record (
     sent_time BIGINT
 );
 
+CREATE TABLE IF NOT EXISTS t_infra_notify_receiver (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    receiver_type VARCHAR(32) NOT NULL DEFAULT 'USER',
+    account_id VARCHAR(64),
+    phone VARCHAR(32),
+    email VARCHAR(128),
+    feishu_id VARCHAR(128),
+    phone_verified TINYINT NOT NULL DEFAULT 0,
+    email_verified TINYINT NOT NULL DEFAULT 0,
+    feishu_verified TINYINT NOT NULL DEFAULT 0,
+    night_receive TINYINT NOT NULL DEFAULT 1,
+    sms_mute TINYINT NOT NULL DEFAULT 0,
+    marketing_mute TINYINT NOT NULL DEFAULT 0,
+    verify_token_hash VARCHAR(64),
+    verify_channels VARCHAR(64),
+    verify_expire_time BIGINT,
+    verify_sent_time BIGINT,
+    last_verify_time BIGINT,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_infra_notify_receiver_account UNIQUE (tenant_id, account_id),
+    KEY idx_infra_notify_receiver_tenant (tenant_id, update_time)
+);
+
+CREATE TABLE IF NOT EXISTS t_infra_notify_subscription (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    service_code VARCHAR(64) NOT NULL,
+    service_name VARCHAR(128) NOT NULL,
+    channels VARCHAR(255) NOT NULL,
+    receiver_id BIGINT,
+    receiver_name VARCHAR(128),
+    muted TINYINT NOT NULL DEFAULT 0,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_infra_notify_subscription_service UNIQUE (tenant_id, user_id, service_code),
+    KEY idx_infra_notify_subscription_user (tenant_id, user_id, update_time)
+);
+
+CREATE TABLE IF NOT EXISTS t_infra_notify_preference (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    only_unverified TINYINT NOT NULL DEFAULT 0,
+    hide_muted TINYINT NOT NULL DEFAULT 0,
+    assistant_followed TINYINT NOT NULL DEFAULT 0,
+    create_time BIGINT NOT NULL,
+    update_time BIGINT NOT NULL,
+    CONSTRAINT uk_infra_notify_preference_user UNIQUE (tenant_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS t_infra_file_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     file_key VARCHAR(255) NOT NULL,
@@ -128,6 +182,27 @@ CREATE TABLE IF NOT EXISTS t_infra_api_key (
     expires_time BIGINT NOT NULL DEFAULT -1,
     create_time BIGINT NOT NULL,
     update_time BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS t_infra_api_key_rotation (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    old_api_key VARCHAR(64) NOT NULL,
+    new_api_key VARCHAR(64) NOT NULL,
+    grace_hours BIGINT NOT NULL DEFAULT 0,
+    operator VARCHAR(64),
+    description VARCHAR(512),
+    rotate_time BIGINT NOT NULL,
+    KEY idx_infra_api_key_rotation_old (old_api_key, rotate_time),
+    KEY idx_infra_api_key_rotation_new (new_api_key, rotate_time)
+);
+
+CREATE TABLE IF NOT EXISTS t_infra_api_key_metric (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    api_key_hash VARCHAR(64) NOT NULL,
+    http_status INT NOT NULL,
+    elapsed_millis BIGINT NOT NULL,
+    create_time BIGINT NOT NULL,
+    KEY idx_infra_api_key_metric_key (api_key_hash, create_time)
 );
 
 
