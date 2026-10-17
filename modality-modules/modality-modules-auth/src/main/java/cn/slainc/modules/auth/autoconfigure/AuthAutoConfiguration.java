@@ -9,6 +9,7 @@ import cn.slainc.modules.auth.service.mfa.AuthSecondFactorGate;
 import cn.slainc.modules.auth.web.login.AuthLogoutController;
 import cn.slainc.modules.auth.service.login.AuthLogoutService;
 import cn.slainc.modules.auth.service.session.AuthSessionService;
+import cn.slainc.modules.auth.service.policy.SecurityPolicyService;
 import cn.slainc.modules.auth.filter.SessionRenewalFilter;
 import cn.slainc.modules.auth.web.password.AuthPasswordController;
 import cn.slainc.modules.auth.service.password.AuthPasswordService;
@@ -60,9 +61,10 @@ public class AuthAutoConfiguration {
                                                  CurrentRequestReader requestReader,
                                                  ObjectProvider<StringRedisTemplate> redis,
                                                  ObjectProvider<BusinessMetrics> metrics,
-                                                 ObjectProvider<AccountRestrictionPort> restrictionPort) {
+                                                 ObjectProvider<AccountRestrictionPort> restrictionPort,
+                                                 ObjectProvider<SecurityPolicyService> policyService) {
         return new AuthSessionService(config, authProvider, banService, kickService, recorder, passwordPolicy,
-                publisher, requestReader, redis, metrics, restrictionPort);
+                publisher, requestReader, redis, metrics, restrictionPort, policyService);
     }
 
     @Bean
@@ -77,9 +79,11 @@ public class AuthAutoConfiguration {
                                              ObjectProvider<AuthSecondFactorGate> secondFactorGate,
                                              ObjectProvider<AccountAuthProvider> authProvider,
                                              ObjectProvider<AccountBanService> banService,
-                                             ObjectProvider<AccountLockService> lockService) {
+                                             ObjectProvider<AccountLockService> lockService,
+                                             ObjectProvider<SecurityPolicyService> policyService) {
         return new AuthLoginService(delegate, properties, captchaService, restrictionPort, renewalService,
-                sessionExtender, requestReader, publisher, secondFactorGate, authProvider, banService, lockService);
+                sessionExtender, requestReader, publisher, secondFactorGate, authProvider, banService, lockService,
+                policyService);
     }
 
     @Bean

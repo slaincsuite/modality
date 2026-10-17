@@ -5,6 +5,9 @@ import cn.slainc.modules.auth.service.third.ThirdPartyLoginService;
 import cn.slainc.modules.auth.service.qrcode.QrLoginService;
 
 import cn.slainc.core.result.Result;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.auth.context.CurrentLogin;
 import cn.slainc.security.StpKit;
 import cn.slainc.thirdauth.ThirdPartyPlatform;
@@ -90,6 +93,29 @@ public class ThirdPartyLoginController {
     public Result<ThirdPartyLoginService.QrStatusView> qrStatus(@PathVariable String platform,
                                                                @PathVariable String ticketId) {
         return Result.ok(loginService.qrLoginStatus(platform, ticketId));
+    }
+
+    @Operation(summary = "发起当前账号第三方绑定二维码")
+    @PostMapping("/{platform}/bind-qr")
+    @AuditLog(value = "发起第三方账号绑定", operation = AuditOperation.CREATE, category = AuditCategory.SECURITY,
+            module = "auth")
+    public Result<ThirdPartyLoginService.QrCreateView> bindQrCreate(@PathVariable String platform,
+                                                                   HttpServletRequest request) {
+        CurrentLogin.requireLogin(request);
+        var loginType = CurrentLogin.type(request);
+        return Result.ok(loginService.createQrBinding(platform, StpKit.of(loginType).getLoginId(),
+                loginType.value()));
+    }
+
+    @Operation(summary = "轮询当前账号第三方绑定状态")
+    @GetMapping("/{platform}/bind-qr/{ticketId}")
+    public Result<ThirdPartyLoginService.BindQrStatusView> bindQrStatus(@PathVariable String platform,
+                                                                       @PathVariable String ticketId,
+                                                                       HttpServletRequest request) {
+        CurrentLogin.requireLogin(request);
+        var loginType = CurrentLogin.type(request);
+        return Result.ok(loginService.bindQrStatus(platform, ticketId, StpKit.of(loginType).getLoginId(),
+                loginType.value()));
     }
 
     @Operation(summary = "兑换第三方扫码登录态")

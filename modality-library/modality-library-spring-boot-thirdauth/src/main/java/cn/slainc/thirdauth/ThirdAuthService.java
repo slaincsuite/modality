@@ -53,15 +53,22 @@ public class ThirdAuthService {
 
     public ThirdAuthLoginContext beginQrLogin(ThirdPartyPlatform platform) {
         ThirdPartyAuthProvider provider = requireProvider(platform);
-        byte[] bytes = new byte[16];
-        RANDOM.nextBytes(bytes);
-        String ticketId = HexFormat.of().formatHex(bytes);
-        long ttl = qrTicketTtlSeconds();
-        QrTicket ticket = new QrTicket();
-        ticket.setTicketId(ticketId);
-        ticket.setPlatform(platform);
-        ticket.setCreatedAt(System.currentTimeMillis());
-        ticket.setExpireAt(System.currentTimeMillis() + ttl * 1000);
+        QrTicket ticket = newQrTicket(platform, QrTicket.Purpose.LOGIN, null, null);
+        String ticketId = ticket.getTicketId();
+        long ttl = remainingTtl(ticket);
+        qrTicketStore.save(ticket, ttl);
+        stateStore.put(ticketId, ttl);
+        return new ThirdAuthLoginContext(provider.getAuthorizeUrl(ticketId, null), ticketId);
+    }
+
+    public ThirdAuthLoginContext beginQrBinding(ThirdPartyPlatform platform, String userId, String loginType) {
+        if (userId == null || userId.isBlank()) {
+            throw new ThirdPartyException("绑定目标用户不能为空");
+        }
+        ThirdPartyAuthProvider provider = requireProvider(platform);
+        QrTicket ticket = newQrTicket(platform, QrTicket.Purpose.BIND, userId, loginType);
+        String ticketId = ticket.getTicketId();
+        long ttl = remainingTtl(ticket);
         qrTicketStore.save(ticket, ttl);
         stateStore.put(ticketId, ttl);
         return new ThirdAuthLoginContext(provider.getAuthorizeUrl(ticketId, null), ticketId);
@@ -85,7 +92,33 @@ public class ThirdAuthService {
 
     public Optional<ThirdAuthLoginResult> consumeQr(String ticketId) {
         return qrTicketStore.consume(ticketId, QrTicket.Status.CONFIRMED)
+                .filter(ticket -> QrTicket.Purpose.LOGIN.name().equals(ticket.getPurpose()))
                 .map(ticket -> JsonUtils.parse(ticket.getPayload(), ThirdAuthLoginResult.class));
+    }
+
+    public Optional<QrTicket> pollBindingQr(ThirdPartyPlatform platform, String ticketId, String userId,
+                                            String loginType) {
+        Optional<QrTicket> found = qrTicketStore.find(ticketId);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        QrTicket ticket = found.get();
+        if (ticket.getPlatform() != platform
+                || !QrTicket.Purpose.BIND.name().equals(ticket.getPurpose())
+                || !String.valueOf(userId).equals(ticket.getTargetUserId())
+                || (ticket.getTargetLoginType() != null
+                && !ticket.getTargetLoginType().equals(loginType))) {
+            throw new ThirdPartyException("绑定二维码不存在或无权访问");
+        }
+        return found;
+    }
+
+    public Optional<ThirdAccountBinding> bindingResult(QrTicket ticket) {
+        if (ticket == null || !QrTicket.Status.CONFIRMED.name().equals(ticket.getStatus())
+                || ticket.getPayload() == null || ticket.getPayload().isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(JsonUtils.parse(ticket.getPayload(), ThirdAccountBinding.class));
     }
 
     public long qrTicketTtlSeconds() {
@@ -112,10 +145,17 @@ public class ThirdAuthService {
         if (!stateStore.consume(state)) {
             throw new ThirdPartyException("state 无效或已过期，请重新发起" + parsed.label() + "登录");
         }
+        Optional<QrTicket> qrTicket = qrTicketStore.find(state);
         ThirdPartyAuthProvider provider = requireProvider(parsed);
         ThirdPartyUser user = provider.getUserInfo(code, state);
+        if (qrTicket.isPresent() && QrTicket.Purpose.BIND.name().equals(qrTicket.get().getPurpose())) {
+            QrTicket ticket = qrTicket.get();
+            ThirdAccountBinding binding = bind(user, ticket.getTargetUserId());
+            confirmQrTicket(ticket, JsonUtils.toJson(binding));
+            return new ThirdAuthLoginResult(true, ticket.getTargetUserId(), user);
+        }
         ThirdAuthLoginResult result = resolveBinding(user);
-        confirmQrTicketIfPresent(state, result);
+        qrTicket.ifPresent(ticket -> confirmQrTicket(ticket, JsonUtils.toJson(result)));
         return result;
     }
 
@@ -189,14 +229,9 @@ public class ThirdAuthService {
         return binding;
     }
 
-    private void confirmQrTicketIfPresent(String state, ThirdAuthLoginResult result) {
-        Optional<QrTicket> ticket = qrTicketStore.find(state);
-        if (ticket.isEmpty()) {
-            return;
-        }
-        QrTicket scanned = ticket.get();
+    private void confirmQrTicket(QrTicket scanned, String payload) {
         scanned.setStatus(QrTicket.Status.CONFIRMED.name());
-        scanned.setPayload(JsonUtils.toJson(result));
+        scanned.setPayload(payload);
         qrTicketStore.save(scanned, remainingTtl(scanned));
     }
 
@@ -208,6 +243,22 @@ public class ThirdAuthService {
     private long remainingTtl(QrTicket ticket) {
         long remaining = (ticket.getExpireAt() - System.currentTimeMillis()) / 1000;
         return Math.max(remaining, 1);
+    }
+
+    private QrTicket newQrTicket(ThirdPartyPlatform platform, QrTicket.Purpose purpose, String targetUserId,
+                                 String targetLoginType) {
+        byte[] bytes = new byte[16];
+        RANDOM.nextBytes(bytes);
+        long ttl = qrTicketTtlSeconds();
+        QrTicket ticket = new QrTicket();
+        ticket.setTicketId(HexFormat.of().formatHex(bytes));
+        ticket.setPlatform(platform);
+        ticket.setPurpose(purpose.name());
+        ticket.setTargetUserId(targetUserId);
+        ticket.setTargetLoginType(targetLoginType);
+        ticket.setCreatedAt(System.currentTimeMillis());
+        ticket.setExpireAt(ticket.getCreatedAt() + ttl * 1000);
+        return ticket;
     }
 
     private ThirdPartyAuthProvider requireProvider(ThirdPartyPlatform platform) {

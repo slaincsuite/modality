@@ -8,6 +8,7 @@ import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.event.LoginEvent;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.monitor.metrics.BusinessMetrics;
+import cn.slainc.modules.auth.service.policy.SecurityPolicyService;
 import cn.slainc.security.StpKit;
 import cn.slainc.security.audit.SecurityAuditRecorder;
 import cn.slainc.security.ban.AccountBanService;
@@ -60,13 +61,15 @@ public class AuthSessionService {
 
     private final ObjectProvider<AccountRestrictionPort> restrictionPort;
 
+    private final ObjectProvider<SecurityPolicyService> policyService;
+
     public AuthSessionService(SecurityConfigReader config, ObjectProvider<AccountAuthProvider> authProvider,
                               AccountBanService banService, KickService kickService, SecurityAuditRecorder recorder,
                               ObjectProvider<PasswordPolicyService> passwordPolicy,
                               ApplicationEventPublisher publisher, CurrentRequestReader requestReader,
                               ObjectProvider<StringRedisTemplate> redis, ObjectProvider<BusinessMetrics> metrics) {
         this(config, authProvider, banService, kickService, recorder, passwordPolicy, publisher, requestReader, redis,
-                metrics, null);
+                metrics, null, null);
     }
 
     public AuthSessionService(SecurityConfigReader config, ObjectProvider<AccountAuthProvider> authProvider,
@@ -75,6 +78,17 @@ public class AuthSessionService {
                               ApplicationEventPublisher publisher, CurrentRequestReader requestReader,
                               ObjectProvider<StringRedisTemplate> redis, ObjectProvider<BusinessMetrics> metrics,
                               ObjectProvider<AccountRestrictionPort> restrictionPort) {
+        this(config, authProvider, banService, kickService, recorder, passwordPolicy, publisher, requestReader, redis,
+                metrics, restrictionPort, null);
+    }
+
+    public AuthSessionService(SecurityConfigReader config, ObjectProvider<AccountAuthProvider> authProvider,
+                              AccountBanService banService, KickService kickService, SecurityAuditRecorder recorder,
+                              ObjectProvider<PasswordPolicyService> passwordPolicy,
+                              ApplicationEventPublisher publisher, CurrentRequestReader requestReader,
+                              ObjectProvider<StringRedisTemplate> redis, ObjectProvider<BusinessMetrics> metrics,
+                              ObjectProvider<AccountRestrictionPort> restrictionPort,
+                              ObjectProvider<SecurityPolicyService> policyService) {
         this.config = config;
         this.authProvider = authProvider;
         this.banService = banService;
@@ -86,6 +100,7 @@ public class AuthSessionService {
         this.redis = redis;
         this.metrics = metrics;
         this.restrictionPort = restrictionPort;
+        this.policyService = policyService;
     }
 
     public LoginResult establish(LoginType type, Object loginId, String deviceType, String deviceId) {
@@ -172,7 +187,8 @@ public class AuthSessionService {
         parameter.setTerminalExtra("loginTime", System.currentTimeMillis());
         parameter.setTerminalExtra("deviceId", deviceId == null ? "" : deviceId);
         parameter.setTerminalExtra("username", account.username());
-        parameter.setTimeout(config.sessionTimeout(type));
+        parameter.setTimeout(effectiveMaxSessionSeconds(type));
+        parameter.setActiveTimeout(effectiveIdleTimeoutSeconds());
         parameter.setIsConcurrent(!config.deviceSingleSessionPerType());
         parameter.setIsShare(false);
         parameter.setMaxLoginCount(-1);
@@ -229,10 +245,25 @@ public class AuthSessionService {
         } catch (Exception e) {
             log.warn("记录最后登录 IP 失败：{}", e.getMessage());
         }
-        if (previous != null && !previous.isBlank() && !previous.equals(clientIp)) {
+        if (remoteCheckEnabled() && previous != null && !previous.isBlank() && !previous.equals(clientIp)) {
             recorder.alarm("异地登录", type, loginId, clientIp,
                     "登录 IP 发生变化：" + previous + " -> " + clientIp);
         }
+    }
+
+    private long effectiveMaxSessionSeconds(LoginType type) {
+        SecurityPolicyService policy = policyService == null ? null : policyService.getIfAvailable();
+        return policy == null ? config.sessionTimeout(type) : policy.effectiveSessionPolicy().maxSessionSeconds();
+    }
+
+    private long effectiveIdleTimeoutSeconds() {
+        SecurityPolicyService policy = policyService == null ? null : policyService.getIfAvailable();
+        return policy == null ? config.sessionActiveTimeout() : policy.effectiveSessionPolicy().idleTimeoutSeconds();
+    }
+
+    private boolean remoteCheckEnabled() {
+        SecurityPolicyService policy = policyService == null ? null : policyService.getIfAvailable();
+        return policy == null || policy.remoteCheckEnabled();
     }
 
     private Long asLong(Object loginId) {

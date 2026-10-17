@@ -5,6 +5,8 @@ import cn.slainc.modules.auth.store.AuthTicketStore;
 
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
+import cn.slainc.core.exception.ThirdPartyException;
+import cn.slainc.core.result.ResultCode;
 import cn.slainc.crypto.hash.BCryptUtils;
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.modules.auth.service.session.AuthSessionService;
@@ -91,6 +93,10 @@ public class ThirdPartyLoginService {
         }
     }
 
+    public record BindQrStatusView(String ticketId, String status, String statusLabel, long expireAt,
+                                   ThirdAccountBinding binding) {
+    }
+
     public ThirdAuthLoginContext authorizeUrl(String platform) {
         return thirdAuthService.beginLogin(resolve(platform));
     }
@@ -113,6 +119,35 @@ public class ThirdPartyLoginService {
         return new QrCreateView(context.state(), context.authorizeUrl(),
                 image == null ? null : image.renderBase64(context.authorizeUrl()),
                 thirdAuthService.qrTicketTtlSeconds());
+    }
+
+    public QrCreateView createQrBinding(String platform, Object userId, String loginType) {
+        if (userId == null) {
+            throw new BizException("当前登录身份缺少用户 ID，无法绑定第三方账号");
+        }
+        ThirdAuthLoginContext context = thirdAuthService.beginQrBinding(resolve(platform), String.valueOf(userId),
+                loginType);
+        QrImageService image = imageService.getIfAvailable();
+        return new QrCreateView(context.state(), context.authorizeUrl(),
+                image == null ? null : image.renderBase64(context.authorizeUrl()),
+                thirdAuthService.qrTicketTtlSeconds());
+    }
+
+    public BindQrStatusView bindQrStatus(String platform, String ticketId, Object userId, String loginType) {
+        if (userId == null) {
+            throw new BizException("当前登录身份缺少用户 ID，无法查询绑定状态");
+        }
+        ThirdPartyPlatform resolved = resolve(platform);
+        try {
+            return thirdAuthService.pollBindingQr(resolved, ticketId, String.valueOf(userId), loginType)
+                    .map(ticket -> new BindQrStatusView(ticket.getTicketId(), ticket.getStatus(),
+                            labelOf(ticket.getStatus()), ticket.getExpireAt(),
+                            thirdAuthService.bindingResult(ticket).orElse(null)))
+                    .orElseGet(() -> new BindQrStatusView(ticketId, QrTicket.Status.EXPIRED.name(),
+                            labelOf(QrTicket.Status.EXPIRED.name()), 0, null));
+        } catch (ThirdPartyException e) {
+            throw new BizException(ResultCode.FORBIDDEN, e.getMessage());
+        }
     }
 
     public QrStatusView qrLoginStatus(String platform, String ticketId) {

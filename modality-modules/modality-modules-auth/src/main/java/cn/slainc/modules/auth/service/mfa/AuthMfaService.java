@@ -2,6 +2,7 @@ package cn.slainc.modules.auth.service.mfa;
 
 import cn.slainc.modules.auth.service.login.AuthLoginService;
 import cn.slainc.modules.auth.service.session.AuthSessionService;
+import cn.slainc.modules.auth.service.policy.SecurityPolicyService;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.context.UserContext;
@@ -67,11 +68,23 @@ public class AuthMfaService implements AuthSecondFactorGate {
 
     private final ObjectProvider<SecurityPermissionProvider> permissionProvider;
 
+    private final ObjectProvider<SecurityPolicyService> policyService;
+
     public AuthMfaService(MfaConfigReader config, TotpEngine totp, RecoveryCodeGenerator recoveryCodeGenerator,
                           MfaSecretCodec secretCodec, SecondFactorGate gate, MfaFactorStore factorStore,
                           AuthTicketStore<MfaLoginTicket> ticketStore, AuthSessionService sessionService,
                           AuthLoginService loginService, ObjectProvider<AccountAuthProvider> authProvider,
                           ObjectProvider<SecurityPermissionProvider> permissionProvider) {
+        this(config, totp, recoveryCodeGenerator, secretCodec, gate, factorStore, ticketStore, sessionService,
+                loginService, authProvider, permissionProvider, null);
+    }
+
+    public AuthMfaService(MfaConfigReader config, TotpEngine totp, RecoveryCodeGenerator recoveryCodeGenerator,
+                          MfaSecretCodec secretCodec, SecondFactorGate gate, MfaFactorStore factorStore,
+                          AuthTicketStore<MfaLoginTicket> ticketStore, AuthSessionService sessionService,
+                          AuthLoginService loginService, ObjectProvider<AccountAuthProvider> authProvider,
+                          ObjectProvider<SecurityPermissionProvider> permissionProvider,
+                          ObjectProvider<SecurityPolicyService> policyService) {
         this.config = config;
         this.totp = totp;
         this.recoveryCodeGenerator = recoveryCodeGenerator;
@@ -83,6 +96,7 @@ public class AuthMfaService implements AuthSecondFactorGate {
         this.loginService = loginService;
         this.authProvider = authProvider;
         this.permissionProvider = permissionProvider;
+        this.policyService = policyService;
     }
 
     public record MfaStatusView(boolean enrolled, boolean activated, String method, int recoveryCodesRemaining,
@@ -96,6 +110,10 @@ public class AuthMfaService implements AuthSecondFactorGate {
     public record MfaEnrollView(String secret, String otpauthUrl, String issuer, int digits, int periodSeconds) {
     }
 
+    public record AdminMfaStatusView(boolean enrolled, boolean activated, String method, LocalDateTime boundAt,
+                                     LocalDateTime lastUsedAt, boolean locked, LocalDateTime lockedUntil) {
+    }
+
     @Override
     public boolean appliesTo(LoginType type) {
         return type != null && AuthMfaUserLoader.USER_LOGIN_TYPES.contains(type);
@@ -104,6 +122,10 @@ public class AuthMfaService implements AuthSecondFactorGate {
     @Override
     public boolean required(LoginType type, Long userId, String username) {
         if (userId == null) {
+            return false;
+        }
+        SecurityPolicyService policy = policyService == null ? null : policyService.getIfAvailable();
+        if (policy != null && !policy.loginProtectEnabled()) {
             return false;
         }
         return gate.required(userOf(type, userId, username));
@@ -218,6 +240,26 @@ public class AuthMfaService implements AuthSecondFactorGate {
         factorStore.saveRecord(factor);
         log.info("用户 {} 重新生成 {} 枚恢复码", userId, codes.size());
         return codes;
+    }
+
+    public AdminMfaStatusView adminStatus(Long userId) {
+        MfaFactorRecord factor = userId == null ? null : factorStore.findRecord(userId, FACTOR_TYPE_TOTP);
+        if (factor == null) {
+            return new AdminMfaStatusView(false, false, FACTOR_TYPE_TOTP, null, null, false, null);
+        }
+        boolean locked = locked(factor);
+        return new AdminMfaStatusView(true, Boolean.TRUE.equals(factor.getActivated()), FACTOR_TYPE_TOTP,
+                factor.getCreateTime(), factor.getLastUsedAt(), locked, locked ? factor.getLockedUntil() : null);
+    }
+
+    public void adminDisable(Long userId) {
+        if (userId == null) {
+            throw new BizException(ResultCode.PARAM_MISSING, "用户标识不能为空");
+        }
+        if (!factorStore.delete(userId, FACTOR_TYPE_TOTP)) {
+            throw new BizException(ResultCode.DATA_NOT_FOUND, "该用户未绑定二次验证");
+        }
+        log.info("管理员解绑用户 {} 的二次验证并清理恢复码", userId);
     }
 
     public MfaFactorSnapshot factorOf(Long userId) {
