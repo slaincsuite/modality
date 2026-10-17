@@ -53,7 +53,9 @@ public abstract class InfraModuleTestBase {
     void loginAndReset() throws Exception {
         for (String table : new String[]{"t_infra_config_history", "t_infra_dict_type", "t_infra_dict_item",
                 "t_infra_notice", "t_infra_notify_template", "t_infra_notify_message", "t_infra_notify_webhook",
-                "t_infra_notify_record", "t_infra_file_record", "t_search_document", "t_search_index_term",
+                "t_infra_notify_record", "t_infra_notify_receiver", "t_infra_notify_subscription",
+                "t_infra_notify_preference", "t_infra_api_key", "t_infra_api_key_rotation",
+                "t_infra_api_key_metric", "t_infra_file_record", "t_search_document", "t_search_index_term",
                 "t_search_history", "t_recycle_item"}) {
             jdbc.execute("DELETE FROM " + table);
         }
@@ -77,6 +79,17 @@ public abstract class InfraModuleTestBase {
         if (satoken != null) {
             builder.header("satoken", satoken);
         }
+        builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody()
+                : HttpRequest.BodyPublishers.ofString(body));
+        return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    protected HttpResponse<String> sendWithApiKey(String apiKey, String method, String path, String body)
+            throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port() + path))
+                .timeout(Duration.ofSeconds(30))
+                .header("Content-Type", "application/json")
+                .header("X-API-Key", apiKey);
         builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody()
                 : HttpRequest.BodyPublishers.ofString(body));
         return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());

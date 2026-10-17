@@ -47,6 +47,20 @@ class RecycleModuleTest extends cn.slainc.modules.infra.InfraModuleTestBase {
     }
 
     @Test
+    void cleanSweepsExpiredRowsStoredAsEpochMillis() throws Exception {
+        long now = System.currentTimeMillis();
+        jdbc.update("INSERT INTO t_recycle_item (entity_type, entity_id, entity_name, snapshot, deleted_at,"
+                        + " expire_at, restored, tenant_id, created_at, updated_at, version)"
+                        + " VALUES ('INFRA_NOTICE', '9001', '过期公告', '{}', ?, ?, 0, 1, ?, ?, 0)",
+                now - 40L * 24L * 60L * 60L * 1000L, now - 1000L, now, now);
+
+        String cleaned = post("/infra/recycle/clean", null);
+
+        assertThat(JsonPath.read(cleaned, "$.data").toString()).isEqualTo("1");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM t_recycle_item", Integer.class)).isZero();
+    }
+
+    @Test
     void restoredNoticeKeepsItsOriginalFields() throws Exception {
         String noticeId = post("/infra/notice", "{\"title\":\"恢复公告\",\"content\":\"恢复正文\","
                 + "\"level\":\"WARN\"}", "$.data.id");

@@ -259,6 +259,24 @@ class RecycleBinServiceTest {
     }
 
     @Test
+    void shouldCompareExpirationWithEpochMillis() {
+        when(mapper.delete(any())).thenReturn(1);
+        java.time.LocalDateTime threshold = java.time.LocalDateTime.of(2026, 10, 17, 12, 0);
+        long expected = threshold.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+        assertThat(service.deleteExpired(threshold)).isEqualTo(1);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.Wrapper<RecycleItemEntity>> captor =
+                ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.Wrapper.class);
+        verify(mapper).delete(captor.capture());
+        var wrapper = (com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?, ?, ?>) captor.getValue();
+        assertThat(wrapper.getSqlSegment()).contains("expire_at");
+        var values = wrapper.getParamNameValuePairs().values();
+        assertThat(values).anyMatch(value -> value instanceof Long number && number == expected);
+    }
+
+    @Test
     void shouldPageItemsWithKeywordFilter() {
         org.mockito.Mockito.doReturn(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<RecycleItemEntity>())
                 .when(mapper).selectPage(any(), any());
