@@ -9,6 +9,7 @@ import cn.slainc.modules.audit.service.cleanup.AuditCleanupService;
 import cn.slainc.modules.audit.config.AuditConfigReader;
 import cn.slainc.modules.audit.excel.AuditLogExportService;
 import cn.slainc.modules.audit.excel.OnlineUserExcelService;
+import cn.slainc.modules.audit.excel.PolicyEvaluationLogExportService;
 import cn.slainc.modules.audit.listener.AuditEventCollector;
 import cn.slainc.modules.audit.service.oplog.AuditLogService;
 import cn.slainc.modules.audit.store.JdbcAuditLogStore;
@@ -16,6 +17,7 @@ import cn.slainc.modules.audit.mapper.ApiLogMapper;
 import cn.slainc.modules.audit.mapper.AuditLogMapper;
 import cn.slainc.modules.audit.mapper.PolicyEvaluationLogMapper;
 import cn.slainc.modules.audit.service.policylog.PolicyEvaluationLogService;
+import cn.slainc.modules.audit.service.online.OnlineSessionService;
 import cn.slainc.modules.audit.web.apilog.ApiLogController;
 import cn.slainc.modules.audit.web.oplog.AuditLogController;
 import cn.slainc.modules.audit.web.cleanup.AuditMaintenanceController;
@@ -24,6 +26,8 @@ import cn.slainc.modules.audit.web.policylog.PolicyEvaluationLogController;
 import cn.slainc.security.login.CurrentRequestReader;
 import cn.slainc.session.kick.KickSessionService;
 import cn.slainc.session.online.OnlineUserService;
+import cn.slainc.session.config.SessionConfigReader;
+import cn.slainc.session.query.SessionScanner;
 import cn.slainc.session.stats.SessionStatsService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -94,6 +98,13 @@ public class AuditAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public PolicyEvaluationLogExportService policyEvaluationLogExportService(
+            PolicyEvaluationLogService policyEvaluationLogService) {
+        return new PolicyEvaluationLogExportService(policyEvaluationLogService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public AuditAlertService auditAlertService(AuditLogService auditLogService, AuditConfigReader configReader,
                                                ObjectProvider<AuditAlertChannel> channels) {
         return new AuditAlertService(auditLogService, configReader, channels);
@@ -117,6 +128,13 @@ public class AuditAutoConfiguration {
         @ConditionalOnMissingBean
         public OnlineUserExcelService onlineUserExcelService() {
             return new OnlineUserExcelService();
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        public OnlineSessionService onlineSessionService(SessionScanner scanner, SessionConfigReader config,
+                                                         KickSessionService kickSessionService) {
+            return new OnlineSessionService(scanner, config, kickSessionService);
         }
     }
 }

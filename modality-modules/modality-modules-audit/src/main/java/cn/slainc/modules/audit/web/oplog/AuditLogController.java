@@ -46,14 +46,15 @@ public class AuditLogController {
                        @RequestParam(required = false) String level,
                        @RequestParam(required = false) String module,
                        @RequestParam(required = false) String username,
+                       @RequestParam(required = false) String description,
                        @RequestParam(required = false) String loginType,
                        @RequestParam(required = false) Boolean success,
                        @RequestParam(required = false) Long from,
                        @RequestParam(required = false) Long to,
                        @RequestParam(defaultValue = "1") long current,
                        @RequestParam(defaultValue = "10") long size) {
-        return auditLogService.search(category, operation, level, module, username, loginType, success, from, to,
-                current, size);
+        return auditLogService.search(category, operation, level, module, username, description, loginType, success,
+                from, to, current, size);
     }
 
     @GetMapping("/stats")
@@ -78,6 +79,7 @@ public class AuditLogController {
                        @RequestParam(required = false) String level,
                        @RequestParam(required = false) String module,
                        @RequestParam(required = false) String username,
+                       @RequestParam(required = false) String description,
                        @RequestParam(required = false) String loginType,
                        @RequestParam(required = false) Boolean success,
                        @RequestParam(required = false) Long from,
@@ -85,7 +87,7 @@ public class AuditLogController {
                        @RequestParam(defaultValue = "10000") int limit,
                        HttpServletResponse response) {
         exportService.export(DownloadResponses.attachmentStream(response, "audit-logs.xlsx",
-                DownloadResponses.CONTENT_TYPE_EXCEL), category, operation, level, module, username, loginType,
-                success, from, to, limit);
+                DownloadResponses.CONTENT_TYPE_EXCEL), category, operation, level, module, username, description,
+                loginType, success, from, to, limit);
     }
 }

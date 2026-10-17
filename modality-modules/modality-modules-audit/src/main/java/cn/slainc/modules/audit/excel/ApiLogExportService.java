@@ -18,10 +18,10 @@ public class ApiLogExportService {
         this.apiLogService = apiLogService;
     }
 
-    public void export(OutputStream outputStream, String path, String method, Integer statusCode, String loginId,
-                       String loginType, Long from, Long to, int limit) {
-        List<ApiLogRecord> records = apiLogService.list(path, method, statusCode, loginId, loginType, from, to,
-                Math.max(1, limit));
+    public void export(OutputStream outputStream, String path, String method, Integer statusCode, String statusRange,
+                       String scope, String loginId, String loginType, Long from, Long to, int limit) {
+        List<ApiLogRecord> records = apiLogService.list(path, method, statusCode, statusRange, scope, loginId,
+                loginType, from, to, Math.max(1, limit));
         List<ApiLogExportRow> rows = new ArrayList<>();
         for (ApiLogRecord record : records) {
             rows.add(new ApiLogExportRow(record.getRequestPath(), record.getHttpMethod(),

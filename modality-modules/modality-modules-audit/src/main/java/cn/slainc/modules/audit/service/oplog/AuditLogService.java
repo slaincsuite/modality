@@ -32,18 +32,19 @@ public class AuditLogService {
     }
 
     public PageResult<AuditLogRecord> search(String category, String operation, String level, String module,
-                                              String username, String loginType, Boolean success, Long from, Long to,
-                                              long current, long size) {
+                                              String username, String description, String loginType, Boolean success,
+                                              Long from, Long to, long current, long size) {
         Page<AuditLogRecord> page = auditLogMapper.selectPage(Page.of(current, size),
-                baseWrapper(category, operation, level, module, username, loginType, success, from, to)
+                baseWrapper(category, operation, level, module, username, description, loginType, success, from, to)
                         .orderByDesc(AuditLogRecord::getId));
         return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
 
     public List<AuditLogRecord> list(String category, String operation, String level, String module, String username,
-                                     String loginType, Boolean success, Long from, Long to, int limit) {
-        return auditLogMapper.selectList(baseWrapper(category, operation, level, module, username, loginType,
-                        success, from, to)
+                                     String description, String loginType, Boolean success, Long from, Long to,
+                                     int limit) {
+        return auditLogMapper.selectList(baseWrapper(category, operation, level, module, username, description,
+                        loginType, success, from, to)
                 .orderByDesc(AuditLogRecord::getId)
                 .last("LIMIT " + clampLimit(limit)));
     }
@@ -53,7 +54,7 @@ public class AuditLogService {
     }
 
     public long count(Long from, Long to, Boolean success, String category) {
-        return auditLogMapper.selectCount(baseWrapper(category, null, null, null, null, null, success, from, to));
+        return auditLogMapper.selectCount(baseWrapper(category, null, null, null, null, null, null, success, from, to));
     }
 
     public long countLevelIn(Long from, Long to, List<String> levels) {
@@ -164,18 +165,24 @@ public class AuditLogService {
     }
 
     private LambdaQueryWrapper<AuditLogRecord> baseWrapper(String category, String operation, String level,
-                                                           String module, String username, String loginType,
-                                                           Boolean success, Long from, Long to) {
+                                                           String module, String username, String description,
+                                                           String loginType, Boolean success, Long from, Long to) {
         return new LambdaQueryWrapper<AuditLogRecord>()
                 .eq(category != null && !category.isBlank(), AuditLogRecord::getCategory, category)
                 .eq(operation != null && !operation.isBlank(), AuditLogRecord::getOperation, operation)
                 .eq(level != null && !level.isBlank(), AuditLogRecord::getLevel, level)
                 .eq(module != null && !module.isBlank(), AuditLogRecord::getModule, module)
-                .like(username != null && !username.isBlank(), AuditLogRecord::getUsername, username)
+                .like(username != null && !username.isBlank(), AuditLogRecord::getUsername, trim(username))
+                .like(description != null && !description.isBlank(), AuditLogRecord::getDescription,
+                        trim(description))
                 .eq(loginType != null && !loginType.isBlank(), AuditLogRecord::getLoginType, loginType)
                 .eq(success != null, AuditLogRecord::getSuccess, success)
                 .ge(from != null, AuditLogRecord::getCreateTime, from)
                 .le(to != null, AuditLogRecord::getCreateTime, to);
+    }
+
+    private static String trim(String value) {
+        return value == null ? null : value.trim();
     }
 
     public int purgeBefore(long epochMillis) {
