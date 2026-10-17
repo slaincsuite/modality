@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -78,6 +79,11 @@ class WorkOrderAttachmentServiceTest {
         assertThat(list).hasSize(1);
         assertThat(list.get(0).getFileName()).isEqualTo("diagnosis.log");
         assertThat(attachmentService.downloadUrl(uploaded.getId())).contains("signature=");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        attachmentService.download(uploaded.getId(), response);
+        assertThat(response.getContentAsByteArray()).isEqualTo(content);
+        assertThat(response.getContentType()).startsWith("text/plain");
+        assertThat(response.getHeader("Content-Disposition")).contains("diagnosis.log");
         attachmentService.delete(uploaded.getId());
         assertThat(attachmentService.listByOrder(order.getId())).isEmpty();
         assertThatThrownBy(() -> attachmentService.downloadUrl(uploaded.getId()))
@@ -94,5 +100,28 @@ class WorkOrderAttachmentServiceTest {
                 .isInstanceOf(BizException.class)
                 .hasMessageContaining("附件内容不能为空");
         assertThat(attachmentService.listByOrder(order.getId())).isEmpty();
+    }
+
+    @Test
+    void uploadToMissingOrderIsRejected() {
+        assertThatThrownBy(() -> attachmentService.upload(999999L, "missing.txt",
+                "内容".getBytes(StandardCharsets.UTF_8), "text/plain"))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("工单不存在");
+    }
+
+    @Test
+    void downloadIsTenantIsolated() {
+        WorkOrderRecord order = workOrderService.create("跨租户附件", "内容", null);
+        WorkOrderAttachmentRecord uploaded = attachmentService.upload(order.getId(), "tenant.log",
+                "租户一".getBytes(StandardCharsets.UTF_8), "text/plain");
+        TenantContext.set(2L);
+        try {
+            assertThatThrownBy(() -> attachmentService.download(uploaded.getId(), new MockHttpServletResponse()))
+                    .isInstanceOf(BizException.class)
+                    .hasMessageContaining("附件不存在");
+        } finally {
+            TenantContext.set(1L);
+        }
     }
 }
