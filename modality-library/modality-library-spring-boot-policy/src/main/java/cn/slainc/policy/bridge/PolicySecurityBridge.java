@@ -8,6 +8,8 @@ import cn.slainc.policy.spi.PolicyGroupProvider;
 import cn.slainc.security.spi.SecurityPolicyProvider;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class PolicySecurityBridge implements SecurityPolicyProvider {
@@ -30,10 +32,23 @@ public class PolicySecurityBridge implements SecurityPolicyProvider {
         PolicyRequest request = new PolicyRequest();
         request.userId(String.valueOf(loginId));
         request.loginType(type.name());
-        request.setTenantId(TenantContext.get());
+        request.setTenantId(TenantContext.getOrDefault());
         PolicyGroupProvider provider = groupProvider == null ? null : groupProvider.getIfAvailable();
         request.setGroups(provider == null ? List.of() : provider.groups(loginId, type));
-        return engine.resolveActions(request);
+        LinkedHashSet<String> permissions = new LinkedHashSet<>();
+        for (String action : engine.resolveActions(request)) {
+            permissions.add(action);
+            if (action.startsWith("modality:")) {
+                permissions.add(action.substring("modality:".length()));
+            }
+        }
+        for (String action : engine.resolveDeniedActions(request)) {
+            permissions.add("!" + action);
+            if (action.startsWith("modality:")) {
+                permissions.add("!" + action.substring("modality:".length()));
+            }
+        }
+        return new ArrayList<>(permissions);
     }
 
     @Override

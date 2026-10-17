@@ -37,6 +37,14 @@ public class PolicyOriginStore implements PolicyBindingOriginStore {
     }
 
     @Override
+    public Optional<PolicyBindingOrigin> findByPolicyId(String policyId, Long tenantId) {
+        return jdbcTemplate.query("SELECT * FROM " + PolicyCenterKeys.POLICY_BINDING_SOURCE_TABLE
+                                + " WHERE tenant_id = ? AND policy_id = ? LIMIT 1",
+                        PolicyOriginStore::mapRow, tenantId, policyId)
+                .stream().findFirst();
+    }
+
+    @Override
     public void save(PolicyBindingOrigin origin) {
         try {
             jdbcTemplate.update("INSERT INTO " + PolicyCenterKeys.POLICY_BINDING_SOURCE_TABLE

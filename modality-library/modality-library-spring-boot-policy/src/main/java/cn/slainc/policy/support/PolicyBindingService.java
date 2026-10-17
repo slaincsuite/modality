@@ -3,6 +3,7 @@ package cn.slainc.policy.support;
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.exception.BizException;
+import cn.slainc.core.result.ResultCode;
 import cn.slainc.policy.domain.Policy;
 import cn.slainc.policy.domain.PolicyBinding;
 import cn.slainc.policy.domain.PolicyDocument;
@@ -18,6 +19,8 @@ import java.util.Optional;
 
 // 策略绑定编排：以既有策略文档为模板为主体创建独立策略实例并登记绑定镜像；Client 主体映射为 APP 体系下的 USER 型策略
 public class PolicyBindingService {
+
+    public static final String DERIVED_DESCRIPTION_PREFIX = "由绑定操作从策略 ";
 
     private final PolicyBindingStore bindingStore;
 
@@ -82,8 +85,22 @@ public class PolicyBindingService {
             }
         }
         PolicyDocument document = source.getDocument();
-        Policy created = adminService.create(source.getName() + "-" + subjectId, subjectType, subjectId,
-                loginType, document, "由绑定操作从策略 " + source.getId() + " 派生", operator);
+        PolicySubjectType boundSubjectType = subjectType;
+        String boundSubjectId = subjectId;
+        if (subjectType == PolicySubjectType.ROLE) {
+            boundSubjectType = PolicySubjectType.TENANT_ROLE;
+            boundSubjectId = tenantId + ":" + subjectId;
+        }
+        if (subjectType == PolicySubjectType.GROUP) {
+            boundSubjectType = PolicySubjectType.TENANT_GROUP;
+            boundSubjectId = tenantId + ":" + subjectId;
+        }
+        if (boundSubjectId.length() > 64) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR,
+                    "角色或用户组编码过长，绑定后的策略主体标识最多 64 个字符");
+        }
+        Policy created = adminService.create(source.getName() + "-" + subjectId, boundSubjectType, boundSubjectId,
+                loginType, document, DERIVED_DESCRIPTION_PREFIX + source.getId() + " 派生", operator);
         PolicyBinding binding = new PolicyBinding();
         binding.setTenantId(tenantId);
         binding.setPolicyId(created.getId());
@@ -119,7 +136,9 @@ public class PolicyBindingService {
     }
 
     public List<PolicyBinding> query(String subjectType, String subjectId, String policyId) {
-        return bindingStore.query(subjectType, subjectId, policyId);
+        return bindingStore.query(subjectType, subjectId, policyId).stream()
+                .map(this::withSourcePolicy)
+                .toList();
     }
 
     public List<PolicyBinding> queryBySource(String sourcePolicyId) {
@@ -153,5 +172,18 @@ public class PolicyBindingService {
 
     private PolicyBindingOriginStore originStore() {
         return originStore == null ? null : originStore.getIfAvailable();
+    }
+
+    private PolicyBinding withSourcePolicy(PolicyBinding binding) {
+        if (binding == null || binding.getSourcePolicyId() != null) {
+            return binding;
+        }
+        PolicyBindingOriginStore origins = originStore();
+        if (origins == null) {
+            return binding;
+        }
+        origins.findByPolicyId(binding.getPolicyId(), TenantContext.getOrDefault())
+                .ifPresent(origin -> binding.setSourcePolicyId(origin.sourcePolicyId()));
+        return binding;
     }
 }

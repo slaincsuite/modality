@@ -4,6 +4,7 @@ import cn.slainc.core.jdbc.ClasspathSchemaInitializer;
 import cn.slainc.modules.policy.PolicyCenterKeys;
 import cn.slainc.modules.policy.service.binding.PolicyBindingPortalService;
 import cn.slainc.modules.policy.service.catalog.PolicyCatalogService;
+import cn.slainc.modules.policy.service.generator.PolicyGeneratorService;
 import cn.slainc.modules.policy.service.manage.PolicyManageService;
 import cn.slainc.modules.policy.service.self.PolicySelfService;
 import cn.slainc.modules.policy.service.testcase.PolicyTestCaseService;
@@ -15,6 +16,7 @@ import cn.slainc.modules.policy.store.PolicyTestCaseStore;
 import cn.slainc.modules.policy.store.PolicyTemplateStore;
 import cn.slainc.modules.policy.web.binding.PolicyBindingPortalController;
 import cn.slainc.modules.policy.web.catalog.PolicyCatalogController;
+import cn.slainc.modules.policy.web.generator.PolicyGeneratorController;
 import cn.slainc.modules.policy.web.manage.PolicyManageController;
 import cn.slainc.modules.policy.web.self.PolicySelfController;
 import cn.slainc.modules.policy.web.simulate.PolicySimulateController;
@@ -44,7 +46,7 @@ import javax.sql.DataSource;
 @ConditionalOnProperty(prefix = "modality.policy-center", name = "enabled", matchIfMissing = true)
 @Import({PolicyManageController.class, PolicySimulateController.class, PolicyTestCaseController.class,
         PolicyTransferController.class, PolicyBindingPortalController.class, PolicyCatalogController.class,
-        PolicySelfController.class})
+        PolicySelfController.class, PolicyGeneratorController.class})
 public class PolicyCenterAutoConfiguration {
 
     @Bean
@@ -118,6 +120,13 @@ public class PolicyCenterAutoConfiguration {
     @ConditionalOnMissingBean
     public PolicyCatalogService policyCatalogService() {
         return new PolicyCatalogService();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PolicyGeneratorService policyGeneratorService(PolicyManageService manageService,
+                                                         PolicyCatalogService catalogService) {
+        return new PolicyGeneratorService(manageService, catalogService);
     }
 
     @Bean

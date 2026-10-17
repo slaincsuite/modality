@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.EnumMap;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -28,9 +29,17 @@ public final class ConditionEvaluators {
                 actual != null && expected.stream().noneMatch(value -> value.equals(String.valueOf(actual))));
         EVALUATORS.put(ConditionOperator.STRING_LIKE, (actual, expected) ->
                 actual != null && expected.stream().anyMatch(value -> WildcardMatcher.match(value, String.valueOf(actual))));
+        EVALUATORS.put(ConditionOperator.STRING_NOT_LIKE, (actual, expected) ->
+                actual != null && expected.stream().noneMatch(value -> WildcardMatcher.match(value, String.valueOf(actual))));
         EVALUATORS.put(ConditionOperator.NUMERIC_EQUAL, (actual, expected) -> compareNumeric(actual, expected, 0));
+        EVALUATORS.put(ConditionOperator.NUMERIC_NOT_EQUAL, (actual, expected) -> {
+            BigDecimal actualValue = parseNumeric(actual);
+            return actualValue != null && expected.stream().map(ConditionEvaluators::parseNumeric)
+                    .allMatch(value -> value == null || actualValue.compareTo(value) != 0);
+        });
         EVALUATORS.put(ConditionOperator.NUMERIC_LESS_THAN, (actual, expected) -> compareNumeric(actual, expected, -1));
         EVALUATORS.put(ConditionOperator.NUMERIC_GREATER_THAN, (actual, expected) -> compareNumeric(actual, expected, 1));
+        EVALUATORS.put(ConditionOperator.DATE_EQUAL, (actual, expected) -> compareDate(actual, expected, 0));
         EVALUATORS.put(ConditionOperator.DATE_LESS_THAN, (actual, expected) -> compareDate(actual, expected, -1));
         EVALUATORS.put(ConditionOperator.DATE_GREATER_THAN, (actual, expected) -> compareDate(actual, expected, 1));
         EVALUATORS.put(ConditionOperator.BOOL_EQUAL, (actual, expected) -> {
@@ -42,6 +51,12 @@ public final class ConditionEvaluators {
                 safeIpCheck(() -> ipEquals(actual, expected)));
         EVALUATORS.put(ConditionOperator.IP_IN_RANGE, (actual, expected) ->
                 safeIpCheck(() -> ipInRange(actual, expected)));
+        EVALUATORS.put(ConditionOperator.IP_NOT_IN_RANGE, (actual, expected) ->
+                safeIpCheck(() -> ipNotInRange(actual, expected)));
+        EVALUATORS.put(ConditionOperator.COLLECTION_CONTAINS, (actual, expected) ->
+                collectionContains(actual, expected, true));
+        EVALUATORS.put(ConditionOperator.COLLECTION_NOT_CONTAINS, (actual, expected) ->
+                collectionContains(actual, expected, false));
         EVALUATORS.put(ConditionOperator.NULL_EQUAL, (actual, expected) -> expected.stream()
                 .map(ConditionEvaluators::parseBoolean)
                 .anyMatch(value -> value != null && value == (actual == null)));
@@ -160,6 +175,38 @@ public final class ConditionEvaluators {
         }
         return expected.stream().map(ConditionEvaluators::parseAddress)
                 .anyMatch(network -> network != null && network.contains(actualAddress));
+    }
+
+    private static boolean ipNotInRange(Object actual, List<String> expected) {
+        if (actual == null) {
+            return false;
+        }
+        IPAddressString actualAddress = parseAddress(String.valueOf(actual));
+        if (actualAddress == null || actualAddress.getAddress() == null) {
+            return false;
+        }
+        return expected.stream().map(ConditionEvaluators::parseAddress)
+                .noneMatch(network -> network != null && network.contains(actualAddress));
+    }
+
+    private static boolean collectionContains(Object actual, List<String> expected, boolean contains) {
+        Collection<?> values;
+        if (actual instanceof Collection<?> collection) {
+            values = collection;
+        } else if (actual != null && actual.getClass().isArray()) {
+            int length = java.lang.reflect.Array.getLength(actual);
+            java.util.List<Object> elements = new java.util.ArrayList<>(length);
+            for (int index = 0; index < length; index++) {
+                elements.add(java.lang.reflect.Array.get(actual, index));
+            }
+            values = elements;
+        } else {
+            return false;
+        }
+        boolean matched = values.stream().filter(value -> value != null)
+                .map(String::valueOf)
+                .anyMatch(expected::contains);
+        return contains ? matched : !matched;
     }
 
     private static boolean safeIpCheck(java.util.function.BooleanSupplier check) {

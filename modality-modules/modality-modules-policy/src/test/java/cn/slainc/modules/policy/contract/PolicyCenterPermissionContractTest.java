@@ -4,6 +4,7 @@ import cn.slainc.logger.oplog.AuditLog;
 import cn.slainc.modules.policy.PolicyCenterKeys;
 import cn.slainc.modules.policy.web.binding.PolicyBindingPortalController;
 import cn.slainc.modules.policy.web.catalog.PolicyCatalogController;
+import cn.slainc.modules.policy.web.generator.PolicyGeneratorController;
 import cn.slainc.modules.policy.web.manage.PolicyManageController;
 import cn.slainc.modules.policy.web.self.PolicySelfController;
 import cn.slainc.security.annotation.RequirePermission;
@@ -31,6 +32,12 @@ class PolicyCenterPermissionContractTest {
         assertPermission(PolicyManageController.class, "boundary", PolicyCenterKeys.PERMISSION_POLICY_BOUNDARY_QUERY);
         assertPermission(PolicyManageController.class, "updateBoundary", PolicyCenterKeys.PERMISSION_POLICY_BOUNDARY_UPDATE);
         assertPermission(PolicyBindingPortalController.class, "bindGroup", PolicyCenterKeys.PERMISSION_BINDING_BIND);
+        assertPermission(PolicyGeneratorController.class, "capabilities",
+                PolicyCenterKeys.PERMISSION_POLICY_CATALOG_QUERY);
+        assertPermission(PolicyGeneratorController.class, "preview",
+                PolicyCenterKeys.PERMISSION_POLICY_VALIDATE);
+        assertPermission(PolicyGeneratorController.class, "create",
+                PolicyCenterKeys.PERMISSION_POLICY_CREATE);
 
         for (String method : new String[]{"products", "services", "actions", "resources"}) {
             assertPermission(PolicyCatalogController.class, method, PolicyCenterKeys.PERMISSION_POLICY_CATALOG_QUERY);
@@ -41,6 +48,7 @@ class PolicyCenterPermissionContractTest {
             assertAudit(PolicyManageController.class, method);
         }
         assertAudit(PolicyBindingPortalController.class, "bindGroup");
+        assertAudit(PolicyGeneratorController.class, "create");
         assertThat(Arrays.stream(PolicySelfController.class.getDeclaredMethods())
                 .filter(method -> method.getName().equals("policies"))
                 .findFirst().orElseThrow().getAnnotation(RequirePermission.class)).isNull();

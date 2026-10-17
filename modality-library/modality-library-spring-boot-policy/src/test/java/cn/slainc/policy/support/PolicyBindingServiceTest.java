@@ -55,6 +55,10 @@ class PolicyBindingServiceTest {
         assertEquals("GROUP", second.getSubjectType());
         assertEquals(2, policyStore.list().size());
         assertEquals(1, bindingService.queryBySource(source.getId()).size());
+        Policy derived = policyStore.list().stream()
+                .filter(policy -> !policy.getId().equals(source.getId())).findFirst().orElseThrow();
+        assertEquals(PolicySubjectType.TENANT_GROUP, derived.getSubjectType());
+        assertEquals("1:team-a", derived.getSubjectId());
     }
 
     private PolicyDocument document() {

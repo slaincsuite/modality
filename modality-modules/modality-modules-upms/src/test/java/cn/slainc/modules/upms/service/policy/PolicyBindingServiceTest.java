@@ -77,7 +77,8 @@ class PolicyBindingServiceTest extends UpmsIntegrationTestBase {
         PolicyBinding binding = bindingService.bindToRole(policyId, "analyst", "tester");
         assertThat(binding.getSubjectType()).isEqualTo(PolicyBinding.SUBJECT_ROLE);
         policyEngine.invalidate();
-        PolicyRequest request = PolicyRequest.of("report:export", "finance:quarterly").roles(List.of("analyst"));
+        PolicyRequest request = PolicyRequest.of("report:export", "finance:quarterly")
+                .tenantId(1L).loginType(LoginType.TENANT_USER.value()).roles(List.of("analyst"));
         assertThat(policyEngine.evaluate(request).allowed()).isTrue();
     }
 

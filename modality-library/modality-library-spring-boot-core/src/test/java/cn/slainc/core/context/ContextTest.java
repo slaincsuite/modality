@@ -28,7 +28,7 @@ class ContextTest {
         assertFalse(UserContext.hasRole("admin"));
 
         UserContext.UserInfo info = new UserContext.UserInfo(100L, "admin", LoginType.PLATFORM_ADMIN,
-                Set.of("admin", "ops"), Set.of("user:list"), true);
+                Set.of("admin", "ops"), Set.of("user:list", "role:*"), true);
         UserContext.set(info);
 
         assertTrue(UserContext.isAuthenticated());
@@ -39,6 +39,7 @@ class ContextTest {
         assertFalse(UserContext.hasRole("guest"));
         assertFalse(UserContext.hasRole(null));
         assertTrue(UserContext.hasPermission("user:list"));
+        assertTrue(UserContext.hasPermission("role:assign"));
         assertFalse(UserContext.hasPermission("user:delete"));
         assertTrue(UserContext.isSuperAdmin());
 

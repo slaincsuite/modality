@@ -17,6 +17,7 @@ import cn.slainc.modules.policy.store.PolicyBoundaryStore;
 import cn.slainc.modules.policy.store.PolicyMetaStore;
 import cn.slainc.modules.policy.store.PolicyTemplateStore;
 import cn.slainc.policy.support.PolicyAdminService;
+import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.policy.support.PolicyDiffService;
 import cn.slainc.policy.support.PolicyTemplates;
 import cn.slainc.policy.domain.Policy;
@@ -164,6 +165,7 @@ public class PolicyManageService {
                         || metaGroup(metas, policy).equalsIgnoreCase(group.trim()))
                 .filter(policy -> creator == null || creator.isBlank()
                         || creator.trim().equals(policy.getCreator()))
+                .filter(policy -> !isBindingDerived(policy))
                 .filter(policy -> system == null
                         || system == metas.getOrDefault(policy.getId(),
                         new PolicyMeta(policy.getId(), PolicyCenterKeys.DEFAULT_GROUP, false)).system())
@@ -252,6 +254,11 @@ public class PolicyManageService {
     private String metaGroup(Map<String, PolicyMeta> metas, Policy policy) {
         PolicyMeta meta = metas.get(policy.getId());
         return meta == null ? PolicyCenterKeys.DEFAULT_GROUP : meta.group();
+    }
+
+    private boolean isBindingDerived(Policy policy) {
+        return policy.getDescription() != null
+                && policy.getDescription().startsWith(PolicyBindingService.DERIVED_DESCRIPTION_PREFIX);
     }
 
     private void requireModifiable(String id) {

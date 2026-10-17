@@ -46,17 +46,18 @@ class PolicySecurityBridgeTest {
     void permissionResolutionReturnsAllowPatterns() {
         savePolicy(PolicySubjectType.USER, "1001", "TENANT_USER", Effect.ALLOW, List.of("modality:user:*"));
         savePolicy(PolicySubjectType.USER, "1002", "TENANT_USER", Effect.ALLOW, List.of("modality:order:*"));
-        assertEquals(List.of("modality:user:*"), bridge.getPermissions("1001", LoginType.TENANT_USER));
-        assertEquals(List.of("modality:order:*"), bridge.getPermissions("1002", LoginType.TENANT_USER));
+        assertEquals(List.of("modality:user:*", "user:*"), bridge.getPermissions("1001", LoginType.TENANT_USER));
+        assertEquals(List.of("modality:order:*", "order:*"), bridge.getPermissions("1002", LoginType.TENANT_USER));
         assertEquals(List.of(), bridge.getPermissions("1003", LoginType.TENANT_USER));
     }
 
     @Test
-    void denyCoveredAllowPatternDropped() {
+    void denyPatternIsExportedForPermissionMatcher() {
         savePolicy(PolicySubjectType.USER, "1001", "TENANT_USER", Effect.ALLOW, List.of("modality:user:*"));
         savePolicy(PolicySubjectType.USER, "1001", "TENANT_USER", Effect.DENY, List.of("modality:user:delete"));
         List<String> permissions = bridge.getPermissions("1001", LoginType.TENANT_USER);
-        assertTrue(permissions.isEmpty());
+        assertEquals(List.of("modality:user:*", "user:*",
+                "!modality:user:delete", "!user:delete"), permissions);
     }
 
     @Test
@@ -71,6 +72,7 @@ class PolicySecurityBridgeTest {
         PolicyEngine engine = new PolicyEngine(store, SingleProvider.of(new FakeConfigService()), new PolicyProperties());
         PolicySecurityBridge groupBridge = new PolicySecurityBridge(engine, SingleProvider.of(provider));
         savePolicy(PolicySubjectType.GROUP, "team-a", null, Effect.ALLOW, List.of("modality:team:*"));
-        assertEquals(List.of("modality:team:*"), groupBridge.getPermissions("1001", LoginType.TENANT_USER));
+        assertEquals(List.of("modality:team:*", "team:*"),
+                groupBridge.getPermissions("1001", LoginType.TENANT_USER));
     }
 }

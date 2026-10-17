@@ -9,6 +9,10 @@ public interface PolicyBindingOriginStore {
 
     List<PolicyBindingOrigin> listBySource(String sourcePolicyId, Long tenantId);
 
+    default Optional<PolicyBindingOrigin> findByPolicyId(String policyId, Long tenantId) {
+        return Optional.empty();
+    }
+
     void save(PolicyBindingOrigin origin);
 
     void deleteByBindingId(Long bindingId);

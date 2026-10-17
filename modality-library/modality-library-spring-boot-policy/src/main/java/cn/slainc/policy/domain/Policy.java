@@ -1,6 +1,7 @@
 package cn.slainc.policy.domain;
 
 import cn.slainc.core.exception.BizException;
+import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.result.ResultCode;
 
 import java.security.SecureRandom;
@@ -39,11 +40,25 @@ public class Policy {
         if (name == null || name.isBlank()) {
             throw new BizException(ResultCode.PARAM_MISSING, "策略名称不能为空");
         }
+        if (name.trim().length() > 128) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR, "策略名称最多 128 个字符");
+        }
         if (subjectType == null) {
             throw new BizException(ResultCode.PARAM_MISSING, "策略作用对象不能为空");
         }
         if (subjectType != PolicySubjectType.GLOBAL && (subjectId == null || subjectId.isBlank())) {
             throw new BizException(ResultCode.PARAM_MISSING, subjectType.code() + " 类型策略必须指定作用对象标识");
+        }
+        if ((subjectType == PolicySubjectType.TENANT_ROLE || subjectType == PolicySubjectType.TENANT_GROUP)
+                && !subjectId.trim().matches("\\d+:.+")) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR,
+                    subjectType.code() + " 类型策略的作用对象必须使用 租户ID:角色或用户组编码 格式");
+        }
+        if (subjectId != null && subjectId.trim().length() > 64) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR, "策略作用对象标识最多 64 个字符");
+        }
+        if (loginType != null && !loginType.isBlank() && LoginType.of(loginType.trim()) == null) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR, "不支持的账号体系: " + loginType);
         }
         if (document == null) {
             throw new BizException(ResultCode.PARAM_MISSING, "策略文档不能为空");

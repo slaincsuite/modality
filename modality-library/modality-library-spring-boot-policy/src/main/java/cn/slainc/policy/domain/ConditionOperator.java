@@ -5,14 +5,20 @@ public enum ConditionOperator {
     STRING_EQUAL("string_equal", Category.STRING),
     STRING_NOT_EQUAL("string_not_equal", Category.STRING),
     STRING_LIKE("string_like", Category.STRING),
+    STRING_NOT_LIKE("string_not_like", Category.STRING),
     NUMERIC_EQUAL("numeric_equal", Category.NUMERIC),
+    NUMERIC_NOT_EQUAL("numeric_not_equal", Category.NUMERIC),
     NUMERIC_LESS_THAN("numeric_less_than", Category.NUMERIC),
     NUMERIC_GREATER_THAN("numeric_greater_than", Category.NUMERIC),
+    DATE_EQUAL("date_equal", Category.DATE),
     DATE_LESS_THAN("date_less_than", Category.DATE),
     DATE_GREATER_THAN("date_greater_than", Category.DATE),
     BOOL_EQUAL("bool_equal", Category.BOOLEAN),
     IP_EQUAL("ip_equal", Category.IP),
     IP_IN_RANGE("ip_in_range", Category.IP),
+    IP_NOT_IN_RANGE("ip_not_in_range", Category.IP),
+    COLLECTION_CONTAINS("collection_contains", Category.COLLECTION),
+    COLLECTION_NOT_CONTAINS("collection_not_contains", Category.COLLECTION),
     NULL_EQUAL("null_equal", Category.NULL);
 
     private final String code;
@@ -58,6 +64,7 @@ public enum ConditionOperator {
         DATE,
         BOOLEAN,
         IP,
+        COLLECTION,
         NULL
     }
 }

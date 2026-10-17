@@ -4,6 +4,7 @@ import cn.slainc.policy.PolicyTestApplication;
 import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.domain.Effect;
 import cn.slainc.policy.domain.PolicyDocument;
+import cn.slainc.policy.domain.PolicyRequest;
 import cn.slainc.policy.domain.PolicyStatement;
 import cn.slainc.policy.domain.PolicySubjectType;
 import com.jayway.jsonpath.JsonPath;
@@ -18,6 +19,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +38,8 @@ class PolicyAspectHttpTest {
 
     private String token;
 
+    private String adminToken;
+
     @BeforeEach
     void setUp() throws Exception {
         PolicyStatement read = statement(Effect.ALLOW, List.of("modality:policy-test:read"), List.of("*"));
@@ -47,9 +51,22 @@ class PolicyAspectHttpTest {
         adminService.create("全局禁写", PolicySubjectType.GLOBAL, null, null,
                 PolicyDocument.of(statement(Effect.DENY, List.of("modality:policy-test:write"), List.of("*"))),
                 null, "测试");
+        adminService.create("用户组读取", PolicySubjectType.GROUP, "group-10001", null,
+                PolicyDocument.of(statement(Effect.ALLOW, List.of("modality:policy-test:group"), List.of("*"))),
+                null, "测试");
+        PolicyStatement mfa = statement(Effect.ALLOW, List.of("modality:policy-test:mfa"), List.of("*"));
+        mfa.setCondition(Map.of("bool_equal", Map.of(PolicyRequest.KEY_MFA_VERIFIED, List.of("true"))));
+        adminService.create("敏感操作二次认证", PolicySubjectType.USER, "10001", "TENANT_USER",
+                PolicyDocument.of(mfa), null, "测试");
+        adminService.create("平台管理员读取", PolicySubjectType.USER, "20001", "PLATFORM_ADMIN",
+                PolicyDocument.of(statement(Effect.ALLOW, List.of("modality:policy-test:read"), List.of("*"))),
+                null, "测试");
         HttpResponse<String> loginResponse = exchange("/policy-test/login", null);
         assertEquals(200, loginResponse.statusCode());
         token = JsonPath.read(loginResponse.body(), "$.data");
+        HttpResponse<String> adminLogin = exchange("/policy-test/login-admin", null);
+        assertEquals(200, adminLogin.statusCode());
+        adminToken = JsonPath.read(adminLogin.body(), "$.data");
     }
 
     @Test
@@ -83,6 +100,25 @@ class PolicyAspectHttpTest {
     }
 
     @Test
+    void groupPolicyUsesGroupProviderDuringRealHttpEvaluation() throws Exception {
+        assertEquals(200, exchange("/policy-test/group", token).statusCode());
+    }
+
+    @Test
+    void mfaConditionReadsSafeAuthWindow() throws Exception {
+        assertEquals(403, exchange("/policy-test/mfa", token).statusCode());
+        assertEquals(200, exchange("/policy-test/open-safe", token).statusCode());
+        assertEquals(200, exchange("/policy-test/mfa", token).statusCode());
+    }
+
+    @Test
+    void platformAdminAnnotationResolvesCurrentLoginTypeAutomatically() throws Exception {
+        HttpResponse<String> response = exchange("/policy-test/read", adminToken, "PLATFORM_ADMIN");
+        assertEquals(200, response.statusCode());
+        assertEquals("read-ok", JsonPath.read(response.body(), "$.data"));
+    }
+
+    @Test
     void newDenyPolicyTakesEffectImmediately() throws Exception {
         assertEquals(200, exchange("/policy-test/read", token).statusCode());
         String denyId = adminService.create("禁读策略", PolicySubjectType.GLOBAL, null, null,
@@ -97,9 +133,13 @@ class PolicyAspectHttpTest {
     }
 
     private HttpResponse<String> exchange(String path, String tokenValue) throws Exception {
+        return exchange(path, tokenValue, "TENANT_USER");
+    }
+
+    private HttpResponse<String> exchange(String path, String tokenValue, String loginType) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).GET();
         if (tokenValue != null) {
-            builder.header("satoken", tokenValue).header("X-Login-Type", "TENANT_USER");
+            builder.header("satoken", tokenValue).header("X-Login-Type", loginType);
         }
         return httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }

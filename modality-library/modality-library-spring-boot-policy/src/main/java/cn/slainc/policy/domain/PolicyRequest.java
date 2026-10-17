@@ -15,6 +15,22 @@ public class PolicyRequest {
 
     public static final String KEY_CURRENT_TIME = "modality:CurrentTime";
 
+    public static final String KEY_LOGIN_TYPE = "modality:LoginType";
+
+    public static final String KEY_ROLES = "modality:Roles";
+
+    public static final String KEY_GROUPS = "modality:Groups";
+
+    public static final String KEY_REQUEST_PATH = "modality:RequestPath";
+
+    public static final String KEY_HTTP_METHOD = "modality:HttpMethod";
+
+    public static final String KEY_USER_AGENT = "modality:UserAgent";
+
+    public static final String KEY_MFA_VERIFIED = "modality:MfaVerified";
+
+    public static final String KEY_SAFE_AUTH = "modality:SafeAuth";
+
     private String userId;
 
     private String loginType;

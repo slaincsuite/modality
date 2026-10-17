@@ -187,7 +187,10 @@ class PolicyAdminServiceTest {
     @Test
     void allPresetTemplatesValid() {
         PolicyTemplates.presets().forEach((name, document) -> document.validate());
-        assertEquals(4, PolicyTemplates.presets().size());
+        assertEquals(20, PolicyTemplates.presets().size());
+        assertTrue(PolicyTemplates.presets().containsKey(PolicyTemplates.BREAK_GLASS));
+        assertTrue(PolicyTemplates.presets().containsKey(PolicyTemplates.MFA_EXPORT_GUARD));
+        assertTrue(PolicyTemplates.presets().containsKey(PolicyTemplates.TENANT_SELF_SERVICE));
         Map<String, Map<String, List<String>>> condition = PolicyTemplates.template(PolicyTemplates.INTERNAL_ONLY)
                 .getStatements().get(0).getCondition();
         assertNotNull(condition.get("ip_in_range"));

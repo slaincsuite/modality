@@ -47,10 +47,10 @@ public class PolicySelfService {
 
     private List<PolicyView> directPolicies(UserContext.UserInfo user) {
         Map<String, PolicyView> result = new LinkedHashMap<>();
-        addSubjectPolicies(result, "user", String.valueOf(user.userId()));
-        addBindingPolicies(result, "USER", String.valueOf(user.userId()));
+        addSubjectPolicies(result, "user", String.valueOf(user.userId()), user.loginType());
+        addBindingPolicies(result, "USER", String.valueOf(user.userId()), user.loginType());
         if (user.loginType() == LoginType.APP) {
-            addBindingPolicies(result, "CLIENT", String.valueOf(user.userId()));
+            addBindingPolicies(result, "CLIENT", String.valueOf(user.userId()), user.loginType());
         }
         return new ArrayList<>(result.values());
     }
@@ -58,8 +58,8 @@ public class PolicySelfService {
     private List<PolicyView> rolePolicies(UserContext.UserInfo user) {
         Map<String, PolicyView> result = new LinkedHashMap<>();
         for (String role : user.roles()) {
-            addSubjectPolicies(result, "role", role);
-            addBindingPolicies(result, "ROLE", role);
+            addSubjectPolicies(result, "role", role, user.loginType());
+            addBindingPolicies(result, "ROLE", role, user.loginType());
         }
         return new ArrayList<>(result.values());
     }
@@ -67,23 +67,31 @@ public class PolicySelfService {
     private List<PolicyView> groupPolicies(UserContext.UserInfo user) {
         Map<String, PolicyView> result = new LinkedHashMap<>();
         for (String group : groups(user)) {
-            addSubjectPolicies(result, "group", group);
-            addBindingPolicies(result, "GROUP", group);
+            addSubjectPolicies(result, "group", group, user.loginType());
+            addBindingPolicies(result, "GROUP", group, user.loginType());
         }
         return new ArrayList<>(result.values());
     }
 
-    private void addSubjectPolicies(Map<String, PolicyView> target, String subjectType, String subjectId) {
+    private void addSubjectPolicies(Map<String, PolicyView> target, String subjectType, String subjectId,
+                                    LoginType loginType) {
         manageService.page(null, subjectType, subjectId, null, null, null, 1, Integer.MAX_VALUE)
-                .records().forEach(policy -> target.putIfAbsent(policy.id(), policy));
+                .records().stream()
+                .filter(policy -> policy.loginType() == null || policy.loginType().isBlank()
+                        || loginType == null || policy.loginType().equalsIgnoreCase(loginType.value()))
+                .forEach(policy -> target.putIfAbsent(policy.id(), policy));
     }
 
-    private void addBindingPolicies(Map<String, PolicyView> target, String subjectType, String subjectId) {
+    private void addBindingPolicies(Map<String, PolicyView> target, String subjectType, String subjectId,
+                                    LoginType loginType) {
         List<PolicyBinding> bindings = bindingService.query(subjectType, subjectId, null);
         for (PolicyBinding binding : bindings) {
             try {
                 PolicyView policy = manageService.view(binding.getPolicyId());
-                target.putIfAbsent(policy.id(), policy);
+                if (policy.loginType() == null || policy.loginType().isBlank()
+                        || loginType == null || policy.loginType().equalsIgnoreCase(loginType.value())) {
+                    target.putIfAbsent(policy.id(), policy);
+                }
             } catch (RuntimeException exception) {
                 log.warn("读取主体策略 {} 失败: {}", binding.getPolicyId(), exception.getMessage());
             }

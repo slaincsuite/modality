@@ -1,6 +1,7 @@
 package cn.slainc.core.context;
 
 import cn.slainc.core.enums.LoginType;
+import cn.slainc.core.support.PermissionMatcher;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -59,7 +60,7 @@ public final class UserContext {
     }
 
     public static boolean hasPermission(String permission) {
-        return permission != null && permissions().contains(permission);
+        return permission != null && PermissionMatcher.granted(permissions(), permission);
     }
 
     public static boolean isSuperAdmin() {

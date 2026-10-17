@@ -85,7 +85,6 @@ public class PolicyEngine {
     public List<String> resolveActions(PolicyRequest request) {
         Snapshot current = snapshot();
         LinkedHashSet<String> allowed = new LinkedHashSet<>();
-        LinkedHashSet<String> denied = new LinkedHashSet<>();
         for (Policy policy : current.policies()) {
             if (!policy.enabled() || !subjectApplies(policy, request)) {
                 continue;
@@ -96,14 +95,26 @@ public class PolicyEngine {
                 }
                 if (statement.effectEnum() == Effect.ALLOW) {
                     allowed.addAll(statement.getActions());
-                } else {
+                }
+            }
+        }
+        return List.copyOf(allowed);
+    }
+
+    public List<String> resolveDeniedActions(PolicyRequest request) {
+        Snapshot current = snapshot();
+        LinkedHashSet<String> denied = new LinkedHashSet<>();
+        for (Policy policy : current.policies()) {
+            if (!policy.enabled() || !subjectApplies(policy, request)) {
+                continue;
+            }
+            for (var statement : policy.getDocument().getStatements()) {
+                if (!statement.hasCondition() && statement.effectEnum() == Effect.DENY) {
                     denied.addAll(statement.getActions());
                 }
             }
         }
-        allowed.removeIf(pattern -> denied.stream()
-                .anyMatch(deny -> WildcardMatcher.match(deny, pattern) || WildcardMatcher.match(pattern, deny)));
-        return List.copyOf(allowed);
+        return List.copyOf(denied);
     }
 
     public List<Policy> snapshotPolicies() {
@@ -180,13 +191,41 @@ public class PolicyEngine {
             return request.getTenantId() != null
                     && policy.getSubjectId().equals(String.valueOf(request.getTenantId()));
         }
+        if (policy.getSubjectType() == PolicySubjectType.TENANT_ROLE) {
+            return tenantSubjectApplies(policy, request, request.getRoles());
+        }
+        if (policy.getSubjectType() == PolicySubjectType.TENANT_GROUP) {
+            return tenantSubjectApplies(policy, request, request.getGroups());
+        }
         if (policy.getSubjectType() == PolicySubjectType.ROLE) {
-            return request.getRoles() != null && request.getRoles().contains(policy.getSubjectId());
+            return isPersonLoginType(request.getLoginType())
+                    && request.getRoles() != null && request.getRoles().contains(policy.getSubjectId());
         }
         if (policy.getSubjectType() == PolicySubjectType.GROUP) {
-            return request.getGroups() != null && request.getGroups().contains(policy.getSubjectId());
+            return isPersonLoginType(request.getLoginType())
+                    && request.getGroups() != null && request.getGroups().contains(policy.getSubjectId());
+        }
+        if (policy.getLoginType() == null && !isPersonLoginType(request.getLoginType())) {
+            return false;
         }
         return request.getUserId() != null && policy.getSubjectId().equals(request.getUserId());
+    }
+
+    private boolean tenantSubjectApplies(Policy policy, PolicyRequest request, List<String> subjectCodes) {
+        if (request.getTenantId() == null || policy.getSubjectId() == null) {
+            return false;
+        }
+        String prefix = request.getTenantId() + ":";
+        return policy.getSubjectId().startsWith(prefix)
+                && subjectCodes != null
+                && subjectCodes.contains(policy.getSubjectId().substring(prefix.length()));
+    }
+
+    private boolean isPersonLoginType(String loginType) {
+        return "PLATFORM_ADMIN".equalsIgnoreCase(loginType)
+                || "PLATFORM_USER".equalsIgnoreCase(loginType)
+                || "TENANT_ADMIN".equalsIgnoreCase(loginType)
+                || "TENANT_USER".equalsIgnoreCase(loginType);
     }
 
     private Snapshot snapshot() {

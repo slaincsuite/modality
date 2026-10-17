@@ -88,8 +88,9 @@ public class PolicyAutoConfiguration {
 
         @Bean
         @ConditionalOnMissingBean
-        public PolicyAspect policyAspect(PolicyEngine policyEngine) {
-            return new PolicyAspect(policyEngine);
+        public PolicyAspect policyAspect(PolicyEngine policyEngine,
+                                         ObjectProvider<PolicyGroupProvider> groupProvider) {
+            return new PolicyAspect(policyEngine, groupProvider);
         }
     }
 

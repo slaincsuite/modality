@@ -42,6 +42,16 @@ class ConditionEvaluatorsTest {
     }
 
     @Test
+    void stringNotLikeRequiresAllPatternsToMiss() {
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.STRING_NOT_LIKE,
+                "prod-api", List.of("dev-*", "uat-*")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.STRING_NOT_LIKE,
+                "prod-api", List.of("dev-*", "prod-*")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.STRING_NOT_LIKE,
+                null, List.of("prod-*")));
+    }
+
+    @Test
     void numericComparisons() {
         assertTrue(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_EQUAL, 100, List.of("100")));
         assertTrue(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_EQUAL, "100.00", List.of("100")));
@@ -51,6 +61,8 @@ class ConditionEvaluatorsTest {
         assertFalse(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_LESS_THAN, 100, List.of("100")));
         assertTrue(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_GREATER_THAN, 101, List.of("100")));
         assertFalse(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_GREATER_THAN, "abc", List.of("100")));
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_NOT_EQUAL, 101, List.of("100")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.NUMERIC_NOT_EQUAL, "100.00", List.of("100")));
     }
 
     @Test
@@ -74,6 +86,8 @@ class ConditionEvaluatorsTest {
                 "2026-01-01", List.of(deadline)));
         assertFalse(ConditionEvaluators.evaluate(ConditionOperator.DATE_LESS_THAN,
                 "not-a-date", List.of(deadline)));
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.DATE_EQUAL,
+                "2099-01-01T00:00:00Z", List.of(deadline)));
     }
 
     @Test
@@ -99,6 +113,28 @@ class ConditionEvaluatorsTest {
     void ipOperatorsTolerateInvalidInput() {
         assertFalse(ConditionEvaluators.evaluate(ConditionOperator.IP_IN_RANGE, "10.0.0.1", List.of("not-a-cidr")));
         assertFalse(ConditionEvaluators.evaluate(ConditionOperator.IP_EQUAL, "10.0.0.1", List.of("not-an-ip")));
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.IP_NOT_IN_RANGE,
+                "8.8.8.8", List.of("10.0.0.0/8")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.IP_NOT_IN_RANGE,
+                "10.1.2.3", List.of("10.0.0.0/8")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.IP_NOT_IN_RANGE,
+                "not-ip", List.of("10.0.0.0/8")));
+    }
+
+    @Test
+    void collectionOperatorsMatchRoleAndGroupLists() {
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.COLLECTION_CONTAINS,
+                List.of("admin", "auditor"), List.of("admin")));
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.COLLECTION_CONTAINS,
+                new String[]{"team-a", "team-b"}, List.of("team-b")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.COLLECTION_CONTAINS,
+                List.of("user"), List.of("admin")));
+        assertTrue(ConditionEvaluators.evaluate(ConditionOperator.COLLECTION_NOT_CONTAINS,
+                List.of("user"), List.of("admin")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.COLLECTION_NOT_CONTAINS,
+                List.of("admin"), List.of("admin")));
+        assertFalse(ConditionEvaluators.evaluate(ConditionOperator.COLLECTION_CONTAINS,
+                null, List.of("admin")));
     }
 
     @Test

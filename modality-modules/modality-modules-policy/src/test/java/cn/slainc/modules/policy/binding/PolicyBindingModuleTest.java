@@ -81,6 +81,8 @@ class PolicyBindingModuleTest {
         String subjectView = get("/policy/bindings/subject?subjectType=user&subjectId=92001");
         assertThat(Integer.parseInt(JsonPath.read(subjectView, "$.data.boundPolicies.length()").toString()))
                 .isEqualTo(1);
+        String subjectBindings = get("/policy/bindings/query?subjectType=user&subjectId=92001");
+        assertThat(JsonPath.read(subjectBindings, "$.data[0].sourcePolicyId").toString()).isEqualTo(policyId);
 
         HttpResponse<String> unbound = send("DELETE", "/policy/bindings/" + userBindingId, null);
         assertThat(unbound.statusCode()).isEqualTo(200);
@@ -122,6 +124,8 @@ class PolicyBindingModuleTest {
         String sourceBindings = get("/policy/manage/" + policyId + "/bindings");
         assertThat(Integer.parseInt(JsonPath.read(sourceBindings, "$.data.length()").toString())).isEqualTo(1);
         assertThat(JsonPath.read(sourceBindings, "$.data[0].sourcePolicyId").toString()).isEqualTo(policyId);
+        assertThat(get("/policy/manage/page?keyword=用户组源策略"))
+                .doesNotContain("用户组源策略-group-92001");
         String query = get("/policy/bindings/query?policyId=" + policyId);
         assertThat(Integer.parseInt(JsonPath.read(query, "$.data.length()").toString())).isEqualTo(1);
         Integer derived = jdbc.queryForObject("SELECT COUNT(*) FROM t_policy WHERE name LIKE ?",

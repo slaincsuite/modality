@@ -116,8 +116,10 @@ class PolicyEngineTest {
     void userAndTenantSubjectsFilterByIdentity() {
         createPolicy(PolicySubjectType.USER, "1001", Effect.ALLOW, List.of("modality:user:*"), List.of("*"), null);
         createPolicy(PolicySubjectType.TENANT, "2", Effect.ALLOW, List.of("modality:order:*"), List.of("*"), null);
-        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r").userId("1001")).allowed());
-        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r").userId("1002")).allowed());
+        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .userId("1001").loginType("TENANT_USER")).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .userId("1002").loginType("TENANT_USER")).allowed());
         assertTrue(engine.evaluate(PolicyRequest.of("modality:order:get", "r").tenantId(2L)).allowed());
         assertFalse(engine.evaluate(PolicyRequest.of("modality:order:get", "r").tenantId(3L)).allowed());
     }
@@ -125,15 +127,38 @@ class PolicyEngineTest {
     @Test
     void roleSubjectFiltersByRoleList() {
         createPolicy(PolicySubjectType.ROLE, "admin", Effect.ALLOW, List.of("modality:*:*"), List.of("*"), null);
-        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r").roles(List.of("admin"))).allowed());
-        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r").roles(List.of("user"))).allowed());
+        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .loginType("TENANT_USER").roles(List.of("admin"))).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .loginType("TENANT_USER").roles(List.of("user"))).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .loginType("APP").roles(List.of("admin"))).allowed());
     }
 
     @Test
     void groupSubjectFiltersByGroupList() {
         createPolicy(PolicySubjectType.GROUP, "team-a", Effect.ALLOW, List.of("modality:*:*"), List.of("*"), null);
-        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r").groups(List.of("team-a"))).allowed());
-        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r").groups(List.of("team-b"))).allowed());
+        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .loginType("TENANT_USER").groups(List.of("team-a"))).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .loginType("TENANT_USER").groups(List.of("team-b"))).allowed());
+    }
+
+    @Test
+    void tenantRoleAndGroupPoliciesCannotLeakAcrossTenants() {
+        createPolicy(PolicySubjectType.TENANT_ROLE, "2:admin", Effect.ALLOW,
+                List.of("modality:user:*"), List.of("*"), null);
+        createPolicy(PolicySubjectType.TENANT_GROUP, "2:team-a", Effect.ALLOW,
+                List.of("modality:order:*"), List.of("*"), null);
+
+        assertTrue(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .tenantId(2L).loginType("TENANT_USER").roles(List.of("admin"))).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:user:get", "r")
+                .tenantId(3L).loginType("TENANT_USER").roles(List.of("admin"))).allowed());
+        assertTrue(engine.evaluate(PolicyRequest.of("modality:order:get", "r")
+                .tenantId(2L).loginType("TENANT_USER").groups(List.of("team-a"))).allowed());
+        assertFalse(engine.evaluate(PolicyRequest.of("modality:order:get", "r")
+                .tenantId(3L).loginType("TENANT_USER").groups(List.of("team-a"))).allowed());
     }
 
     @Test
@@ -175,21 +200,22 @@ class PolicyEngineTest {
     }
 
     @Test
-    void resolveActionsReturnsAllowPatternsNotCoveredByDeny() {
+    void resolveActionsKeepsAllowPatternsAndDeniedPatternsAreExplicit() {
         createPolicy(PolicySubjectType.USER, "1001", Effect.ALLOW,
                 List.of("modality:user:*", "modality:order:*"), List.of("*"), null);
         createPolicy(PolicySubjectType.USER, "1001", Effect.DENY, List.of("modality:user:delete"), List.of("*"), null);
-        List<String> actions = engine.resolveActions(new PolicyRequest().userId("1001"));
+        List<String> actions = engine.resolveActions(new PolicyRequest().userId("1001").loginType("TENANT_USER"));
         assertTrue(actions.contains("modality:order:*"));
-        assertFalse(actions.contains("modality:user:*"));
-        assertFalse(actions.contains("modality:user:delete"));
+        assertTrue(actions.contains("modality:user:*"));
+        assertEquals(List.of("modality:user:delete"),
+                engine.resolveDeniedActions(new PolicyRequest().userId("1001").loginType("TENANT_USER")));
     }
 
     @Test
     void resolveActionsSkipsConditionalStatements() {
         createPolicy(PolicySubjectType.USER, "1001", Effect.ALLOW, List.of("modality:user:*"), List.of("*"),
                 Map.of("ip_in_range", Map.of("modality:SourceIp", List.of("10.0.0.0/8"))));
-        assertEquals(List.of(), engine.resolveActions(new PolicyRequest().userId("1001")));
+        assertEquals(List.of(), engine.resolveActions(new PolicyRequest().userId("1001").loginType("TENANT_USER")));
     }
 
     @Test

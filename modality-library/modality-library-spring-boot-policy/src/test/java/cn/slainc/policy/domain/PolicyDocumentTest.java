@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -90,5 +91,21 @@ class PolicyDocumentTest {
     void parsingMalformedJsonGivesChineseError() {
         BizException exception = assertThrows(BizException.class, () -> PolicyDocument.parse("{not-json"));
         assertTrue(exception.getMessage().contains("不是合法的 JSON"));
+    }
+
+    @Test
+    void oversizedDocumentAndCollectionsAreRejected() {
+        assertThrows(BizException.class, () -> PolicyDocument.parse("{\"padding\":\""
+                + "x".repeat(1_048_577) + "\"}"));
+
+        PolicyDocument tooManyStatements = new PolicyDocument();
+        tooManyStatements.setStatements(IntStream.range(0, 129)
+                .mapToObj(index -> statement(Effect.ALLOW, List.of("*"), List.of("*"))).toList());
+        assertThrows(BizException.class, tooManyStatements::validate);
+
+        PolicyDocument tooManyActions = new PolicyDocument();
+        tooManyActions.getStatements().add(statement(Effect.ALLOW,
+                IntStream.range(0, 257).mapToObj(index -> "action:" + index).toList(), List.of("*")));
+        assertThrows(BizException.class, tooManyActions::validate);
     }
 }

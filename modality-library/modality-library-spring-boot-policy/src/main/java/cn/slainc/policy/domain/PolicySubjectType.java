@@ -6,6 +6,10 @@ public enum PolicySubjectType {
 
     TENANT("tenant"),
 
+    TENANT_ROLE("tenant-role"),
+
+    TENANT_GROUP("tenant-group"),
+
     ROLE("role"),
 
     USER("user"),
@@ -28,6 +32,7 @@ public enum PolicySubjectType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("非法的策略作用对象: " + code + "，只允许 global、tenant、role、user、group");
+        throw new IllegalArgumentException("非法的策略作用对象: " + code
+                + "，只允许 global、tenant、tenant-role、tenant-group、role、user、group");
     }
 }

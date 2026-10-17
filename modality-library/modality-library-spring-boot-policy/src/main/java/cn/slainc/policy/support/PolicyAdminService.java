@@ -45,7 +45,11 @@ public class PolicyAdminService {
     public Policy create(String name, PolicySubjectType subjectType, String subjectId, String loginType,
                          PolicyDocument document, String description, String operator) {
         Policy policy = Policy.create(name, subjectType, subjectId, loginType, document);
-        policy.setDescription(description == null ? "" : description);
+        String normalizedDescription = description == null ? "" : description.trim();
+        if (normalizedDescription.length() > 256) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR, "策略描述最多 256 个字符");
+        }
+        policy.setDescription(normalizedDescription);
         policy.setCreator(operator);
         Policy saved = store.save(policy);
         afterChange(saved, "CREATE", null, saved.getDocument().toJson(), operator);

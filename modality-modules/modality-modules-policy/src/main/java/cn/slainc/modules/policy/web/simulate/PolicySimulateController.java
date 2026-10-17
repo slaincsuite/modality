@@ -2,6 +2,7 @@ package cn.slainc.modules.policy.web.simulate;
 
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.ResultCode;
+import cn.slainc.core.context.TenantContext;
 import cn.slainc.modules.policy.PolicyCenterKeys;
 import cn.slainc.modules.policy.dto.PolicyBatchSimulateRequest;
 import cn.slainc.modules.policy.dto.PolicyCaseInput;
@@ -89,8 +90,10 @@ public class PolicySimulateController {
         }
         PolicyRequest target = PolicyRequest.of(request.action(), request.resource());
         target.setUserId(request.userId());
-        target.setLoginType(request.loginType());
-        target.setTenantId(request.tenantId());
+        target.setLoginType(request.loginType() == null || request.loginType().isBlank()
+                ? (request.userId() == null || request.userId().isBlank() ? null : "TENANT_USER")
+                : request.loginType());
+        target.setTenantId(request.tenantId() == null ? TenantContext.getOrDefault() : request.tenantId());
         if (request.roles() != null) {
             target.setRoles(request.roles());
         }
