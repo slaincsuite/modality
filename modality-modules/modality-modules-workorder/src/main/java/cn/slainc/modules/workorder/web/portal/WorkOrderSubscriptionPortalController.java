@@ -1,7 +1,11 @@
 package cn.slainc.modules.workorder.web.portal;
 
 import cn.slainc.core.context.UserContext;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
+import cn.slainc.modules.workorder.dto.WorkOrderSubscriptionView;
 import cn.slainc.security.annotation.RequireLogin;
+import cn.slainc.workorder.subscribe.WorkOrderSubscription;
 import cn.slainc.workorder.subscribe.WorkOrderSubscriptionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,14 +31,24 @@ public class WorkOrderSubscriptionPortalController {
     }
 
     @PostMapping("/{id}/subscription")
+    @AuditLog(value = "订阅工单", operation = AuditOperation.CREATE, module = "workorder")
     public Object subscribe(@PathVariable Long id) {
         subscriptionService.subscribeOrder(id, UserContext.userId());
         return Map.of("subscribed", true);
     }
 
     @DeleteMapping("/{id}/subscription")
+    @AuditLog(value = "取消订阅工单", operation = AuditOperation.DELETE, module = "workorder")
     public Object unsubscribe(@PathVariable Long id) {
         return Map.of("unsubscribed", subscriptionService.unsubscribeOrder(id, UserContext.userId()));
+    }
+
+    @GetMapping("/{id}/subscription")
+    public Object subscription(@PathVariable Long id) {
+        WorkOrderSubscription subscription = subscriptionService
+                .orderSubscription(id, UserContext.userId())
+                .orElse(null);
+        return WorkOrderSubscriptionView.of(subscription);
     }
 
     @GetMapping("/subscriptions")
@@ -43,12 +57,14 @@ public class WorkOrderSubscriptionPortalController {
     }
 
     @PostMapping("/type-subscriptions")
+    @AuditLog(value = "订阅工单类型", operation = AuditOperation.CREATE, module = "workorder")
     public Object subscribeType(@RequestBody Map<String, String> body) {
         subscriptionService.subscribeType(body == null ? null : body.get("typeCode"), UserContext.userId());
         return Map.of("subscribed", true);
     }
 
     @DeleteMapping("/type-subscriptions/{typeCode}")
+    @AuditLog(value = "取消订阅工单类型", operation = AuditOperation.DELETE, module = "workorder")
     public Object unsubscribeType(@PathVariable String typeCode) {
         subscriptionService.unsubscribeType(typeCode, UserContext.userId());
         return Map.of("unsubscribed", true);

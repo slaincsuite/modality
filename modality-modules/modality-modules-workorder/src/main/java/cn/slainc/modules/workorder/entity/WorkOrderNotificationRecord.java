@@ -30,7 +30,7 @@ public class WorkOrderNotificationRecord {
     private String channel;
 
     @TableField("is_read")
-    private Boolean read;
+    private Boolean readFlag;
 
     private Long createTime;
 
@@ -98,12 +98,20 @@ public class WorkOrderNotificationRecord {
         this.channel = channel;
     }
 
+    public Boolean getReadFlag() {
+        return readFlag;
+    }
+
+    public void setReadFlag(Boolean readFlag) {
+        this.readFlag = readFlag;
+    }
+
     public Boolean isRead() {
-        return read;
+        return readFlag;
     }
 
     public void setRead(Boolean read) {
-        this.read = read;
+        this.readFlag = read;
     }
 
     public Long getCreateTime() {

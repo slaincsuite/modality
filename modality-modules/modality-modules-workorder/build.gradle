@@ -12,6 +12,7 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-mybatis')
     api project(':modality-library:modality-library-spring-boot-storage')
     api project(':modality-library:modality-library-spring-boot-excel')
+    implementation project(':modality-library:modality-library-spring-boot-logger')
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
     testRuntimeOnly libs.h2
 }

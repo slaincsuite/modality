@@ -1,6 +1,9 @@
 package cn.slainc.modules.workorder.web.portal;
 
 import cn.slainc.core.context.UserContext;
+import cn.slainc.core.exception.BizException;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.security.annotation.RequireLogin;
 import cn.slainc.workorder.spi.WorkOrderNotificationStore;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,12 +39,16 @@ public class WorkOrderNotificationPortalController {
     }
 
     @PostMapping("/notifications/{notificationId}/read")
+    @AuditLog(value = "标记工单通知已读", operation = AuditOperation.UPDATE, module = "workorder")
     public Object markRead(@PathVariable Long notificationId) {
-        notificationStore.markRead(notificationId);
+        if (!notificationStore.markRead(notificationId, UserContext.userId())) {
+            throw new BizException("通知不存在");
+        }
         return Map.of("marked", true);
     }
 
     @PostMapping("/notifications/read-all")
+    @AuditLog(value = "全部标记工单通知已读", operation = AuditOperation.UPDATE, module = "workorder")
     public Object markAllRead() {
         notificationStore.markAllRead(UserContext.userId());
         return Map.of("marked", true);

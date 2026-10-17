@@ -1,6 +1,9 @@
 package cn.slainc.modules.workorder.web.portal;
 
 import cn.slainc.core.context.UserContext;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
+import cn.slainc.modules.workorder.dto.WorkOrderCommentRequest;
 import cn.slainc.modules.workorder.service.order.WorkOrderService;
 import cn.slainc.security.annotation.RequireLogin;
 import cn.slainc.workorder.comment.WorkOrderCommentService;
@@ -33,14 +36,13 @@ public class WorkOrderCommentPortalController {
     }
 
     @PostMapping("/{id}/comments")
-    public Object comment(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Number parentId = body == null ? null : (Number) body.get("parentId");
-        Number quotedCommentId = body == null ? null : (Number) body.get("quotedCommentId");
-        return commentService.add(id, UserContext.userId(),
-                body == null ? null : (String) body.get("content"),
-                body == null ? null : (String) body.get("visibility"),
-                parentId == null ? null : parentId.longValue(),
-                quotedCommentId == null ? null : quotedCommentId.longValue());
+    @AuditLog(value = "发表工单评论", operation = AuditOperation.CREATE, module = "workorder")
+    public Object comment(@PathVariable Long id, @RequestBody WorkOrderCommentRequest request) {
+        WorkOrderCommentRequest actual = request == null
+                ? new WorkOrderCommentRequest(null, null, null, null)
+                : request;
+        return commentService.add(id, UserContext.userId(), actual.content(), actual.visibility(),
+                actual.parentId(), actual.quotedCommentId());
     }
 
     @GetMapping("/{id}/comments")
@@ -50,17 +52,20 @@ public class WorkOrderCommentPortalController {
     }
 
     @PostMapping("/comments/{commentId}")
+    @AuditLog(value = "编辑工单评论", operation = AuditOperation.UPDATE, module = "workorder")
     public Object editComment(@PathVariable Long commentId, @RequestBody Map<String, String> body) {
         return commentService.edit(commentId, UserContext.userId(), body == null ? null : body.get("content"));
     }
 
     @PostMapping("/comments/{commentId}/like")
+    @AuditLog(value = "点赞工单评论", operation = AuditOperation.UPDATE, module = "workorder")
     public Object likeComment(@PathVariable Long commentId,
                               @RequestParam(defaultValue = "false") boolean cancel) {
         return commentService.like(commentId, cancel);
     }
 
     @DeleteMapping("/comments/{commentId}")
+    @AuditLog(value = "删除工单评论", operation = AuditOperation.DELETE, module = "workorder")
     public Object deleteComment(@PathVariable Long commentId) {
         commentService.delete(commentId, UserContext.userId());
         return Map.of("deleted", true);

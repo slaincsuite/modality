@@ -1,5 +1,9 @@
 package cn.slainc.modules.workorder.web.manage;
 
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
+import cn.slainc.modules.workorder.dto.WorkOrderAutoAssignRequest;
+import cn.slainc.modules.workorder.dto.WorkOrderBatchReopenRequest;
 import cn.slainc.modules.workorder.WorkorderKeys;
 import cn.slainc.modules.workorder.service.order.WorkOrderService;
 import cn.slainc.security.annotation.RequirePermission;
@@ -11,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.List;
 import java.util.Map;
 
 
@@ -28,12 +31,14 @@ public class WorkOrderFlowController {
 
     @PostMapping("/{id}/claim")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "认领工单", operation = AuditOperation.UPDATE, module = "workorder")
     public Object claim(@PathVariable Long id) {
         return workOrderService.claim(id);
     }
 
     @PostMapping("/{id}/transfer")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "转派工单", operation = AuditOperation.UPDATE, module = "workorder")
     public Object transfer(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Number toAssigneeId = body == null ? null : (Number) body.get("toAssigneeId");
         return workOrderService.transfer(id, toAssigneeId == null ? null : toAssigneeId.longValue(),
@@ -42,6 +47,7 @@ public class WorkOrderFlowController {
 
     @PostMapping("/{id}/escalate")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "升级工单", operation = AuditOperation.UPDATE, module = "workorder")
     public Object escalate(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Number toAssigneeId = body == null ? null : (Number) body.get("toAssigneeId");
         return workOrderService.escalate(id, toAssigneeId == null ? null : toAssigneeId.longValue(),
@@ -50,24 +56,28 @@ public class WorkOrderFlowController {
 
     @PostMapping("/{id}/resolve")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "解决工单", operation = AuditOperation.UPDATE, module = "workorder")
     public Object resolve(@PathVariable Long id) {
         return workOrderService.resolve(id);
     }
 
     @PostMapping("/{id}/suspend")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "挂起工单", operation = AuditOperation.UPDATE, module = "workorder")
     public Object suspend(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         return workOrderService.suspend(id, body == null ? null : (String) body.get("reason"));
     }
 
     @PostMapping("/{id}/resume")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "恢复工单", operation = AuditOperation.UPDATE, module = "workorder")
     public Object resume(@PathVariable Long id) {
         return workOrderService.resume(id);
     }
 
     @PostMapping("/{id}/urge")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "催办工单", operation = AuditOperation.OTHER, module = "workorder")
     public Object urge(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         workOrderService.urge(id, body == null ? null : (String) body.get("message"));
         return workOrderService.requireOrder(id);
@@ -75,24 +85,31 @@ public class WorkOrderFlowController {
 
     @PostMapping("/{id}/auto-assign")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
-    @SuppressWarnings("unchecked")
-    public Object autoAssign(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        List<Long> candidates = body == null ? null : (List<Long>) body.get("candidates");
-        return workOrderService.autoAssign(id, candidates,
-                body == null ? null : (String) body.get("strategy"));
+    @AuditLog(value = "自动分派工单", operation = AuditOperation.UPDATE, module = "workorder")
+    public Object autoAssign(@PathVariable Long id,
+                             @RequestBody(required = false) WorkOrderAutoAssignRequest request) {
+        WorkOrderAutoAssignRequest actual = request == null
+                ? new WorkOrderAutoAssignRequest(null, null)
+                : request;
+        return workOrderService.autoAssign(id, actual.candidates(), actual.strategy());
     }
 
     @PostMapping("/{id}/reopen")
+    @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
+    @AuditLog(value = "重开工单", operation = AuditOperation.UPDATE, module = "workorder")
     public Object reopen(@PathVariable Long id) {
         return workOrderService.reopen(id);
     }
 
     @PostMapping("/batch-reopen")
     @RequirePermission(permissions = WorkorderKeys.PERMISSION_ORDER_ASSIGN)
-    @SuppressWarnings("unchecked")
-    public Object batchReopen(@RequestBody Map<String, Object> body) {
-        List<Long> ids = body == null ? null : (List<Long>) body.get("ids");
-        return workOrderService.batchReopen(ids);
+    @AuditLog(value = "批量重开工单", operation = AuditOperation.UPDATE, module = "workorder")
+    public Object batchReopen(@RequestBody(required = false) WorkOrderBatchReopenRequest request) {
+        WorkOrderBatchReopenRequest actual = request == null
+                ? new WorkOrderBatchReopenRequest(null, null, null, null, null)
+                : request;
+        return workOrderService.batchReopen(actual.ids(), actual.status(), actual.typeCode(),
+                actual.from(), actual.to());
     }
 
     @GetMapping("/{id}/preview")

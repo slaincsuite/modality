@@ -38,9 +38,12 @@ public class WorkOrderCommentService {
             throw new BizException("评论内容不能为空");
         }
         orderStore.findById(orderId).orElseThrow(() -> new BizException("工单不存在"));
-        if (!WorkOrderComment.VISIBILITY_INTERNAL.equals(visibility)
-                && !WorkOrderComment.VISIBILITY_EXTERNAL.equals(visibility)) {
-            throw new BizException("未知的评论可见性：" + visibility);
+        String effectiveVisibility = visibility == null || visibility.isBlank()
+                ? WorkOrderComment.VISIBILITY_INTERNAL
+                : visibility;
+        if (!WorkOrderComment.VISIBILITY_INTERNAL.equals(effectiveVisibility)
+                && !WorkOrderComment.VISIBILITY_EXTERNAL.equals(effectiveVisibility)) {
+            throw new BizException("未知的评论可见性：" + effectiveVisibility);
         }
         requireSameOrder(parentId, orderId);
         requireSameOrder(quotedCommentId, orderId);
@@ -49,7 +52,7 @@ public class WorkOrderCommentService {
         comment.setOrderId(orderId);
         comment.setAuthorId(authorId);
         comment.setContent(content.trim());
-        comment.setVisibility(visibility == null ? WorkOrderComment.VISIBILITY_INTERNAL : visibility);
+        comment.setVisibility(effectiveVisibility);
         comment.setParentId(parentId);
         comment.setQuotedCommentId(quotedCommentId);
         comment.setCreateTime(now);

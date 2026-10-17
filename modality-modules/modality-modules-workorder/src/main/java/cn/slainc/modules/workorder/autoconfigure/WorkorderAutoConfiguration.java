@@ -10,6 +10,7 @@ import cn.slainc.modules.workorder.mapper.WorkOrderReplyMapper;
 import cn.slainc.modules.workorder.mapper.WorkOrderSubscriptionMapper;
 import cn.slainc.modules.workorder.service.order.WorkOrderAttachmentService;
 import cn.slainc.modules.workorder.service.order.WorkOrderService;
+import cn.slainc.modules.workorder.service.order.WorkOrderTypeService;
 import cn.slainc.modules.workorder.service.stats.WorkOrderStatsService;
 import cn.slainc.workorder.spi.WorkOrderCommentStore;
 import cn.slainc.workorder.spi.WorkOrderNotificationStore;
@@ -21,6 +22,7 @@ import cn.slainc.modules.workorder.store.MpWorkOrderStore;
 import cn.slainc.modules.workorder.store.MpWorkOrderSubscriptionStore;
 import cn.slainc.storage.StorageTemplate;
 import cn.slainc.modules.workorder.web.order.WorkOrderAttachmentController;
+import cn.slainc.modules.workorder.web.order.WorkOrderTypeController;
 import cn.slainc.modules.workorder.web.portal.WorkOrderCommentPortalController;
 import cn.slainc.modules.workorder.web.manage.WorkOrderFlowController;
 import cn.slainc.modules.workorder.web.manage.WorkOrderManageController;
@@ -32,6 +34,7 @@ import cn.slainc.workorder.autoconfigure.WorkorderEngineAutoConfiguration;
 import cn.slainc.workorder.engine.WorkOrderEngine;
 import cn.slainc.workorder.spi.WorkOrderActivityStore;
 import cn.slainc.workorder.spi.WorkOrderStore;
+import cn.slainc.workorder.type.WorkOrderTypeRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -44,6 +47,7 @@ import org.springframework.context.annotation.Import;
 @AutoConfigureBefore(WorkorderEngineAutoConfiguration.class)
 @ConditionalOnProperty(prefix = "modality.workorder", name = "enabled", matchIfMissing = true)
 @Import({WorkOrderManageController.class, WorkOrderFlowController.class, WorkOrderAttachmentController.class,
+        WorkOrderTypeController.class,
         WorkOrderPortalController.class, WorkOrderCommentPortalController.class,
         WorkOrderSubscriptionPortalController.class, WorkOrderNotificationPortalController.class,
         WorkOrderStatsController.class})
@@ -59,9 +63,16 @@ public class WorkorderAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public WorkOrderTypeService workOrderTypeService(WorkOrderTypeRegistry typeRegistry) {
+        return new WorkOrderTypeService(typeRegistry);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public WorkOrderAttachmentService workOrderAttachmentService(StorageTemplate storageTemplate,
-                                                                 WorkOrderAttachmentMapper attachmentMapper) {
-        return new WorkOrderAttachmentService(storageTemplate, attachmentMapper);
+                                                                 WorkOrderAttachmentMapper attachmentMapper,
+                                                                 WorkOrderService workOrderService) {
+        return new WorkOrderAttachmentService(storageTemplate, attachmentMapper, workOrderService);
     }
 
     @Bean

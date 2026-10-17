@@ -42,6 +42,16 @@ public class MemoryWorkOrderNotificationStore implements WorkOrderNotificationSt
     }
 
     @Override
+    public boolean markRead(Long notificationId, Long recipientId) {
+        WorkOrderNotification notification = notifications.get(notificationId);
+        if (notification == null || !recipientId.equals(notification.getRecipientId())) {
+            return false;
+        }
+        notification.setRead(true);
+        return true;
+    }
+
+    @Override
     public void markAllRead(Long recipientId) {
         notifications.values().stream()
                 .filter(n -> n.getRecipientId().equals(recipientId))

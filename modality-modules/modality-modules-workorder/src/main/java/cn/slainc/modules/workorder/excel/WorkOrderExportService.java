@@ -2,6 +2,7 @@ package cn.slainc.modules.workorder.excel;
 
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
+import cn.slainc.modules.workorder.dto.WorkOrderFilter;
 import cn.slainc.modules.workorder.entity.WorkOrderRecord;
 import cn.slainc.modules.workorder.service.order.WorkOrderService;
 import cn.slainc.utils.date.DateUtils;
@@ -19,8 +20,10 @@ public class WorkOrderExportService {
         this.workOrderService = workOrderService;
     }
 
-    public void export(String status, String priority, String keyword, HttpServletResponse response) {
-        List<WorkOrderRecord> records = workOrderService.list(status, priority, keyword,
+    public void export(String status, String priority, String typeCode, String keyword, String from,
+                       String to, HttpServletResponse response) {
+        List<WorkOrderRecord> records = workOrderService.list(
+                new WorkOrderFilter(status, priority, typeCode, keyword, from, to),
                 WorkOrderService.MAX_EXPORT_LIMIT);
         List<WorkOrderExportRow> rows = new ArrayList<>();
         for (WorkOrderRecord record : records) {

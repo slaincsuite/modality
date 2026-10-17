@@ -12,6 +12,8 @@ public interface WorkOrderNotificationStore {
 
     void markRead(Long notificationId);
 
+    boolean markRead(Long notificationId, Long recipientId);
+
     void markAllRead(Long recipientId);
 
     long countUnread(Long recipientId);
