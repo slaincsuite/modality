@@ -111,7 +111,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 
 ### 业务服务模块（1）
 
-`live-monitor`（直播监控）：与业务模块同层的独立服务单元，包根 `cn.slainc.services.livemonitor`，配置前缀 `modality.live-monitor`；当前仅搭好装配骨架，端点与服务随业务实现补齐。
+`live-monitor`（直播监控）：与业务模块同层的独立服务单元，包根 `cn.slainc.services.livemonitor`，配置前缀 `modality.live-monitor`；提供直播源登记、健康探测（HTTP 状态与耗时、内网/回环地址拦截）、批量检测与统计端点。
 
 ### 启动模块（1）
 
