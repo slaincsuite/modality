@@ -2,6 +2,7 @@ package cn.slainc.modules.policy;
 
 import cn.dev33.satoken.stp.StpInterface;
 import cn.slainc.core.result.Result;
+import cn.slainc.policy.spi.PolicyGroupProvider;
 import cn.slainc.security.StpKit;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -37,8 +38,13 @@ public class PolicyModuleApplication {
 
             @Override
             public List<String> getRoleList(Object loginId, String loginType) {
-                return List.of();
+                return List.of("batch11-role");
             }
         };
+    }
+
+    @Bean
+    public PolicyGroupProvider policyTestGroupProvider() {
+        return (loginId, type) -> List.of("group-92001");
     }
 }

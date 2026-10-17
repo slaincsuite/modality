@@ -36,7 +36,8 @@ class PolicyTestCaseModuleTest {
     @BeforeEach
     void setUp() throws Exception {
         for (String table : new String[]{"t_policy", "t_policy_version", "t_policy_audit", "t_policy_meta",
-                "t_policy_test_case"}) {
+                "t_policy_test_case", "t_policy_binding", "t_policy_template", "t_policy_boundary",
+                "t_policy_binding_source"}) {
             try {
                 jdbc.execute("DELETE FROM " + table);
             } catch (org.springframework.dao.DataAccessException ignored) {

@@ -2,6 +2,7 @@ package cn.slainc.modules.policy.simulate;
 
 import cn.slainc.modules.policy.PolicyModuleApplication;
 import cn.slainc.modules.policy.PolicyTestBodies;
+import cn.slainc.utils.json.JsonUtils;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,7 +37,8 @@ class PolicySimulateModuleTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        for (String table : new String[]{"t_policy", "t_policy_version", "t_policy_audit", "t_policy_meta"}) {
+        for (String table : new String[]{"t_policy", "t_policy_version", "t_policy_audit", "t_policy_meta",
+                "t_policy_binding", "t_policy_boundary", "t_policy_binding_source"}) {
             try {
                 jdbc.execute("DELETE FROM " + table);
             } catch (org.springframework.dao.DataAccessException ignored) {
@@ -82,6 +85,35 @@ class PolicySimulateModuleTest {
         assertThat(JsonPath.read(body, "$.data.summary[0]").toString()).contains("共 3 个用例，通过 2 个");
     }
 
+    @Test
+    void invalidSimulationRequestIsRejectedWithoutEvaluation() throws Exception {
+        HttpResponse<String> missingAction = send("POST", "/policy/simulate",
+                "{\"resource\":\"modality:demo/1\",\"userId\":\"92001\"}");
+        assertThat(missingAction.statusCode()).isEqualTo(400);
+        assertThat(missingAction.body()).contains("模拟请求必须提供 action 与 resource");
+
+        HttpResponse<String> invalidCase = send("POST", "/policy/simulate/batch",
+                "{\"cases\":[{\"name\":\"缺少请求\",\"expected\":\"ALLOW\"}]}");
+        assertThat(invalidCase.statusCode()).isEqualTo(400);
+        assertThat(invalidCase.body()).contains("缺少请求内容");
+    }
+
+    @Test
+    void simulationExposesBoundaryOfMatchedPolicy() throws Exception {
+        String policyId = post("/policy/manage", PolicyTestBodies.createRequest("带边界模拟策略",
+                "global", null, null, PolicyTestBodies.document("boundary-allow", "allow",
+                        "modality:boundary:get")));
+        policyId = JsonPath.read(policyId, "$.data.id");
+        post("/policy/manage/" + policyId + "/boundary", JsonUtils.toJson(Map.of("documentJson",
+                PolicyTestBodies.document("boundary", "deny", "modality:boundary:delete"))));
+
+        String result = post("/policy/simulate", "{\"action\":\"modality:boundary:get\","
+                + "\"resource\":\"modality:boundary/1\",\"userId\":\"92001\"}");
+        assertThat(Integer.parseInt(JsonPath.read(result, "$.data.boundaries.length()").toString())).isEqualTo(1);
+        assertThat(JsonPath.read(result, "$.data.boundaries[0].document").toString())
+                .contains("modality:boundary:delete");
+    }
+
     private String login() throws Exception {
         HttpResponse<String> response = HTTP.send(
                 HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/policy-test/login")).GET().build(),
@@ -90,14 +122,19 @@ class PolicySimulateModuleTest {
     }
 
     private String post(String path, String body) throws Exception {
-        HttpResponse<String> response = HTTP.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+        HttpResponse<String> response = send("POST", path, body);
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        return response.body();
+    }
+
+    private HttpResponse<String> send(String method, String path, String body) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                 .timeout(Duration.ofSeconds(15))
                 .header("Content-Type", "application/json")
                 .header("X-Login-Type", "TENANT_USER")
-                .header("satoken", token)
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build(), HttpResponse.BodyHandlers.ofString());
-        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        return response.body();
+                .header("satoken", token);
+        builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody()
+                : HttpRequest.BodyPublishers.ofString(body));
+        return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }
 }
