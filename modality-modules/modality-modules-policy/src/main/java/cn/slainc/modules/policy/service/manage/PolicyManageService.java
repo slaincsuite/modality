@@ -4,10 +4,18 @@ import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.policy.PolicyCenterKeys;
+import cn.slainc.modules.policy.dto.PolicyBoundaryView;
 import cn.slainc.modules.policy.dto.PolicyCreateRequest;
+import cn.slainc.modules.policy.dto.PolicyCustomTemplateRequest;
+import cn.slainc.modules.policy.dto.PolicyCustomTemplateView;
+import cn.slainc.modules.policy.dto.PolicyParseView;
 import cn.slainc.modules.policy.dto.PolicyView;
 import cn.slainc.modules.policy.entity.PolicyMeta;
+import cn.slainc.modules.policy.entity.PolicyBoundaryRecord;
+import cn.slainc.modules.policy.entity.PolicyCustomTemplateRecord;
+import cn.slainc.modules.policy.store.PolicyBoundaryStore;
 import cn.slainc.modules.policy.store.PolicyMetaStore;
+import cn.slainc.modules.policy.store.PolicyTemplateStore;
 import cn.slainc.policy.support.PolicyAdminService;
 import cn.slainc.policy.support.PolicyDiffService;
 import cn.slainc.policy.support.PolicyTemplates;
@@ -41,11 +49,18 @@ public class PolicyManageService {
 
     private final PolicyDiffService diffService;
 
+    private final PolicyTemplateStore templateStore;
+
+    private final PolicyBoundaryStore boundaryStore;
+
     public PolicyManageService(PolicyAdminService adminService, PolicyMetaStore metaStore,
-                               PolicyDiffService diffService) {
+                               PolicyDiffService diffService, PolicyTemplateStore templateStore,
+                               PolicyBoundaryStore boundaryStore) {
         this.adminService = adminService;
         this.metaStore = metaStore;
         this.diffService = diffService;
+        this.templateStore = templateStore;
+        this.boundaryStore = boundaryStore;
     }
 
     public PolicyView create(PolicyCreateRequest request, String operator) {
@@ -78,6 +93,7 @@ public class PolicyManageService {
         requireModifiable(id);
         adminService.delete(id, operator);
         metaStore.delete(id);
+        boundaryStore.delete(id);
     }
 
     public PolicyView copy(String id, String name, String operator) {
@@ -92,8 +108,12 @@ public class PolicyManageService {
 
     public PolicyView importFromTemplate(String template, String name, String subjectType, String subjectId,
                                          String group, String operator) {
-        Policy policy = adminService.importTemplate(template, name, parseSubjectType(subjectType), subjectId,
-                operator);
+        Optional<PolicyCustomTemplateRecord> custom = findCustomTemplate(template);
+        Policy policy = custom
+                .map(record -> adminService.create(name, parseSubjectType(subjectType), subjectId, null,
+                        PolicyDocument.parse(record.document()), "从自定义模板 " + record.name() + " 导入", operator))
+                .orElseGet(() -> adminService.importTemplate(template, name, parseSubjectType(subjectType),
+                        subjectId, operator));
         metaStore.upsert(policy.getId(), group, false);
         return view(policy.getId());
     }
@@ -123,6 +143,11 @@ public class PolicyManageService {
 
     public PageResult<PolicyView> page(String keyword, String subjectType, String subjectId, String status,
                                        String group, String creator, long current, long size) {
+        return page(keyword, subjectType, subjectId, status, group, creator, null, current, size);
+    }
+
+    public PageResult<PolicyView> page(String keyword, String subjectType, String subjectId, String status,
+                                       String group, String creator, Boolean system, long current, long size) {
         Map<String, PolicyMeta> metas = metaStore.listAll();
         List<PolicyView> matched = adminService.list().stream()
                 .filter(policy -> keyword == null || keyword.isBlank()
@@ -139,6 +164,9 @@ public class PolicyManageService {
                         || metaGroup(metas, policy).equalsIgnoreCase(group.trim()))
                 .filter(policy -> creator == null || creator.isBlank()
                         || creator.trim().equals(policy.getCreator()))
+                .filter(policy -> system == null
+                        || system == metas.getOrDefault(policy.getId(),
+                        new PolicyMeta(policy.getId(), PolicyCenterKeys.DEFAULT_GROUP, false)).system())
                 .sorted(Comparator.comparingLong(Policy::getUpdatedAt).reversed())
                 .map(policy -> PolicyView.of(policy, metas.get(policy.getId())))
                 .toList();
@@ -148,7 +176,49 @@ public class PolicyManageService {
     public Map<String, Object> templates() {
         Map<String, Object> result = new LinkedHashMap<>();
         PolicyTemplates.presets().forEach((key, document) -> result.put(key, document.toJson()));
+        templateStore.list().forEach(template -> result.put("custom:" + template.id(), template.document()));
         return result;
+    }
+
+    public PolicyParseView parse(String documentJson) {
+        PolicyDocument document = PolicyDocument.parse(documentJson);
+        return new PolicyParseView(true, document.getStatements().size(), document.toJson());
+    }
+
+    public List<PolicyCustomTemplateView> customTemplates() {
+        return templateStore.list().stream().map(this::customTemplateView).toList();
+    }
+
+    public PolicyCustomTemplateView createCustomTemplate(PolicyCustomTemplateRequest request, String operator) {
+        PolicyDocument document = PolicyDocument.parse(request.documentJson());
+        String name = requireTemplateName(request.name());
+        String description = normalizeDescription(request.description());
+        return customTemplateView(templateStore.insert(name, description, document.toJson(), operator));
+    }
+
+    public PolicyCustomTemplateView updateCustomTemplate(String id, PolicyCustomTemplateRequest request) {
+        PolicyDocument document = PolicyDocument.parse(request.documentJson());
+        String name = requireTemplateName(request.name());
+        String description = normalizeDescription(request.description());
+        return customTemplateView(templateStore.update(id, name, description, document.toJson()));
+    }
+
+    public void deleteCustomTemplate(String id) {
+        templateStore.delete(id);
+    }
+
+    public PolicyBoundaryView boundary(String policyId) {
+        adminService.get(policyId);
+        return boundaryStore.find(policyId).map(this::boundaryView)
+                .orElseGet(() -> new PolicyBoundaryView(policyId, null, null, 0, 0));
+    }
+
+    public PolicyBoundaryView updateBoundary(String policyId, String documentJson, String operator) {
+        adminService.get(policyId);
+        PolicyDocument document = PolicyDocument.parse(documentJson);
+        boundaryStore.save(policyId, document.toJson(), operator);
+        return boundaryStore.find(policyId).map(this::boundaryView)
+                .orElseThrow(() -> new BizException(ResultCode.DATA_STATE_INVALID, "策略边界保存后读取失败"));
     }
 
     public List<PolicyVersionRecord> versions(String id) {
@@ -200,5 +270,37 @@ public class PolicyManageService {
             throw new BizException(ResultCode.PARAM_MISSING, "策略作用对象不能为空");
         }
         return PolicySubjectType.of(subjectType.trim());
+    }
+
+    private Optional<PolicyCustomTemplateRecord> findCustomTemplate(String template) {
+        if (template == null || template.isBlank()) {
+            return Optional.empty();
+        }
+        String key = template.startsWith("custom:") ? template.substring("custom:".length()) : template;
+        if (!key.startsWith("tpl_")) {
+            return Optional.empty();
+        }
+        return templateStore.find(key);
+    }
+
+    private PolicyCustomTemplateView customTemplateView(PolicyCustomTemplateRecord record) {
+        return new PolicyCustomTemplateView(record.id(), "custom:" + record.id(), record.name(),
+                record.description(), record.document(), record.creator(), record.createTime(), record.updateTime());
+    }
+
+    private PolicyBoundaryView boundaryView(PolicyBoundaryRecord record) {
+        return new PolicyBoundaryView(record.policyId(), record.document(), record.operator(),
+                record.createTime(), record.updateTime());
+    }
+
+    private String requireTemplateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new BizException(ResultCode.PARAM_MISSING, "自定义模板名称不能为空");
+        }
+        return name.trim();
+    }
+
+    private String normalizeDescription(String description) {
+        return description == null ? "" : description.trim();
     }
 }

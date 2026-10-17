@@ -1,18 +1,28 @@
 package cn.slainc.modules.policy.web.manage;
 
 import cn.slainc.core.context.UserContext;
+import cn.slainc.core.exception.BizException;
+import cn.slainc.core.result.ResultCode;
 import cn.slainc.logger.oplog.AuditCategory;
 import cn.slainc.logger.oplog.AuditLog;
 import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.policy.PolicyCenterKeys;
+import cn.slainc.modules.policy.dto.PolicyBatchGrantRequest;
+import cn.slainc.modules.policy.dto.PolicyBoundaryRequest;
 import cn.slainc.modules.policy.dto.PolicyCopyRequest;
 import cn.slainc.modules.policy.dto.PolicyCreateRequest;
+import cn.slainc.modules.policy.dto.PolicyCustomTemplateRequest;
 import cn.slainc.modules.policy.dto.PolicyGroupRequest;
+import cn.slainc.modules.policy.dto.PolicyParseRequest;
 import cn.slainc.modules.policy.dto.PolicyStatusRequest;
 import cn.slainc.modules.policy.dto.PolicyUpdateRequest;
 import cn.slainc.modules.policy.dto.TemplateImportRequest;
+import cn.slainc.modules.policy.service.binding.PolicyBindingPortalService;
 import cn.slainc.modules.policy.service.manage.PolicyManageService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.security.annotation.CheckMode;
+import cn.slainc.web.http.DownloadResponses;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +41,11 @@ public class PolicyManageController {
 
     private final PolicyManageService manageService;
 
-    public PolicyManageController(PolicyManageService manageService) {
+    private final PolicyBindingPortalService bindingService;
+
+    public PolicyManageController(PolicyManageService manageService, PolicyBindingPortalService bindingService) {
         this.manageService = manageService;
+        this.bindingService = bindingService;
     }
 
     @PostMapping
@@ -51,15 +64,88 @@ public class PolicyManageController {
                        @RequestParam(required = false) String status,
                        @RequestParam(required = false) String group,
                        @RequestParam(required = false) String creator,
+                       @RequestParam(required = false) Boolean system,
                        @RequestParam(defaultValue = "1") long current,
                        @RequestParam(defaultValue = "10") long size) {
-        return manageService.page(keyword, subjectType, subjectId, status, group, creator, current, size);
+        return manageService.page(keyword, subjectType, subjectId, status, group, creator, system, current, size);
     }
 
     @GetMapping("/templates")
     @RequirePermission(permissions = PolicyCenterKeys.PERMISSION_POLICY_QUERY)
     public Object templates() {
         return manageService.templates();
+    }
+
+    @GetMapping("/templates/custom")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_TEMPLATE_QUERY,
+            PolicyCenterKeys.PERMISSION_POLICY_QUERY}, mode = CheckMode.ANY)
+    public Object customTemplates() {
+        return manageService.customTemplates();
+    }
+
+    @PostMapping("/templates/custom")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_TEMPLATE_SAVE,
+            PolicyCenterKeys.PERMISSION_POLICY_CREATE}, mode = CheckMode.ANY)
+    @AuditLog(value = "创建自定义策略模板", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "policy", recordParams = false)
+    public Object createCustomTemplate(@RequestBody PolicyCustomTemplateRequest request) {
+        return manageService.createCustomTemplate(request, operator());
+    }
+
+    @PutMapping("/templates/custom/{id}")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_TEMPLATE_SAVE,
+            PolicyCenterKeys.PERMISSION_POLICY_UPDATE}, mode = CheckMode.ANY)
+    @AuditLog(value = "修改自定义策略模板", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "policy", recordParams = false)
+    public Object updateCustomTemplate(@PathVariable String id,
+                                       @RequestBody PolicyCustomTemplateRequest request) {
+        return manageService.updateCustomTemplate(id, request);
+    }
+
+    @PutMapping("/templates/custom")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_TEMPLATE_SAVE,
+            PolicyCenterKeys.PERMISSION_POLICY_UPDATE}, mode = CheckMode.ANY)
+    @AuditLog(value = "修改自定义策略模板", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "policy", recordParams = false)
+    public Object updateCustomTemplateByBody(@RequestBody PolicyCustomTemplateRequest request) {
+        if (request.id() == null || request.id().isBlank()) {
+            throw new BizException(ResultCode.PARAM_MISSING, "修改自定义模板必须提供模板标识");
+        }
+        return manageService.updateCustomTemplate(request.id().trim(), request);
+    }
+
+    @DeleteMapping("/templates/custom/{id}")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_TEMPLATE_SAVE,
+            PolicyCenterKeys.PERMISSION_POLICY_DELETE}, mode = CheckMode.ANY)
+    @AuditLog(value = "删除自定义策略模板", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "policy")
+    public void deleteCustomTemplate(@PathVariable String id) {
+        manageService.deleteCustomTemplate(id);
+    }
+
+    @DeleteMapping("/templates/custom")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_TEMPLATE_SAVE,
+            PolicyCenterKeys.PERMISSION_POLICY_DELETE}, mode = CheckMode.ANY)
+    @AuditLog(value = "删除自定义策略模板", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "policy")
+    public void deleteCustomTemplateByQuery(@RequestParam String id) {
+        manageService.deleteCustomTemplate(id);
+    }
+
+    @PostMapping("/parse")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_VALIDATE,
+            PolicyCenterKeys.PERMISSION_POLICY_QUERY}, mode = CheckMode.ANY)
+    public Object parse(@RequestBody PolicyParseRequest request) {
+        return manageService.parse(request.documentJson());
+    }
+
+    @PostMapping("/batch-grant")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_GRANT,
+            PolicyCenterKeys.PERMISSION_BINDING_BIND}, mode = CheckMode.ANY)
+    @AuditLog(value = "批量授权策略", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "policy")
+    public Object batchGrant(@RequestBody PolicyBatchGrantRequest request) {
+        return bindingService.batchGrant(request, operator());
     }
 
     @PostMapping("/system/seed")
@@ -103,6 +189,8 @@ public class PolicyManageController {
 
     @PutMapping("/{id}/group")
     @RequirePermission(permissions = PolicyCenterKeys.PERMISSION_POLICY_UPDATE)
+    @AuditLog(value = "调整策略分组", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "policy")
     public Object changeGroup(@PathVariable String id, @RequestBody PolicyGroupRequest request) {
         return manageService.changeGroup(id, request.group());
     }
@@ -147,6 +235,36 @@ public class PolicyManageController {
     @RequirePermission(permissions = PolicyCenterKeys.PERMISSION_POLICY_QUERY)
     public Object audit(@PathVariable String id, @RequestParam(defaultValue = "20") int limit) {
         return manageService.audit(id, limit);
+    }
+
+    @GetMapping("/{id}/bindings")
+    @RequirePermission(permissions = PolicyCenterKeys.PERMISSION_BINDING_QUERY)
+    public Object bindings(@PathVariable String id) {
+        return bindingService.sourceBindings(id);
+    }
+
+    @GetMapping("/{id}/bindings/export")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_BINDING_EXPORT,
+            PolicyCenterKeys.PERMISSION_POLICY_TRANSFER}, mode = CheckMode.ANY)
+    public void exportBindings(@PathVariable String id, HttpServletResponse response) {
+        bindingService.exportBindings(id, DownloadResponses.attachmentStream(response,
+                "policy-bindings-" + id + ".xlsx", DownloadResponses.CONTENT_TYPE_EXCEL));
+    }
+
+    @GetMapping("/{id}/boundary")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_BOUNDARY_QUERY,
+            PolicyCenterKeys.PERMISSION_POLICY_QUERY}, mode = CheckMode.ANY)
+    public Object boundary(@PathVariable String id) {
+        return manageService.boundary(id);
+    }
+
+    @PostMapping("/{id}/boundary")
+    @RequirePermission(permissions = {PolicyCenterKeys.PERMISSION_POLICY_BOUNDARY_UPDATE,
+            PolicyCenterKeys.PERMISSION_POLICY_UPDATE}, mode = CheckMode.ANY)
+    @AuditLog(value = "设置策略权限边界", operation = AuditOperation.CONFIG, category = AuditCategory.SECURITY,
+            module = "policy", recordParams = false)
+    public Object updateBoundary(@PathVariable String id, @RequestBody PolicyBoundaryRequest request) {
+        return manageService.updateBoundary(id, request.documentJson(), operator());
     }
 
     private String operator() {
