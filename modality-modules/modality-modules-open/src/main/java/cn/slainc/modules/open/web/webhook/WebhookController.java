@@ -40,10 +40,11 @@ public class WebhookController {
     @GetMapping("/page")
     @RequirePermission(permissions = OpenKeys.PERMISSION_WEBHOOK_QUERY)
     public Object page(@RequestParam(required = false) String name,
+                       @RequestParam(required = false) String keyword,
                        @RequestParam(required = false) Boolean enabled,
                        @RequestParam(defaultValue = "1") long current,
                        @RequestParam(defaultValue = "10") long size) {
-        return subscriptionService.page(name, enabled, current, size);
+        return subscriptionService.page(name, keyword, enabled, current, size);
     }
 
     @GetMapping("/events")
@@ -90,6 +91,16 @@ public class WebhookController {
                              @RequestParam(defaultValue = "1") long current,
                              @RequestParam(defaultValue = "10") long size) {
         return deliveryService.page(id, eventType, status, current, size);
+    }
+
+    @GetMapping("/deliveries/page")
+    @RequirePermission(permissions = OpenKeys.PERMISSION_WEBHOOK_DELIVERY_QUERY)
+    public Object deliveriesPage(@RequestParam(required = false) Long subscriptionId,
+                                 @RequestParam(required = false) String eventType,
+                                 @RequestParam(required = false) String status,
+                                 @RequestParam(defaultValue = "1") long current,
+                                 @RequestParam(defaultValue = "10") long size) {
+        return deliveryService.page(subscriptionId, eventType, status, current, size);
     }
 
     @PostMapping("/deliveries/{id}/retry")

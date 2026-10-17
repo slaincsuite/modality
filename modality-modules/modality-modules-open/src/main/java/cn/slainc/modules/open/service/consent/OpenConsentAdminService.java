@@ -3,7 +3,9 @@ package cn.slainc.modules.open.service.consent;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.ResultCode;
+import cn.slainc.modules.open.dto.ConsentView;
 import cn.slainc.modules.open.store.ConsentQueryDao;
+import cn.slainc.modules.open.store.ConsentQueryRow;
 import cn.slainc.openapi.domain.ConsentRecord;
 import cn.slainc.openapi.spi.ConsentService;
 import cn.slainc.web.websocket.WebSocketPusher;
@@ -33,10 +35,14 @@ public class OpenConsentAdminService {
         this.pusher = pusher;
     }
 
-    public PageResult<ConsentRecord> page(String userId, String appId, String scope, Boolean active,
-                                          Long from, Long to, long current, long size) {
+    public PageResult<ConsentView> page(String userId, String appId, String scope, Boolean active,
+                                        Long from, Long to, long current, long size) {
         ConsentQueryDao dao = requireDao();
-        return dao.page(userId, appId, scope, active, from, to, current, size);
+        return dao.page(userId, appId, scope, active, from, to, current, size).map(OpenConsentAdminService::toView);
+    }
+
+    public List<ConsentView> listForUser(String userId, String appId, Boolean active) {
+        return page(userId, appId, null, active, null, null, 1, 200).records();
     }
 
     // 用户主动解约：撤销本人对应用的整笔授权
@@ -64,24 +70,35 @@ public class OpenConsentAdminService {
 
     // 按应用批量解约：撤销该应用全部活跃授权，返回解约数量
     public Map<String, Object> batchRevokeByApp(String appId, String operator) {
+        return batchRevokeByApp(appId, operator, null);
+    }
+
+    public Map<String, Object> batchRevokeByApp(String appId, String operator, String reason) {
+        String normalizedReason = normalizeReason(reason);
         int revoked = 0;
+        ConsentQueryDao dao = queryDao.getIfAvailable();
         for (ConsentRecord record : consentService.listByApp(appId)) {
             if (record.active()) {
-                consentService.revoke(record.getUserId(), appId);
-                notifyRevoked(record.getUserId(), appId, "管理员 " + operator + " 批量解约");
+                ConsentRecord revokedRecord = consentService.revoke(record.getUserId(), appId);
+                if (dao != null) {
+                    dao.markRevokeReason(revokedRecord.getId(), normalizedReason);
+                }
+                notifyRevoked(record.getUserId(), appId, revokeMessage(operator, normalizedReason));
                 revoked++;
             }
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("appId", appId);
         result.put("revoked", revoked);
+        result.put("reason", normalizedReason);
         return result;
     }
 
-    public List<ConsentRecord> exportRows(String userId, String appId, Boolean active, Long from, Long to,
-                                          int limit) {
+    public List<ConsentView> exportRows(String userId, String appId, Boolean active, Long from, Long to,
+                                        int limit) {
         return requireDao().page(userId, appId, null, active, from, to, 1,
-                Math.min(Math.max(limit, 1), 10000)).records();
+                Math.min(Math.max(limit, 1), 10000)).records().stream()
+                .map(OpenConsentAdminService::toView).toList();
     }
 
     private ConsentQueryDao requireDao() {
@@ -103,5 +120,26 @@ public class OpenConsentAdminService {
         if (!pusher.sendToUser(userId, payload)) {
             log.info("用户 {} 对应用 {} 的授权已解约: {}", userId, appId, reason);
         }
+    }
+
+    private static String normalizeReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return null;
+        }
+        String value = reason.trim();
+        if (value.length() > 256) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR, "解约原因不能超过 256 个字符");
+        }
+        return value;
+    }
+
+    private static String revokeMessage(String operator, String reason) {
+        String message = "管理员 " + operator + " 批量解约";
+        return reason == null ? message : message + "：" + reason;
+    }
+
+    private static ConsentView toView(ConsentQueryRow row) {
+        return new ConsentView(row.id(), row.userId(), row.appId(), row.appName(), row.scopes(), row.grantedAt(),
+                row.revokedAt(), row.source(), row.revokeReason());
     }
 }

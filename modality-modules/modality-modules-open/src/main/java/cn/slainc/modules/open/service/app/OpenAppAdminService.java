@@ -42,14 +42,25 @@ public class OpenAppAdminService {
 
     public PageResult<App> page(String keyword, String category, String appType, String status, String ownerId,
                                 long current, long size) {
-        List<App> matched = appService.search(keyword, category, null).stream()
+        return PageResult.from(matched(keyword, category, appType, status, ownerId), current, size);
+    }
+
+    public List<App> exportRows(String keyword, String category, String appType, String status, String ownerId) {
+        return matched(keyword, category, appType, status, ownerId);
+    }
+
+    private List<App> matched(String keyword, String category, String appType, String status, String ownerId) {
+        String search = keyword == null ? null : keyword.trim();
+        return appService.search(null, category, null).stream()
+                .filter(app -> search == null || search.isBlank()
+                        || containsIgnoreCase(app.getName(), search)
+                        || containsIgnoreCase(app.getAppId(), search))
                 .filter(app -> appType == null || appType.isBlank()
                         || app.getAppType().name().equalsIgnoreCase(appType.trim()))
                 .filter(app -> status == null || status.isBlank()
                         || app.getStatus().name().equalsIgnoreCase(status.trim()))
                 .filter(app -> ownerId == null || ownerId.isBlank() || ownerId.trim().equals(app.getOwnerId()))
                 .toList();
-        return PageResult.from(matched, current, size);
     }
 
     public Map<String, Object> detail(String appId) {
@@ -132,5 +143,10 @@ public class OpenAppAdminService {
         if (store != null) {
             store.append(appId, action, operator, reason, detail);
         }
+    }
+
+    private static boolean containsIgnoreCase(String value, String keyword) {
+        return value != null && value.toLowerCase(java.util.Locale.ROOT)
+                .contains(keyword.toLowerCase(java.util.Locale.ROOT));
     }
 }

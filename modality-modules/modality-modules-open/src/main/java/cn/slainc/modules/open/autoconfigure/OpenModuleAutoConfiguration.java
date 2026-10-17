@@ -1,15 +1,19 @@
 package cn.slainc.modules.open.autoconfigure;
 
 import cn.slainc.modules.open.config.OpenConfigReader;
+import cn.slainc.modules.open.excel.AppExportService;
 import cn.slainc.modules.open.excel.ConsentExportService;
 import cn.slainc.modules.open.listener.OpenEventBridge;
 import cn.slainc.modules.open.service.app.OpenAppAdminService;
+import cn.slainc.modules.open.service.app.ScopeGroupService;
 import cn.slainc.modules.open.service.consent.OpenConsentAdminService;
 import cn.slainc.modules.open.service.portal.OpenPortalService;
 import cn.slainc.modules.open.service.stats.OpenStatsService;
 import cn.slainc.modules.open.store.ConsentQueryDao;
 import cn.slainc.modules.open.store.JdbcAppLogStore;
+import cn.slainc.modules.open.store.JdbcScopeGroupStore;
 import cn.slainc.modules.open.web.app.OpenAppAdminController;
+import cn.slainc.modules.open.web.app.OpenScopeGroupAdminController;
 import cn.slainc.modules.open.web.consent.OpenConsentAdminController;
 import cn.slainc.modules.open.web.portal.OpenPortalController;
 import cn.slainc.modules.open.web.app.OpenScopeAdminController;
@@ -37,7 +41,8 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnProperty(prefix = "modality.open", name = "enabled", matchIfMissing = true)
 @EnableConfigurationProperties(OpenModuleProperties.class)
 @Import({OpenAppAdminController.class, OpenScopeAdminController.class, OpenConsentAdminController.class,
-        OpenStatsController.class, OpenPortalController.class, OpenUserConsentController.class})
+        OpenScopeGroupAdminController.class, OpenStatsController.class, OpenPortalController.class,
+        OpenUserConsentController.class})
 public class OpenModuleAutoConfiguration {
 
     @Bean
@@ -55,6 +60,19 @@ public class OpenModuleAutoConfiguration {
                                                    ConsentService consentService,
                                                    ObjectProvider<JdbcAppLogStore> appLogStore) {
         return new OpenAppAdminService(appService, appStore, credentialService, consentService, appLogStore);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AppExportService openAppExportService(OpenAppAdminService adminService) {
+        return new AppExportService(adminService);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ScopeGroupService openScopeGroupService(ObjectProvider<JdbcScopeGroupStore> groupStore,
+                                                   ScopeService scopeService) {
+        return new ScopeGroupService(groupStore.getIfAvailable(), scopeService);
     }
 
     @Bean
@@ -87,9 +105,8 @@ public class OpenModuleAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public ConsentExportService openConsentExportService(OpenConsentAdminService consentAdminService,
-                                                         AppService appService) {
-        return new ConsentExportService(consentAdminService, appService);
+    public ConsentExportService openConsentExportService(OpenConsentAdminService consentAdminService) {
+        return new ConsentExportService(consentAdminService);
     }
 
     @Bean

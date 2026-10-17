@@ -43,7 +43,12 @@ public class WebhookSubscriptionAdminService {
     }
 
     public PageResult<Map<String, Object>> page(String name, Boolean enabled, long current, long size) {
-        return subscriptionStore.page(name, enabled, current, size).map(this::toView);
+        return page(name, null, enabled, current, size);
+    }
+
+    public PageResult<Map<String, Object>> page(String name, String keyword, Boolean enabled, long current,
+                                                long size) {
+        return subscriptionStore.page(name, keyword, enabled, current, size).map(this::toView);
     }
 
     public Map<String, Object> detail(Long id) {

@@ -5,6 +5,7 @@ import cn.slainc.logger.oplog.AuditCategory;
 import cn.slainc.logger.oplog.AuditLog;
 import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.open.OpenKeys;
+import cn.slainc.modules.open.dto.BatchRevokeRequest;
 import cn.slainc.modules.open.excel.ConsentExportService;
 import cn.slainc.modules.open.service.consent.OpenConsentAdminService;
 import cn.slainc.security.annotation.RequirePermission;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -72,7 +74,9 @@ public class OpenConsentAdminController {
     @RequirePermission(permissions = OpenKeys.PERMISSION_CONSENT_REVOKE)
     @AuditLog(value = "按应用批量解约", operation = AuditOperation.DELETE, category = AuditCategory.PERMISSION,
             module = "open")
-    public Object batchRevoke(@PathVariable String appId) {
-        return consentAdminService.batchRevokeByApp(appId, UserContext.username());
+    public Object batchRevoke(@PathVariable String appId,
+                              @RequestBody(required = false) BatchRevokeRequest request) {
+        return consentAdminService.batchRevokeByApp(appId, UserContext.username(),
+                request == null ? null : request.reason());
     }
 }

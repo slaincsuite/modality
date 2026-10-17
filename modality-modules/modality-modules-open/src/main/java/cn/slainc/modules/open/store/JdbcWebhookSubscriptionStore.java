@@ -75,11 +75,22 @@ public class JdbcWebhookSubscriptionStore {
     }
 
     public PageResult<WebhookSubscription> page(String name, Boolean enabled, long current, long size) {
+        return page(name, null, enabled, current, size);
+    }
+
+    public PageResult<WebhookSubscription> page(String name, String keyword, Boolean enabled, long current,
+                                                long size) {
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
         List<Object> args = new ArrayList<>();
         if (name != null && !name.isBlank()) {
             where.append(" AND name LIKE ?");
             args.add("%" + name.trim() + "%");
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            String pattern = "%" + keyword.trim() + "%";
+            where.append(" AND (name LIKE ? OR url LIKE ?)");
+            args.add(pattern);
+            args.add(pattern);
         }
         if (enabled != null) {
             where.append(" AND enabled = ?");
