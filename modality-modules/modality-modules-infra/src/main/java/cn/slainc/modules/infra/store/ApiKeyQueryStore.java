@@ -32,4 +32,24 @@ public class ApiKeyQueryStore {
                 Long.class, (Object) status, status, keyword, keyword, keyword);
         return count == null ? 0 : count;
     }
+
+    public List<Map<String, Object>> listByLoginId(String loginId) {
+        return jdbc.queryForList("SELECT id, api_key, title, intro, login_id, scopes, status, expires_time, "
+                + "create_time, update_time FROM " + InfraKeys.API_KEY_TABLE
+                + " WHERE login_id = ? AND status != 'deleted' ORDER BY create_time DESC", loginId);
+    }
+
+    public Map<String, Object> find(String apiKey) {
+        List<Map<String, Object>> rows = jdbc.queryForList(
+                "SELECT id, api_key, title, intro, login_id, scopes, status, expires_time, create_time, update_time"
+                        + " FROM " + InfraKeys.API_KEY_TABLE + " WHERE api_key = ? AND status != 'deleted'", apiKey);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    public int updateMetadata(String apiKey, String title, String intro) {
+        return jdbc.update("UPDATE " + InfraKeys.API_KEY_TABLE
+                        + " SET title = COALESCE(?, title), intro = COALESCE(?, intro), update_time = ?"
+                        + " WHERE api_key = ? AND status != 'deleted'",
+                title, intro, System.currentTimeMillis(), apiKey);
+    }
 }

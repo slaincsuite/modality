@@ -2,6 +2,9 @@ package cn.slainc.modules.infra.web.notify;
 
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.Result;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.infra.InfraKeys;
 import cn.slainc.modules.infra.context.CurrentUser;
 import cn.slainc.modules.infra.service.notify.NoticeService;
@@ -56,6 +59,8 @@ public class NoticeController {
     }
 
     @cn.slainc.security.annotation.RequirePermission(permissions = InfraKeys.PERMISSION_NOTICE_CREATE)
+    @AuditLog(value = "创建通知公告", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "infra")
     @PostMapping
     public Result<NoticeService.NoticeView> create(@RequestBody Map<String, Object> body) {
         return Result.ok(noticeService.create(text(body.get("title")), text(body.get("content")),
@@ -63,6 +68,8 @@ public class NoticeController {
     }
 
     @cn.slainc.security.annotation.RequirePermission(permissions = InfraKeys.PERMISSION_NOTICE_UPDATE)
+    @AuditLog(value = "修改通知公告", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "infra")
     @PutMapping("/{id}")
     public Result<NoticeService.NoticeView> update(@PathVariable long id, @RequestBody Map<String, Object> body) {
         return Result.ok(noticeService.update(id, text(body.get("title")), text(body.get("content")),
@@ -70,18 +77,24 @@ public class NoticeController {
     }
 
     @cn.slainc.security.annotation.RequirePermission(permissions = InfraKeys.PERMISSION_NOTICE_UPDATE)
+    @AuditLog(value = "发布通知公告", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "infra")
     @PostMapping("/{id}/publish")
     public Result<NoticeService.NoticeView> publish(@PathVariable long id) {
         return Result.ok(noticeService.publish(id));
     }
 
     @cn.slainc.security.annotation.RequirePermission(permissions = InfraKeys.PERMISSION_NOTICE_UPDATE)
+    @AuditLog(value = "下线通知公告", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "infra")
     @PostMapping("/{id}/offline")
     public Result<NoticeService.NoticeView> offline(@PathVariable long id) {
         return Result.ok(noticeService.offline(id));
     }
 
     @cn.slainc.security.annotation.RequirePermission(permissions = InfraKeys.PERMISSION_NOTICE_DELETE)
+    @AuditLog(value = "删除通知公告", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "infra")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable long id) {
         noticeService.delete(id);

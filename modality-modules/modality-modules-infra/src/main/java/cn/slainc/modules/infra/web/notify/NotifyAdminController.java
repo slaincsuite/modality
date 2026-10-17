@@ -2,6 +2,9 @@ package cn.slainc.modules.infra.web.notify;
 
 import cn.slainc.core.result.PageResult;
 import cn.slainc.core.result.Result;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.infra.InfraKeys;
 import cn.slainc.modules.infra.service.notify.NotifyService;
 import cn.slainc.security.annotation.RequirePermission;
@@ -38,6 +41,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_CREATE)
+    @AuditLog(value = "创建通知模板", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "infra")
     @PostMapping("/templates")
     public Result<Void> createTemplate(@RequestBody Map<String, Object> body) {
         notifyService.createTemplate(text(body.get("code")), text(body.get("name")), text(body.get("titleTemplate")),
@@ -46,6 +51,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_UPDATE)
+    @AuditLog(value = "修改通知模板", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "infra")
     @PutMapping("/templates/{id}")
     public Result<Void> updateTemplate(@PathVariable long id, @RequestBody Map<String, Object> body) {
         notifyService.updateTemplate(id, text(body.get("name")), text(body.get("titleTemplate")),
@@ -55,6 +62,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_DELETE)
+    @AuditLog(value = "删除通知模板", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "infra")
     @DeleteMapping("/templates/{id}")
     public Result<Void> deleteTemplate(@PathVariable long id) {
         notifyService.deleteTemplate(id);
@@ -62,6 +71,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_SEND)
+    @AuditLog(value = "发送站内信", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "infra")
     @PostMapping("/in-app")
     public Result<Long> sendInApp(@RequestBody Map<String, Object> body) {
         Object rawReceivers = body.get("receivers");
@@ -76,11 +87,14 @@ public class NotifyAdminController {
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_QUERY)
     @GetMapping("/webhooks/page")
     public Result<PageResult<NotifyService.WebhookView>> webhookPage(
-            @RequestParam(defaultValue = "1") long current, @RequestParam(defaultValue = "10") long size) {
-        return Result.ok(notifyService.webhookPage(current, size));
+            @RequestParam(defaultValue = "1") long current, @RequestParam(defaultValue = "10") long size,
+            @RequestParam(required = false) String keyword) {
+        return Result.ok(notifyService.webhookPage(current, size, keyword));
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_CREATE)
+    @AuditLog(value = "创建 Webhook 渠道", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "infra", recordParams = false)
     @PostMapping("/webhooks")
     public Result<Void> createWebhook(@RequestBody Map<String, Object> body) {
         notifyService.createWebhook(text(body.get("name")), text(body.get("platform")), text(body.get("url")),
@@ -89,6 +103,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_UPDATE)
+    @AuditLog(value = "修改 Webhook 渠道", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "infra", recordParams = false)
     @PutMapping("/webhooks/{id}")
     public Result<Void> updateWebhook(@PathVariable long id, @RequestBody Map<String, Object> body) {
         notifyService.updateWebhook(id, text(body.get("name")), text(body.get("platform")), text(body.get("url")),
@@ -98,6 +114,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_DELETE)
+    @AuditLog(value = "删除 Webhook 渠道", operation = AuditOperation.DELETE, category = AuditCategory.DATA,
+            module = "infra")
     @DeleteMapping("/webhooks/{id}")
     public Result<Void> deleteWebhook(@PathVariable long id) {
         notifyService.deleteWebhook(id);
@@ -105,6 +123,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_SEND)
+    @AuditLog(value = "发送 Webhook 消息", operation = AuditOperation.CREATE, category = AuditCategory.DATA,
+            module = "infra")
     @PostMapping("/webhooks/{id}/send")
     public Result<NotifyService.RecordView> sendWebhook(@PathVariable long id, @RequestBody Map<String, Object> body) {
         return Result.ok(notifyService.sendWebhook(id, text(body.get("templateCode")), params(body.get("params"))));
@@ -119,6 +139,8 @@ public class NotifyAdminController {
     }
 
     @RequirePermission(permissions = InfraKeys.PERMISSION_NOTIFY_RETRY)
+    @AuditLog(value = "重试发送记录", operation = AuditOperation.UPDATE, category = AuditCategory.DATA,
+            module = "infra")
     @PostMapping("/records/{id}/retry")
     public Result<NotifyService.RecordView> retryRecord(@PathVariable long id) {
         return Result.ok(notifyService.retryRecord(id));

@@ -10,9 +10,14 @@ public final class InfraKeys {
     public static final String NOTIFY_MESSAGE_TABLE = "t_infra_notify_message";
     public static final String NOTIFY_WEBHOOK_TABLE = "t_infra_notify_webhook";
     public static final String NOTIFY_RECORD_TABLE = "t_infra_notify_record";
+    public static final String NOTIFY_RECEIVER_TABLE = "t_infra_notify_receiver";
+    public static final String NOTIFY_SUBSCRIPTION_TABLE = "t_infra_notify_subscription";
+    public static final String NOTIFY_PREFERENCE_TABLE = "t_infra_notify_preference";
     public static final String FILE_RECORD_TABLE = "t_infra_file_record";
 
     public static final String API_KEY_TABLE = "t_infra_api_key";
+    public static final String API_KEY_ROTATION_TABLE = "t_infra_api_key_rotation";
+    public static final String API_KEY_METRIC_TABLE = "t_infra_api_key_metric";
 
     public static final String SEARCH_DOCUMENT_TABLE = "t_search_document";
     public static final String SEARCH_INDEX_TERM_TABLE = "t_search_index_term";

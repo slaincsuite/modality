@@ -1,10 +1,16 @@
 package cn.slainc.modules.infra.web.apikey;
 
 import cn.dev33.satoken.apikey.model.ApiKeyModel;
+import cn.slainc.core.result.PageResult;
+import cn.slainc.core.result.Result;
+import cn.slainc.logger.oplog.AuditCategory;
+import cn.slainc.logger.oplog.AuditLog;
+import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.infra.InfraKeys;
 import cn.slainc.apikey.support.ApiKeyAdminService;
 import cn.slainc.apikey.support.ApiKeyStatsService;
-import cn.slainc.modules.infra.store.ApiKeyQueryStore;
+import cn.slainc.modules.infra.context.CurrentUser;
+import cn.slainc.modules.infra.service.apikey.ApiKeyManageService;
 import cn.slainc.security.annotation.RequirePermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -28,30 +34,31 @@ public class ApiKeyManageController {
 
     private final ApiKeyStatsService statsService;
 
-    private final ApiKeyQueryStore queryStore;
+    private final ApiKeyManageService manageService;
+
+    private final CurrentUser currentUser;
 
     public ApiKeyManageController(ApiKeyAdminService adminService, ApiKeyStatsService statsService,
-                                  ApiKeyQueryStore queryStore) {
+                                  ApiKeyManageService manageService, CurrentUser currentUser) {
         this.adminService = adminService;
         this.statsService = statsService;
-        this.queryStore = queryStore;
+        this.manageService = manageService;
+        this.currentUser = currentUser;
     }
 
     @GetMapping
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_QUERY)
-    public Object list(@RequestParam String loginId) {
-        return adminService.listByLoginId(loginId);
+    public Result<List<ApiKeyManageService.ApiKeyView>> list(@RequestParam String loginId) {
+        return Result.ok(manageService.listByLoginId(loginId));
     }
 
     @GetMapping("/page")
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_QUERY)
-    public Object page(@RequestParam(required = false) String status,
-                       @RequestParam(required = false) String keyword,
-                       @RequestParam(defaultValue = "1") long current,
-                       @RequestParam(defaultValue = "10") long size) {
-        long offset = Math.max(0, (current - 1) * size);
-        return java.util.Map.of("records", queryStore.page(status, keyword, offset, size),
-                "total", queryStore.count(status, keyword));
+    public Result<PageResult<Map<String, Object>>> page(@RequestParam(required = false) String status,
+                                                        @RequestParam(required = false) String keyword,
+                                                        @RequestParam(defaultValue = "1") long current,
+                                                        @RequestParam(defaultValue = "10") long size) {
+        return Result.ok(manageService.page(status, keyword, current, size));
     }
 
     @GetMapping(value = "/{loginId}/export.csv", produces = "text/csv;charset=UTF-8")
@@ -62,7 +69,9 @@ public class ApiKeyManageController {
 
     @PostMapping("/issue")
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_ISSUE)
-    public Object issue(@RequestBody Map<String, Object> body) {
+    @AuditLog(value = "签发 API Key", operation = AuditOperation.CREATE, category = AuditCategory.SECURITY,
+            module = "infra", recordParams = false)
+    public Result<Object> issue(@RequestBody Map<String, Object> body) {
         String loginId = stringOf(body.get("loginId"));
         String title = stringOf(body.get("title"));
         List<String> scopes = stringsOf(body.get("scopes"));
@@ -70,45 +79,74 @@ public class ApiKeyManageController {
         @SuppressWarnings("unchecked")
         Map<String, Object> extraData = (Map<String, Object>) body.get("extraData");
         Integer count = integerOf(body.get("count"));
-        if (count != null && count > 1) {
-            return adminService.batchIssue(loginId, title, scopes, ttlDays, extraData, count);
-        }
-        return adminService.issue(loginId, title, scopes, ttlDays, extraData);
+        List<ApiKeyManageService.IssuedKeyView> issued = manageService.issue(loginId, title,
+                firstText(body.get("intro"), body.get("description")), scopes, ttlDays, extraData,
+                count == null ? 1 : count);
+        return Result.ok(issued.size() == 1 ? issued.get(0) : issued);
     }
 
     @PostMapping("/{apiKey}/enable")
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_MANAGE)
-    public Object enable(@PathVariable String apiKey) {
+    @AuditLog(value = "启用 API Key", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "infra", recordParams = false)
+    public Result<Map<String, String>> enable(@PathVariable String apiKey) {
         adminService.enable(apiKey);
-        return Map.of("apiKey", apiKey, "status", "ENABLED");
+        return Result.ok(Map.of("apiKey", apiKey, "status", "ENABLED"));
     }
 
     @PostMapping("/{apiKey}/disable")
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_MANAGE)
-    public Object disable(@PathVariable String apiKey) {
+    @AuditLog(value = "禁用 API Key", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "infra", recordParams = false)
+    public Result<Map<String, String>> disable(@PathVariable String apiKey) {
         adminService.disable(apiKey);
-        return Map.of("apiKey", apiKey, "status", "DISABLED");
+        return Result.ok(Map.of("apiKey", apiKey, "status", "DISABLED"));
     }
 
     @PostMapping("/{apiKey}/extend")
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_MANAGE)
-    public Object extend(@PathVariable String apiKey, @RequestBody Map<String, Object> body) {
+    @AuditLog(value = "延期 API Key", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "infra", recordParams = false)
+    public Result<ApiKeyModel> extend(@PathVariable String apiKey, @RequestBody Map<String, Object> body) {
         Long days = longOf(body.get("days"));
-        return adminService.extend(apiKey, days);
+        return Result.ok(adminService.extend(apiKey, days));
     }
 
     @PostMapping("/{apiKey}/rotate")
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_MANAGE)
-    public Object rotate(@PathVariable String apiKey, @RequestBody Map<String, Object> body) {
+    @AuditLog(value = "轮换 API Key", operation = AuditOperation.UPDATE, category = AuditCategory.SECURITY,
+            module = "infra", recordParams = false)
+    public Result<ApiKeyManageService.IssuedKeyView> rotate(@PathVariable String apiKey,
+                                                            @RequestBody Map<String, Object> body) {
         Long graceHours = longOf(body.get("graceHours"));
-        return adminService.rotate(apiKey, graceHours);
+        return Result.ok(manageService.rotate(apiKey, graceHours == null ? 0L : graceHours, currentUser.operator()));
     }
 
     @DeleteMapping("/{apiKey}")
     @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_MANAGE)
-    public Object delete(@PathVariable String apiKey) {
+    @AuditLog(value = "删除 API Key", operation = AuditOperation.DELETE, category = AuditCategory.SECURITY,
+            module = "infra", recordParams = false)
+    public Result<Map<String, Object>> delete(@PathVariable String apiKey) {
         adminService.delete(apiKey);
-        return Map.of("apiKey", apiKey, "deleted", true);
+        return Result.ok(Map.of("apiKey", apiKey, "deleted", true));
+    }
+
+    @GetMapping("/{apiKey}")
+    @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_QUERY)
+    public Result<ApiKeyManageService.ApiKeyView> detail(@PathVariable String apiKey) {
+        return Result.ok(manageService.detail(apiKey));
+    }
+
+    @GetMapping("/{apiKey}/rotations")
+    @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_QUERY)
+    public Result<List<ApiKeyManageService.RotationView>> rotations(@PathVariable String apiKey) {
+        return Result.ok(manageService.rotations(apiKey));
+    }
+
+    @GetMapping("/{apiKey}/stats")
+    @RequirePermission(permissions = InfraKeys.PERMISSION_APIKEY_QUERY)
+    public Result<ApiKeyManageService.ApiKeyStatsView> stats(@PathVariable String apiKey) {
+        return Result.ok(manageService.stats(apiKey));
     }
 
     @GetMapping("/{apiKey}/stats/total")
@@ -131,6 +169,16 @@ public class ApiKeyManageController {
 
     private static String stringOf(Object value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private static String firstText(Object... values) {
+        for (Object value : values) {
+            String text = stringOf(value);
+            if (text != null && !text.isBlank()) {
+                return text;
+            }
+        }
+        return null;
     }
 
     private static Long longOf(Object value) {
