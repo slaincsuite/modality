@@ -8,11 +8,15 @@ public class PolicyBinding {
 
     public static final String SUBJECT_CLIENT = "CLIENT";
 
+    public static final String SUBJECT_GROUP = "GROUP";
+
     private Long id;
 
     private Long tenantId;
 
     private String policyId;
+
+    private String sourcePolicyId;
 
     private String subjectType;
 
@@ -44,6 +48,14 @@ public class PolicyBinding {
 
     public void setPolicyId(String policyId) {
         this.policyId = policyId;
+    }
+
+    public String getSourcePolicyId() {
+        return sourcePolicyId;
+    }
+
+    public void setSourcePolicyId(String sourcePolicyId) {
+        this.sourcePolicyId = sourcePolicyId;
     }
 
     public String getSubjectType() {

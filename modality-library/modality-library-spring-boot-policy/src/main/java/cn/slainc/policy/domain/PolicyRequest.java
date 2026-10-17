@@ -23,6 +23,8 @@ public class PolicyRequest {
 
     private List<String> roles = new ArrayList<>();
 
+    private List<String> groups = new ArrayList<>();
+
     private String action;
 
     private String resource;
@@ -53,6 +55,11 @@ public class PolicyRequest {
 
     public PolicyRequest roles(List<String> roles) {
         this.roles = roles == null ? new ArrayList<>() : roles;
+        return this;
+    }
+
+    public PolicyRequest groups(List<String> groups) {
+        this.groups = groups == null ? new ArrayList<>() : groups;
         return this;
     }
 
@@ -91,6 +98,14 @@ public class PolicyRequest {
 
     public void setRoles(List<String> roles) {
         this.roles = roles;
+    }
+
+    public List<String> getGroups() {
+        return groups;
+    }
+
+    public void setGroups(List<String> groups) {
+        this.groups = groups;
     }
 
     public String getAction() {
