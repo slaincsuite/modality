@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS t_open_scope (
     requires_audit TINYINT NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS t_open_scope_group (
+    name VARCHAR(64) NOT NULL PRIMARY KEY,
+    description VARCHAR(512),
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS t_open_consent (
     id VARCHAR(64) NOT NULL PRIMARY KEY,
     user_id VARCHAR(64) NOT NULL,
@@ -32,6 +40,7 @@ CREATE TABLE IF NOT EXISTS t_open_consent (
     scopes TEXT NOT NULL,
     granted_at BIGINT NOT NULL,
     revoked_at BIGINT,
+    revoke_reason VARCHAR(256),
     source VARCHAR(16) NOT NULL DEFAULT 'PORTAL'
 );
 

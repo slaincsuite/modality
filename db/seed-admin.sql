@@ -172,8 +172,45 @@ SELECT code, code, 'API', 0, 0, 'enabled', @now, @now FROM (
   SELECT 'tenant:manage:update'
 ) AS seed;
 
+-- 2026-10-17 新增端点权限码（幂等补齐，重复执行安全）
+INSERT IGNORE INTO t_permission (code, name, type, parent_id, sort, status, create_time, update_time)
+SELECT code, code, 'API', 0, 0, 'enabled', @now, @now FROM (
+  SELECT 'audit:policy-log:export' AS code UNION ALL
+  SELECT 'auth:login-policy:query' UNION ALL
+  SELECT 'auth:login-policy:update' UNION ALL
+  SELECT 'auth:mfa-policy:query' UNION ALL
+  SELECT 'auth:mfa-policy:update' UNION ALL
+  SELECT 'auth:session-policy:query' UNION ALL
+  SELECT 'auth:session-policy:update' UNION ALL
+  SELECT 'auth:third-config:query' UNION ALL
+  SELECT 'auth:third-config:update' UNION ALL
+  SELECT 'auth:third-sync:execute' UNION ALL
+  SELECT 'auth:third-sync:export' UNION ALL
+  SELECT 'auth:third-sync:query' UNION ALL
+  SELECT 'live:stream:check' UNION ALL
+  SELECT 'live:stream:create' UNION ALL
+  SELECT 'live:stream:delete' UNION ALL
+  SELECT 'live:stream:query' UNION ALL
+  SELECT 'live:stream:update' UNION ALL
+  SELECT 'policy:binding:export' UNION ALL
+  SELECT 'policy:boundary:query' UNION ALL
+  SELECT 'policy:boundary:update' UNION ALL
+  SELECT 'policy:catalog:query' UNION ALL
+  SELECT 'policy:manage:grant' UNION ALL
+  SELECT 'policy:manage:validate' UNION ALL
+  SELECT 'policy:template:query' UNION ALL
+  SELECT 'policy:template:save' UNION ALL
+  SELECT 'upms:settings:query' UNION ALL
+  SELECT 'upms:settings:update' UNION ALL
+  SELECT 'upms:user:permission-boundary' UNION ALL
+  SELECT 'upms:user:security'
+) AS seed_extra;
+
 INSERT IGNORE INTO t_role (tenant_id, code, name, parent_id, data_scope, sort, status, create_time, update_time)
 VALUES (1, 'platform-admin', '平台管理员', 0, 'ALL', 0, 'enabled', @now, @now);
+
+INSERT IGNORE INTO t_tenant (id, tenant_id, tenant_code, tenant_name, status, isolation_strategy, created_at, updated_at)
+VALUES (1, 1, 'platform', '平台租户', 'ACTIVE', 'ROW', NOW(), NOW());
 
 INSERT IGNORE INTO t_user (tenant_id, username, nickname, password_hash, login_type, status, must_change_password,
                            create_time, update_time)
