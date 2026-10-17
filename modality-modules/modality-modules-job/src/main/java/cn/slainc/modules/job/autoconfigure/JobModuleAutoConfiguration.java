@@ -37,7 +37,19 @@ public class JobModuleAutoConfiguration {
                 properties.getNodeId());
     }
 
-    // 控制器跟随服务条件注册：没有 JobScheduler 时服务与端点一起退避
+    @Bean
+    @ConditionalOnMissingBean(JobManageService.class)
+    @ConditionalOnBean(JobScheduler.class)
+    public JobManageService jobManageService(JobTaskMapper jobTaskMapper, JobLogMapper jobLogMapper,
+                                             JobScheduler jobScheduler, NodeRegistry nodeRegistry,
+                                             JobModuleProperties properties,
+                                             ObjectProvider<Map<String, JobHandler>> handlerBeans) {
+        Map<String, JobHandler> handlers = handlerBeans.getIfAvailable();
+        return new JobManageService(jobTaskMapper, jobLogMapper, jobScheduler, nodeRegistry, properties,
+                handlers == null ? Map.of() : handlers);
+    }
+
+    // 控制器放在 JobManageService 之后声明：@ConditionalOnBean 按声明顺序求值，提前声明会导致控制器被跳过
     @Bean
     @ConditionalOnMissingBean(JobTaskController.class)
     @ConditionalOnBean(JobManageService.class)
@@ -56,18 +68,6 @@ public class JobModuleAutoConfiguration {
     @ConditionalOnMissingBean(JobNodeController.class)
     public JobNodeController jobNodeController(NodeRegistry nodeRegistry) {
         return new JobNodeController(nodeRegistry);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(JobManageService.class)
-    @ConditionalOnBean(JobScheduler.class)
-    public JobManageService jobManageService(JobTaskMapper jobTaskMapper, JobLogMapper jobLogMapper,
-                                             JobScheduler jobScheduler, NodeRegistry nodeRegistry,
-                                             JobModuleProperties properties,
-                                             ObjectProvider<Map<String, JobHandler>> handlerBeans) {
-        Map<String, JobHandler> handlers = handlerBeans.getIfAvailable();
-        return new JobManageService(jobTaskMapper, jobLogMapper, jobScheduler, nodeRegistry, properties,
-                handlers == null ? Map.of() : handlers);
     }
 
     @Bean(name = BuiltinJobHandlers.JOB_LOG_PURGE)
