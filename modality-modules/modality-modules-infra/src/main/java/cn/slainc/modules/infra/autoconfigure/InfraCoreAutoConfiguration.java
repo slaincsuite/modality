@@ -10,15 +10,26 @@ import cn.slainc.modules.infra.context.CurrentUser;
 import cn.slainc.modules.infra.service.config.DictService;
 import cn.slainc.modules.infra.excel.DictTransferService;
 import cn.slainc.modules.infra.service.notify.NoticeService;
+import cn.slainc.modules.infra.service.notify.NotifyReceiverService;
 import cn.slainc.modules.infra.service.notify.NotifyService;
+import cn.slainc.modules.infra.service.notify.NotifySubscriptionService;
 import cn.slainc.modules.infra.service.notify.NotifyWebhookClient;
 import cn.slainc.modules.infra.store.ApiKeyQueryStore;
+import cn.slainc.modules.infra.store.ApiKeyRequestMetricsStore;
+import cn.slainc.modules.infra.support.ApiKeyMetricsFilter;
+import cn.slainc.modules.infra.service.apikey.ApiKeyManageService;
 import cn.slainc.modules.infra.web.apikey.ApiKeyManageController;
+import cn.slainc.modules.infra.web.apikey.UserApiKeyController;
 import cn.slainc.modules.infra.web.config.ConfigAdminController;
 import cn.slainc.modules.infra.web.config.DictController;
 import cn.slainc.modules.infra.web.notify.NoticeController;
 import cn.slainc.modules.infra.web.notify.NotifyAdminController;
+import cn.slainc.modules.infra.web.notify.NotifyReceiverController;
+import cn.slainc.modules.infra.web.notify.NotifySubscriptionController;
 import cn.slainc.modules.infra.web.notify.NotifyUserController;
+import cn.slainc.apikey.support.ApiKeyAdminService;
+import cn.slainc.apikey.config.ApiKeyProperties;
+import cn.slainc.apikey.support.ApiKeyStatsService;
 import cn.slainc.redis.cache.CacheInvalidationListener;
 import cn.slainc.redis.cache.CacheInvalidationPublisher;
 import javax.sql.DataSource;
@@ -40,7 +51,8 @@ import cn.slainc.web.websocket.WebSocketPusher;
 @ConditionalOnProperty(prefix = "modality.infra", name = "enabled", matchIfMissing = true)
 @EnableConfigurationProperties(InfraModuleProperties.class)
 @Import({ApiKeyManageController.class, ConfigAdminController.class, DictController.class, NoticeController.class,
-        NotifyAdminController.class, NotifyUserController.class})
+        NotifyAdminController.class, NotifyReceiverController.class, NotifySubscriptionController.class,
+        NotifyUserController.class, UserApiKeyController.class})
 public class InfraCoreAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(InfraCoreAutoConfiguration.class);
@@ -100,6 +112,28 @@ public class InfraCoreAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public ApiKeyManageService apiKeyManageService(JdbcTemplate jdbc, ApiKeyQueryStore queryStore,
+                                                   ApiKeyAdminService adminService, ApiKeyStatsService statsService,
+                                                   ApiKeyRequestMetricsStore metricsStore) {
+        return new ApiKeyManageService(jdbc, queryStore, adminService, statsService, metricsStore);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ApiKeyRequestMetricsStore apiKeyRequestMetricsStore(JdbcTemplate jdbc) {
+        return new ApiKeyRequestMetricsStore(jdbc);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "modality.apikey", name = "enabled", matchIfMissing = true)
+    public ApiKeyMetricsFilter apiKeyMetricsFilter(ApiKeyProperties properties,
+                                                   ApiKeyRequestMetricsStore metricsStore) {
+        return new ApiKeyMetricsFilter(properties, metricsStore);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public DictTransferService dictTransferService(DictService dictService) {
         return new DictTransferService(dictService);
     }
@@ -124,5 +158,17 @@ public class InfraCoreAutoConfiguration {
                                        WebSocketPusher pusher,
                                        InfraModuleProperties properties) {
         return new NotifyService(jdbc, webhookClient, pusher, properties.getNotify().getMaxRetry());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public NotifyReceiverService notifyReceiverService(JdbcTemplate jdbc) {
+        return new NotifyReceiverService(jdbc);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public NotifySubscriptionService notifySubscriptionService(JdbcTemplate jdbc) {
+        return new NotifySubscriptionService(jdbc);
     }
 }

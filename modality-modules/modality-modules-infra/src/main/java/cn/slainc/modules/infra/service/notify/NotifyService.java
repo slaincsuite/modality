@@ -8,11 +8,13 @@ import cn.slainc.core.result.ResultCode;
 import cn.slainc.modules.infra.InfraKeys;
 import cn.slainc.web.websocket.WebSocketPusher;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 
 public class NotifyService {
 
@@ -24,7 +26,8 @@ public class NotifyService {
                               String templateCode, boolean read, Long readTime, long createTime) {
     }
 
-    public record WebhookView(long id, String name, String platform, String url, boolean enabled) {
+    public record WebhookView(long id, String name, String platform, String url, boolean enabled, long createTime,
+                              boolean secretConfigured, String securityType, List<String> members) {
     }
 
     public record RecordView(long id, String channel, String target, String templateCode, String title,
@@ -177,13 +180,17 @@ public class NotifyService {
         return retried;
     }
 
-    public PageResult<WebhookView> webhookPage(long current, long size) {
+    public PageResult<WebhookView> webhookPage(long current, long size, String keyword) {
+        String where = keyword == null || keyword.isBlank() ? ""
+                : " WHERE name LIKE ? OR platform LIKE ? OR url LIKE ?";
+        List<Object> args = where.isEmpty() ? List.of()
+                : List.of("%" + keyword.trim() + "%", "%" + keyword.trim() + "%", "%" + keyword.trim() + "%");
         return JdbcPager.page(jdbc,
-                "SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE,
-                "SELECT id, name, platform, url, enabled FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE + " ORDER BY id",
-                List.of(), current, size, 500,
-                (rs, rowNum) -> new WebhookView(rs.getLong("id"), rs.getString("name"), rs.getString("platform"),
-                        rs.getString("url"), rs.getInt("enabled") == 1));
+                "SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE + where,
+                "SELECT id, name, platform, url, enabled, create_time,"
+                        + " CASE WHEN secret IS NULL OR secret = '' THEN 0 ELSE 1 END AS secret_configured FROM "
+                        + InfraKeys.NOTIFY_WEBHOOK_TABLE + where + " ORDER BY id",
+                args, current, size, 500, NotifyService::mapWebhook);
     }
 
     public void createWebhook(String name, String platform, String url, String secret) {
@@ -237,12 +244,16 @@ public class NotifyService {
     }
 
     public PageResult<MessageView> myMessages(long receiverId, String loginType, long current, long size,
-                                              Boolean read) {
+                                              Boolean read, String keyword) {
         StringBuilder where = new StringBuilder(" WHERE receiver_id = ? AND login_type = ?");
         List<Object> args = new ArrayList<>(List.of(receiverId, loginType));
         if (read != null) {
             where.append(" AND read_flag = ?");
             args.add(read ? 1 : 0);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            where.append(" AND title LIKE ?");
+            args.add("%" + keyword.trim() + "%");
         }
         return JdbcPager.page(jdbc,
                 "SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE + where,
@@ -254,6 +265,21 @@ public class NotifyService {
                         rs.getString("level"), rs.getString("template_code"), rs.getInt("read_flag") == 1,
                         rs.getObject("read_time") == null ? null : rs.getLong("read_time"),
                         rs.getLong("create_time")));
+    }
+
+    public MessageView findMyMessage(long receiverId, String loginType, long messageId) {
+        List<MessageView> rows = jdbc.query(
+                "SELECT id, receiver_id, login_type, title, content, level, template_code, read_flag, read_time,"
+                        + " create_time FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE
+                        + " WHERE id = ? AND receiver_id = ? AND login_type = ?",
+                (rs, rowNum) -> new MessageView(rs.getLong("id"), rs.getLong("receiver_id"),
+                        rs.getString("login_type"), rs.getString("title"), rs.getString("content"),
+                        rs.getString("level"), rs.getString("template_code"), rs.getInt("read_flag") == 1,
+                        rs.getObject("read_time") == null ? null : rs.getLong("read_time"),
+                        rs.getLong("create_time")),
+                messageId, receiverId, loginType);
+        BizAssert.notEmpty(rows, "站内信不存在或不属于当前用户");
+        return rows.get(0);
     }
 
     public long unreadCount(long receiverId, String loginType) {
@@ -278,9 +304,31 @@ public class NotifyService {
     }
 
     public void deleteMessage(long receiverId, String loginType, long messageId) {
-        int updated = jdbc.update("DELETE FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE
-                + " WHERE id = ? AND receiver_id = ? AND login_type = ?", messageId, receiverId, loginType);
-        BizAssert.isTrue(updated > 0, "站内信不存在或不属于当前用户");
+        deleteMessages(receiverId, loginType, List.of(messageId));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteMessages(long receiverId, String loginType, List<Long> messageIds) {
+        List<Long> ids = messageIds == null ? List.of() : messageIds.stream()
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        BizAssert.notEmpty(ids, "站内信编号不能为空");
+        BizAssert.isTrue(ids.size() <= 200, "单次最多删除 200 条站内信");
+        String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
+        List<Object> countArgs = new ArrayList<>();
+        countArgs.add(receiverId);
+        countArgs.add(loginType);
+        countArgs.addAll(ids);
+        Long matched = jdbc.queryForObject("SELECT COUNT(*) FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE
+                        + " WHERE receiver_id = ? AND login_type = ? AND id IN (" + placeholders + ")",
+                Long.class, countArgs.toArray());
+        BizAssert.isTrue(matched != null && matched == ids.size(), "部分站内信不存在或不属于当前用户");
+        List<Object> deleteArgs = new ArrayList<>();
+        deleteArgs.add(receiverId);
+        deleteArgs.add(loginType);
+        deleteArgs.addAll(ids);
+        return jdbc.update("DELETE FROM " + InfraKeys.NOTIFY_MESSAGE_TABLE
+                + " WHERE receiver_id = ? AND login_type = ? AND id IN (" + placeholders + ")",
+                deleteArgs.toArray());
     }
 
     public static String render(String template, Map<String, String> params) {
@@ -329,11 +377,19 @@ public class NotifyService {
 
     private WebhookView findWebhook(long id) {
         List<WebhookView> rows = jdbc.query(
-                "SELECT id, name, platform, url, enabled FROM " + InfraKeys.NOTIFY_WEBHOOK_TABLE + " WHERE id = ?",
-                (rs, rowNum) -> new WebhookView(rs.getLong("id"), rs.getString("name"), rs.getString("platform"),
-                        rs.getString("url"), rs.getInt("enabled") == 1),
+                "SELECT id, name, platform, url, enabled, create_time,"
+                        + " CASE WHEN secret IS NULL OR secret = '' THEN 0 ELSE 1 END AS secret_configured FROM "
+                        + InfraKeys.NOTIFY_WEBHOOK_TABLE + " WHERE id = ?",
+                NotifyService::mapWebhook,
                 id);
         return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    private static WebhookView mapWebhook(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
+        boolean secretConfigured = rs.getInt("secret_configured") == 1;
+        return new WebhookView(rs.getLong("id"), rs.getString("name"), rs.getString("platform"),
+                rs.getString("url"), rs.getInt("enabled") == 1, rs.getLong("create_time"), secretConfigured,
+                secretConfigured ? "HMAC_SHA256" : "NONE", List.of());
     }
 
     public RecordView findRecord(long id) {

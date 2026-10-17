@@ -222,9 +222,11 @@ public class RecycleBinService implements RecycleItemStore {
         if (recycleItemMapper == null) {
             return 0;
         }
+        LocalDateTime thresholdTime = now == null ? LocalDateTime.now() : now;
+        long threshold = thresholdTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         return recycleItemMapper.delete(Wrappers.<RecycleItemEntity>lambdaQuery()
                 .isNotNull(RecycleItemEntity::getExpireAt)
-                .le(RecycleItemEntity::getExpireAt, now == null ? LocalDateTime.now() : now));
+                .le(RecycleItemEntity::getExpireAt, threshold));
     }
 
     private void restoreLogicalDeleted(RecyclableType type, RecycleItemEntity item) {
