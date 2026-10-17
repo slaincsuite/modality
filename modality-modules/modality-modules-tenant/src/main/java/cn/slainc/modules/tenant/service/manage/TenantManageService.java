@@ -3,10 +3,13 @@ package cn.slainc.modules.tenant.service.manage;
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
+import cn.slainc.core.spi.UserUsage;
+import cn.slainc.core.spi.UserUsageProvider;
 import cn.slainc.excel.ExcelUtils;
 import cn.slainc.modules.tenant.dto.TenantCreateRequest;
 import cn.slainc.modules.tenant.dto.TenantQuotaRequest;
 import cn.slainc.modules.tenant.dto.TenantUpdateRequest;
+import cn.slainc.modules.tenant.dto.TenantUsageView;
 import cn.slainc.modules.tenant.excel.TenantExportRow;
 import cn.slainc.tenant.domain.Tenant;
 import cn.slainc.tenant.enums.TenantStatus;
@@ -19,6 +22,8 @@ import cn.slainc.tenant.quota.TenantQuotaService;
 import cn.slainc.tenant.lookup.TenantService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.io.OutputStream;
@@ -30,6 +35,8 @@ import java.util.Map;
 
 public class TenantManageService {
 
+    private static final Logger log = LoggerFactory.getLogger(TenantManageService.class);
+
     private final TenantMapper tenantMapper;
 
     private final TenantLifecycleService lifecycleService;
@@ -40,14 +47,18 @@ public class TenantManageService {
 
     private final ObjectProvider<DynamicConfigService> configServiceProvider;
 
+    private final ObjectProvider<UserUsageProvider> userUsageProvider;
+
     public TenantManageService(TenantMapper tenantMapper, TenantLifecycleService lifecycleService,
                                TenantService tenantService, TenantQuotaService quotaService,
-                               ObjectProvider<DynamicConfigService> configServiceProvider) {
+                               ObjectProvider<DynamicConfigService> configServiceProvider,
+                               ObjectProvider<UserUsageProvider> userUsageProvider) {
         this.tenantMapper = tenantMapper;
         this.lifecycleService = lifecycleService;
         this.tenantService = tenantService;
         this.quotaService = quotaService;
         this.configServiceProvider = configServiceProvider;
+        this.userUsageProvider = userUsageProvider;
     }
 
     public PageResult<Tenant> page(String status, String keyword, long current, long size) {
@@ -107,6 +118,14 @@ public class TenantManageService {
         return quotaService.quotaOf(tenantId);
     }
 
+    public TenantUsageView usage(Long tenantId) {
+        TenantQuota quota = quota(tenantId);
+        UserUsage usage = userUsage(tenantId);
+        return new TenantUsageView(tenantId, quota.getMaxUsers(), quota.getMaxStorage(), quota.getMaxApiQps(),
+                quota.getMaxApiDaily(), usage == null ? null : usage.total(),
+                usage == null ? null : usage.active(), usage == null ? null : usage.disabled());
+    }
+
     public Tenant create(TenantCreateRequest request) {
         return lifecycleService.create(toTenant(request));
     }
@@ -152,6 +171,19 @@ public class TenantManageService {
         }
         configService.set(TenantQuotaService.QUOTA_KEY_PREFIX + tenantId + "." + dimension.getProperty(),
                 String.valueOf(value), "tenant.quota");
+    }
+
+    private UserUsage userUsage(Long tenantId) {
+        UserUsageProvider provider = userUsageProvider.getIfAvailable();
+        if (provider == null) {
+            return null;
+        }
+        try {
+            return provider.usage(tenantId);
+        } catch (RuntimeException e) {
+            log.warn("租户用户用量查询失败，tenantId={}，将返回空用量：{}", tenantId, e.getMessage());
+            return null;
+        }
     }
 
     public Map<String, Long> stats() {
