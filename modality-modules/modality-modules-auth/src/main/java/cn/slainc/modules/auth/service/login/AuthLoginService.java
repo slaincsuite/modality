@@ -10,6 +10,7 @@ import cn.slainc.core.event.LoginEvent;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.crypto.hash.BCryptUtils;
 import cn.slainc.modules.auth.config.AuthProperties;
+import cn.slainc.modules.auth.service.policy.SecurityPolicyService;
 import cn.slainc.security.ban.AccountBanService;
 import cn.slainc.security.lock.AccountLockService;
 import cn.slainc.security.login.CurrentRequestReader;
@@ -52,6 +53,8 @@ public class AuthLoginService {
 
     private final ObjectProvider<AccountLockService> lockService;
 
+    private final ObjectProvider<SecurityPolicyService> policyService;
+
     public AuthLoginService(SecurityLoginService delegate, AuthProperties properties,
                             ObjectProvider<CaptchaService> captchaService,
                             ObjectProvider<AccountRestrictionPort> restrictionPort,
@@ -62,7 +65,8 @@ public class AuthLoginService {
                             ObjectProvider<AuthSecondFactorGate> secondFactorGate,
                             ObjectProvider<AccountAuthProvider> authProvider,
                             ObjectProvider<AccountBanService> banService,
-                            ObjectProvider<AccountLockService> lockService) {
+                            ObjectProvider<AccountLockService> lockService,
+                            ObjectProvider<SecurityPolicyService> policyService) {
         this.delegate = delegate;
         this.properties = properties;
         this.captchaService = captchaService;
@@ -75,6 +79,7 @@ public class AuthLoginService {
         this.authProvider = authProvider;
         this.banService = banService;
         this.lockService = lockService;
+        this.policyService = policyService;
     }
 
     public record LoginCommand(String username, String password, String deviceType, String deviceId,
@@ -109,6 +114,13 @@ public class AuthLoginService {
                 String challengeId = gate.challenge(type, account.userId(), account.username(),
                         command.deviceType(), command.deviceId(), command.remember());
                 return AuthLoginView.secondFactorRequired(challengeId, gate.method(), account.userId(), type.value());
+            }
+        }
+        PasswordAccount account = findAccount(type, command.username());
+        if (account != null) {
+            SecurityPolicyService policy = policyService == null ? null : policyService.getIfAvailable();
+            if (policy != null) {
+                policy.alignTravelBaseline(type, account.userId(), clientIp);
             }
         }
         LoginResult result = delegate.login(type, new LoginRequest(command.username(), command.password(),

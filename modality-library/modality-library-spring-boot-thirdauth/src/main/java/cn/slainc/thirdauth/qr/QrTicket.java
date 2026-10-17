@@ -12,9 +12,20 @@ public class QrTicket {
         EXPIRED
     }
 
+    public enum Purpose {
+        LOGIN,
+        BIND
+    }
+
     private String ticketId;
 
     private ThirdPartyPlatform platform;
+
+    private String purpose = Purpose.LOGIN.name();
+
+    private String targetUserId;
+
+    private String targetLoginType;
 
     private String status = Status.WAITING.name();
 
@@ -46,6 +57,30 @@ public class QrTicket {
 
     public void setPlatform(String platform) {
         this.platform = ThirdPartyPlatform.of(platform);
+    }
+
+    public String getPurpose() {
+        return purpose;
+    }
+
+    public void setPurpose(String purpose) {
+        this.purpose = purpose;
+    }
+
+    public String getTargetUserId() {
+        return targetUserId;
+    }
+
+    public void setTargetUserId(String targetUserId) {
+        this.targetUserId = targetUserId;
+    }
+
+    public String getTargetLoginType() {
+        return targetLoginType;
+    }
+
+    public void setTargetLoginType(String targetLoginType) {
+        this.targetLoginType = targetLoginType;
     }
 
     public String getStatus() {

@@ -15,11 +15,13 @@ dependencies {
     api project(':modality-library:modality-library-spring-boot-thirdauth')
     api project(':modality-library:modality-library-spring-boot-redis')
     api project(':modality-library:modality-library-spring-boot-sensitive')
+    api project(':modality-library:modality-library-spring-boot-logger')
     implementation project(':modality-library:modality-library-spring-boot-monitor')
     implementation project(':modality-library:modality-library-spring-boot-crypto')
     implementation libs.zxing.core
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
     compileOnly libs.spring.boot.starter.jdbc
+    compileOnly project(':modality-library:modality-library-spring-boot-mybatis')
     // 二次验证库按可选装配引入：未依赖时模块整体退避、可独立启动
     compileOnly project(':modality-library:modality-library-spring-boot-mfa')
     testImplementation libs.spring.boot.starter.jdbc

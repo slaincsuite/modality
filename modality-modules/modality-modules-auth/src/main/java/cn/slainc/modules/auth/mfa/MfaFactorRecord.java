@@ -30,6 +30,10 @@ public class MfaFactorRecord {
 
     private LocalDateTime lockedUntil;
 
+    private LocalDateTime createTime;
+
+    private LocalDateTime updateTime;
+
     public Long getId() {
         return id;
     }
@@ -132,5 +136,21 @@ public class MfaFactorRecord {
 
     public void setLockedUntil(LocalDateTime lockedUntil) {
         this.lockedUntil = lockedUntil;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
     }
 }

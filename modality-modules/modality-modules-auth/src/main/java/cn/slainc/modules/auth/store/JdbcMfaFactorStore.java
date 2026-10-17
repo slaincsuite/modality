@@ -39,6 +39,8 @@ public class JdbcMfaFactorStore implements MfaFactorStore {
         record.setFailCount(rs.getInt("fail_count"));
         long lockedUntil = rs.getLong("locked_until");
         record.setLockedUntil(rs.wasNull() ? null : toDateTime(lockedUntil));
+        record.setCreateTime(toDateTime(rs.getLong("create_time")));
+        record.setUpdateTime(toDateTime(rs.getLong("update_time")));
         return record;
     };
 

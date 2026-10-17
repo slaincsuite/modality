@@ -4,6 +4,7 @@ import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.thirdauth.ThirdAuthService;
 import cn.slainc.thirdauth.binding.InMemoryThirdAccountBindingStore;
 import cn.slainc.thirdauth.binding.ThirdAccountBindingStore;
+import cn.slainc.thirdauth.config.ThirdAuthConfigProvider;
 import cn.slainc.thirdauth.config.ThirdAuthConfigRegistry;
 import cn.slainc.thirdauth.config.ThirdAuthProperties;
 import cn.slainc.thirdauth.provider.FeishuAuthProvider;
@@ -32,8 +33,9 @@ public class ThirdAuthAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public ThirdAuthConfigRegistry thirdAuthConfigRegistry(ThirdAuthProperties properties,
-                                                           ObjectProvider<DynamicConfigService> configService) {
-        return new ThirdAuthConfigRegistry(properties, configService);
+                                                           ObjectProvider<DynamicConfigService> configService,
+                                                           ObjectProvider<ThirdAuthConfigProvider> configProvider) {
+        return new ThirdAuthConfigRegistry(properties, configService, configProvider);
     }
 
     @Bean

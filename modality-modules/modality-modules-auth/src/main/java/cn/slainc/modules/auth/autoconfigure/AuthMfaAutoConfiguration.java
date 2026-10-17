@@ -13,11 +13,15 @@ import cn.slainc.modules.auth.mfa.MfaLoginTicket;
 import cn.slainc.modules.auth.service.login.AuthLoginService;
 import cn.slainc.modules.auth.service.mfa.AuthMfaService;
 import cn.slainc.modules.auth.service.mfa.AuthSecondFactorGate;
+import cn.slainc.modules.auth.service.policy.SecurityPolicyService;
+import cn.slainc.modules.auth.service.user.TargetUserGuard;
 import cn.slainc.modules.auth.service.session.AuthSessionService;
 import cn.slainc.modules.auth.store.AuthTicketStore;
 import cn.slainc.modules.auth.store.JdbcMfaFactorStore;
 import cn.slainc.modules.auth.web.mfa.AuthMfaController;
+import cn.slainc.modules.auth.web.mfa.UserMfaManageController;
 import cn.slainc.security.spi.AccountAuthProvider;
+import cn.slainc.security.spi.AccountAdminPort;
 import cn.slainc.security.spi.SecurityPermissionProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -40,7 +44,7 @@ import javax.sql.DataSource;
         "org.springframework.jdbc.core.JdbcTemplate"})
 @ConditionalOnBean(JdbcTemplate.class)
 @ConditionalOnProperty(prefix = "modality.mfa", name = "enabled", matchIfMissing = true)
-@Import(AuthMfaController.class)
+@Import({AuthMfaController.class, UserMfaManageController.class})
 public class AuthMfaAutoConfiguration {
 
     @Bean
@@ -55,6 +59,12 @@ public class AuthMfaAutoConfiguration {
     @ConditionalOnMissingBean(MfaFactorPort.class)
     public JdbcMfaFactorStore mfaFactorStore(JdbcTemplate jdbcTemplate) {
         return new JdbcMfaFactorStore(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TargetUserGuard targetUserGuard(ObjectProvider<AccountAdminPort> accountAdminPort) {
+        return new TargetUserGuard(accountAdminPort);
     }
 
     @Bean
@@ -80,8 +90,9 @@ public class AuthMfaAutoConfiguration {
                                          AuthTicketStore<MfaLoginTicket> ticketStore,
                                          AuthSessionService sessionService, AuthLoginService loginService,
                                          ObjectProvider<AccountAuthProvider> authProvider,
-                                         ObjectProvider<SecurityPermissionProvider> permissionProvider) {
+                                         ObjectProvider<SecurityPermissionProvider> permissionProvider,
+                                         ObjectProvider<SecurityPolicyService> policyService) {
         return new AuthMfaService(configReader, totp, recoveryCodeGenerator, secretCodec, gate, factorStore,
-                ticketStore, sessionService, loginService, authProvider, permissionProvider);
+                ticketStore, sessionService, loginService, authProvider, permissionProvider, policyService);
     }
 }
