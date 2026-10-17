@@ -3,23 +3,26 @@ package cn.slainc.modules.workorder.service.order;
 import cn.slainc.core.context.UserContext;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
+import cn.slainc.modules.workorder.dto.WorkOrderFilter;
 import cn.slainc.modules.workorder.entity.WorkOrderRecord;
 import cn.slainc.modules.workorder.entity.WorkOrderReplyRecord;
 import cn.slainc.workorder.enums.WorkOrderPriority;
 import cn.slainc.workorder.enums.WorkOrderStatus;
 import cn.slainc.modules.workorder.mapper.WorkOrderMapper;
 import cn.slainc.modules.workorder.mapper.WorkOrderReplyMapper;
-import cn.slainc.utils.json.JsonUtils;
 import cn.slainc.workorder.engine.BatchTransitionResult;
 import cn.slainc.workorder.engine.WorkOrderEngine;
 import cn.slainc.workorder.engine.WorkOrderTransitionPreview;
 import cn.slainc.workorder.domain.WorkOrderActivity;
-import cn.slainc.workorder.engine.WorkOrderEngine;
 import cn.slainc.workorder.domain.WorkOrder;
 import cn.slainc.workorder.domain.WorkOrderSource;
 import cn.slainc.workorder.spi.WorkOrderActivityStore;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import cn.slainc.utils.date.DateUtils;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +32,8 @@ public class WorkOrderService {
     public static final String DEFAULT_TYPE_CODE = "generic";
 
     public static final int MAX_EXPORT_LIMIT = 50000;
+
+    public static final int MAX_BATCH_SIZE = 1000;
 
     private final WorkOrderMapper workOrderMapper;
 
@@ -47,38 +52,45 @@ public class WorkOrderService {
     }
 
     public WorkOrderRecord create(String title, String content, String priorityCode) {
-        return create(title, content, priorityCode, null);
+        return create(null, title, content, priorityCode, null);
     }
 
     public WorkOrderRecord create(String title, String content, String priorityCode,
                                   Map<String, Object> customFields) {
+        return create(null, title, content, priorityCode, customFields);
+    }
+
+    public WorkOrderRecord create(String typeCode, String title, String content, String priorityCode,
+                                  Map<String, Object> customFields) {
         if (priorityCode != null && !priorityCode.isBlank()) {
             WorkOrderPriority.parse(priorityCode);
         }
-        WorkOrder created = engine.create(DEFAULT_TYPE_CODE, title, content,
+        String resolvedTypeCode = typeCode == null || typeCode.isBlank()
+                ? DEFAULT_TYPE_CODE
+                : typeCode.trim();
+        WorkOrder created = engine.create(resolvedTypeCode, title, content,
                 priorityCode == null || priorityCode.isBlank() ? null : priorityCode,
                 WorkOrderSource.MANUAL.name(), null, null, null, UserContext.userId(), customFields);
         return requireOrder(created.getId());
     }
 
-    public PageResult<WorkOrderRecord> pageManage(String status, String priority, String keyword,
-                                                  long current, long size) {
-        LambdaQueryWrapper<WorkOrderRecord> wrapper = baseWrapper(status, priority, keyword)
+    public PageResult<WorkOrderRecord> pageManage(WorkOrderFilter filter, long current, long size) {
+        LambdaQueryWrapper<WorkOrderRecord> wrapper = baseWrapper(filter)
                 .orderByDesc(WorkOrderRecord::getId);
         Page<WorkOrderRecord> page = workOrderMapper.selectPage(Page.of(current, size), wrapper);
         return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
 
-    public PageResult<WorkOrderRecord> pageMine(long current, long size) {
+    public PageResult<WorkOrderRecord> pageMine(WorkOrderFilter filter, long current, long size) {
         Page<WorkOrderRecord> page = workOrderMapper.selectPage(Page.of(current, size),
-                new LambdaQueryWrapper<WorkOrderRecord>()
+                baseWrapper(filter)
                         .eq(WorkOrderRecord::getSubmitterId, UserContext.userId())
                         .orderByDesc(WorkOrderRecord::getId));
         return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
     }
 
-    public List<WorkOrderRecord> list(String status, String priority, String keyword, int limit) {
-        return workOrderMapper.selectList(baseWrapper(status, priority, keyword)
+    public List<WorkOrderRecord> list(WorkOrderFilter filter, int limit) {
+        return workOrderMapper.selectList(baseWrapper(filter)
                 .orderByDesc(WorkOrderRecord::getId)
                 .last("LIMIT " + clampExportLimit(limit)));
     }
@@ -187,8 +199,25 @@ public class WorkOrderService {
         return requireOrder(id);
     }
 
-    public BatchTransitionResult batchReopen(List<Long> ids) {
-        return engine.batchTransition(ids, "reopen", UserContext.userId(), Map.of());
+    public BatchTransitionResult batchReopen(List<Long> ids, String status, String typeCode,
+                                             String from, String to) {
+        List<Long> targets = ids;
+        if (targets == null || targets.isEmpty()) {
+            String effectiveStatus = status == null || status.isBlank()
+                    ? WorkOrderStatus.CLOSED.name()
+                    : status;
+            WorkOrderFilter filter = new WorkOrderFilter(effectiveStatus, null, typeCode, null, from, to);
+            targets = workOrderMapper.selectList(baseWrapper(filter)
+                            .orderByAsc(WorkOrderRecord::getId))
+                    .stream()
+                    .map(WorkOrderRecord::getId)
+                    .toList();
+        }
+        List<Long> distinctTargets = targets == null ? List.of() : targets.stream().distinct().toList();
+        if (distinctTargets.size() > MAX_BATCH_SIZE) {
+            throw new BizException("批量重开最多支持 " + MAX_BATCH_SIZE + " 条，请缩小筛选范围");
+        }
+        return engine.batchTransition(distinctTargets, "reopen", UserContext.userId(), Map.of());
     }
 
     public WorkOrderTransitionPreview preview(Long id, String action) {
@@ -199,14 +228,52 @@ public class WorkOrderService {
         return engine.activities(id);
     }
 
-    private LambdaQueryWrapper<WorkOrderRecord> baseWrapper(String status, String priority, String keyword) {
+    private LambdaQueryWrapper<WorkOrderRecord> baseWrapper(WorkOrderFilter filter) {
+        WorkOrderFilter actual = filter == null ? WorkOrderFilter.empty() : filter;
+        Long from = parseTime(actual.from(), false);
+        Long to = parseTime(actual.to(), true);
+        if (from != null && to != null && from > to) {
+            throw new BizException("提交时间范围不合法，开始时间不能晚于结束时间");
+        }
+        String status = trimToNull(actual.status());
+        String priority = trimToNull(actual.priority());
+        String typeCode = trimToNull(actual.typeCode());
+        String keyword = trimToNull(actual.keyword());
         return new LambdaQueryWrapper<WorkOrderRecord>()
-                .eq(status != null && !status.isBlank(), WorkOrderRecord::getStatus, status)
-                .eq(priority != null && !priority.isBlank(), WorkOrderRecord::getPriority, priority)
-                .and(keyword != null && !keyword.isBlank(),
+                .eq(status != null, WorkOrderRecord::getStatus, status)
+                .eq(priority != null, WorkOrderRecord::getPriority, priority)
+                .eq(typeCode != null, WorkOrderRecord::getTypeCode, typeCode)
+                .ge(from != null, WorkOrderRecord::getCreateTime, from)
+                .le(to != null, WorkOrderRecord::getCreateTime, to)
+                .and(keyword != null,
                         w -> w.like(WorkOrderRecord::getTitle, keyword)
                                 .or()
-                                .like(WorkOrderRecord::getContent, keyword));
+                                .like(WorkOrderRecord::getContent, keyword)
+                                .or()
+                                .like(WorkOrderRecord::getNumber, keyword));
+    }
+
+    private Long parseTime(String value, boolean endOfDay) {
+        String trimmed = trimToNull(value);
+        if (trimmed == null) {
+            return null;
+        }
+        if (trimmed.matches("\\d{13}")) {
+            return Long.parseLong(trimmed);
+        }
+        if (trimmed.matches("\\d{10}")) {
+            return Long.parseLong(trimmed) * 1000L;
+        }
+        LocalDate date = DateUtils.parseDate(trimmed);
+        if (date == null) {
+            throw new BizException("提交时间格式不正确，应为 yyyy-MM-dd 或毫秒时间戳");
+        }
+        LocalDateTime time = endOfDay ? date.atTime(LocalTime.MAX) : date.atStartOfDay();
+        return DateUtils.toEpochMilli(time);
+    }
+
+    private String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private void requireNotClosed(WorkOrderRecord record) {

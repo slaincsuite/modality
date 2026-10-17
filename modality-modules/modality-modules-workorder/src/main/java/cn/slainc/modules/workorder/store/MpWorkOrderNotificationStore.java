@@ -34,7 +34,7 @@ public class MpWorkOrderNotificationStore implements WorkOrderNotificationStore 
     public List<WorkOrderNotification> findByRecipient(Long recipientId, boolean onlyUnread) {
         return notificationMapper.selectList(new LambdaQueryWrapper<WorkOrderNotificationRecord>()
                         .eq(WorkOrderNotificationRecord::getRecipientId, recipientId)
-                        .eq(onlyUnread, WorkOrderNotificationRecord::isRead, false)
+                        .eq(onlyUnread, WorkOrderNotificationRecord::getReadFlag, false)
                         .orderByDesc(WorkOrderNotificationRecord::getId))
                 .stream().map(this::toDomain).toList();
     }
@@ -43,21 +43,36 @@ public class MpWorkOrderNotificationStore implements WorkOrderNotificationStore 
     public void markRead(Long notificationId) {
         notificationMapper.update(null, new LambdaUpdateWrapper<WorkOrderNotificationRecord>()
                 .eq(WorkOrderNotificationRecord::getId, notificationId)
-                .set(WorkOrderNotificationRecord::isRead, true));
+                .set(WorkOrderNotificationRecord::getReadFlag, true));
+    }
+
+    @Override
+    public boolean markRead(Long notificationId, Long recipientId) {
+        Long count = notificationMapper.selectCount(new LambdaQueryWrapper<WorkOrderNotificationRecord>()
+                .eq(WorkOrderNotificationRecord::getId, notificationId)
+                .eq(WorkOrderNotificationRecord::getRecipientId, recipientId));
+        if (count == null || count == 0) {
+            return false;
+        }
+        notificationMapper.update(null, new LambdaUpdateWrapper<WorkOrderNotificationRecord>()
+                .eq(WorkOrderNotificationRecord::getId, notificationId)
+                .eq(WorkOrderNotificationRecord::getRecipientId, recipientId)
+                .set(WorkOrderNotificationRecord::getReadFlag, true));
+        return true;
     }
 
     @Override
     public void markAllRead(Long recipientId) {
         notificationMapper.update(null, new LambdaUpdateWrapper<WorkOrderNotificationRecord>()
                 .eq(WorkOrderNotificationRecord::getRecipientId, recipientId)
-                .set(WorkOrderNotificationRecord::isRead, true));
+                .set(WorkOrderNotificationRecord::getReadFlag, true));
     }
 
     @Override
     public long countUnread(Long recipientId) {
         return notificationMapper.selectCount(new LambdaQueryWrapper<WorkOrderNotificationRecord>()
                 .eq(WorkOrderNotificationRecord::getRecipientId, recipientId)
-                .eq(WorkOrderNotificationRecord::isRead, false));
+                .eq(WorkOrderNotificationRecord::getReadFlag, false));
     }
 
     private WorkOrderNotificationRecord toRecord(WorkOrderNotification notification) {
@@ -70,7 +85,7 @@ public class MpWorkOrderNotificationStore implements WorkOrderNotificationStore 
         record.setTitle(notification.getTitle());
         record.setContent(notification.getContent());
         record.setChannel(notification.getChannel());
-        record.setRead(notification.isRead());
+        record.setReadFlag(notification.isRead());
         record.setCreateTime(notification.getCreateTime());
         return record;
     }
@@ -85,7 +100,7 @@ public class MpWorkOrderNotificationStore implements WorkOrderNotificationStore 
         notification.setTitle(record.getTitle());
         notification.setContent(record.getContent());
         notification.setChannel(record.getChannel());
-        notification.setRead(record.isRead() != null && record.isRead());
+        notification.setRead(record.getReadFlag() != null && record.getReadFlag());
         notification.setCreateTime(record.getCreateTime());
         return notification;
     }

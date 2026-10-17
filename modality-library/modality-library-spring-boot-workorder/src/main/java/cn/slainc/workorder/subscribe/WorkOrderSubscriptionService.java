@@ -1,8 +1,10 @@
 package cn.slainc.workorder.subscribe;
 
+import cn.slainc.core.exception.BizException;
 import cn.slainc.workorder.spi.WorkOrderStore;
 import cn.slainc.workorder.spi.WorkOrderSubscriptionStore;
 import java.util.List;
+import java.util.Optional;
 
 
 public class WorkOrderSubscriptionService {
@@ -17,7 +19,7 @@ public class WorkOrderSubscriptionService {
     }
 
     public void subscribeOrder(Long orderId, Long subscriberId) {
-        orderStore.findById(orderId).orElseThrow(() -> new cn.slainc.core.exception.BizException("工单不存在"));
+        orderStore.findById(orderId).orElseThrow(() -> new BizException("工单不存在"));
         if (!subscriptionStore.existsByOrderAndSubscriber(orderId, subscriberId)) {
             WorkOrderSubscription subscription = new WorkOrderSubscription();
             subscription.setOrderId(orderId);
@@ -29,6 +31,13 @@ public class WorkOrderSubscriptionService {
 
     public boolean unsubscribeOrder(Long orderId, Long subscriberId) {
         return subscriptionStore.deleteByOrderAndSubscriber(orderId, subscriberId);
+    }
+
+    public Optional<WorkOrderSubscription> orderSubscription(Long orderId, Long subscriberId) {
+        orderStore.findById(orderId).orElseThrow(() -> new BizException("工单不存在"));
+        return subscriptionStore.findByOrder(orderId).stream()
+                .filter(subscription -> subscriberId.equals(subscription.getSubscriberId()))
+                .findFirst();
     }
 
     public List<Long> orderSubscribers(Long orderId) {
