@@ -6,6 +6,7 @@ import cn.slainc.logger.oplog.AuditLog;
 import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.tenant.TenantKeys;
 import cn.slainc.modules.tenant.dto.TenantQuotaRequest;
+import cn.slainc.modules.tenant.dto.TenantUsageView;
 import cn.slainc.modules.tenant.service.manage.TenantManageService;
 import cn.slainc.security.annotation.RequirePermission;
 import cn.slainc.tenant.quota.TenantQuota;
@@ -32,6 +33,12 @@ public class TenantQuotaController {
     @RequirePermission(permissions = TenantKeys.PERMISSION_TENANT_QUERY)
     public Result<TenantQuota> quota(@PathVariable Long id) {
         return Result.ok(tenantManageService.quota(id));
+    }
+
+    @GetMapping("/{id}/usage")
+    @RequirePermission(permissions = TenantKeys.PERMISSION_TENANT_QUERY)
+    public Result<TenantUsageView> usage(@PathVariable Long id) {
+        return Result.ok(tenantManageService.usage(id));
     }
 
     @PutMapping("/{id}/quota")

@@ -13,6 +13,7 @@ import cn.slainc.modules.tenant.web.query.TenantQueryController;
 import cn.slainc.modules.tenant.web.quota.TenantQuotaController;
 import cn.slainc.modules.tenant.web.stats.TenantStatsController;
 import cn.slainc.core.config.DynamicConfigService;
+import cn.slainc.core.spi.UserUsageProvider;
 import cn.slainc.tenant.lifecycle.TenantLifecycleService;
 import cn.slainc.tenant.dao.TenantMapper;
 import cn.slainc.tenant.quota.TenantQuotaService;
@@ -43,8 +44,10 @@ public class TenantModuleAutoConfiguration {
                                                    TenantLifecycleService lifecycleService,
                                                    TenantService tenantService,
                                                    TenantQuotaService quotaService,
-                                                   ObjectProvider<DynamicConfigService> configServiceProvider) {
-        return new TenantManageService(tenantMapper, lifecycleService, tenantService, quotaService, configServiceProvider);
+                                                   ObjectProvider<DynamicConfigService> configServiceProvider,
+                                                   ObjectProvider<UserUsageProvider> userUsageProvider) {
+        return new TenantManageService(tenantMapper, lifecycleService, tenantService, quotaService,
+                configServiceProvider, userUsageProvider);
     }
 
     @Bean
