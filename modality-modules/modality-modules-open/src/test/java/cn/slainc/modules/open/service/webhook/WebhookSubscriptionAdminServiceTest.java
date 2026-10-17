@@ -133,6 +133,8 @@ class WebhookSubscriptionAdminServiceTest {
 
         assertThat(service.page(null, null, 1, 10).total()).isEqualTo(2);
         assertThat(service.page("billing", null, 1, 10).total()).isEqualTo(1);
+        assertThat(service.page(null, "billing", null, 1, 10).total()).isEqualTo(1);
+        assertThat(service.page(null, "example.com/billing", null, 1, 10).total()).isEqualTo(1);
         assertThat(service.page(null, Boolean.FALSE, 1, 10).total()).isZero();
         assertThat(service.page(null, Boolean.TRUE, 1, 10).total()).isEqualTo(2);
     }

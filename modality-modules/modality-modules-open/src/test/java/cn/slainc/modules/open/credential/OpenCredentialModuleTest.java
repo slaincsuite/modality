@@ -34,8 +34,8 @@ class OpenCredentialModuleTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_consent", "t_open_credential",
-                "t_open_app_log", "t_oauth_client", "t_consent_record"}) {
+        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_scope_group", "t_open_consent",
+                "t_open_credential", "t_open_app_log", "t_oauth_client", "t_consent_record"}) {
             try {
                 jdbc.execute("DELETE FROM " + table);
             } catch (org.springframework.dao.DataAccessException ignored) {

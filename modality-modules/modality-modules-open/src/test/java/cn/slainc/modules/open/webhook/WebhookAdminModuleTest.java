@@ -68,6 +68,45 @@ class WebhookAdminModuleTest {
     }
 
     @Test
+    void keywordSearchesNameAndUrlWhileNameStaysCompatible() throws Exception {
+        post("/open/webhook", "{\"name\":\"订单回调\",\"url\":\"https://hooks.example.com/order\"}");
+        post("/open/webhook", "{\"name\":\"账单回调\",\"url\":\"https://hooks.example.com/billing\"}");
+
+        assertThat(Integer.parseInt(JsonPath.read(get("/open/webhook/page?keyword=订单"),
+                "$.data.total").toString())).isEqualTo(1);
+        assertThat(Integer.parseInt(JsonPath.read(get("/open/webhook/page?keyword=/billing"),
+                "$.data.total").toString())).isEqualTo(1);
+        assertThat(Integer.parseInt(JsonPath.read(get("/open/webhook/page?name=账单"),
+                "$.data.total").toString())).isEqualTo(1);
+        assertThat(Integer.parseInt(JsonPath.read(get("/open/webhook/page?keyword=不存在的地址"),
+                "$.data.total").toString())).isZero();
+    }
+
+    @Test
+    void deliveryPageIsUnifiedAcrossSubscriptions() throws Exception {
+        long first = Long.parseLong(JsonPath.read(post("/open/webhook",
+                "{\"name\":\"订阅一\",\"url\":\"https://example.com/one\"}"), "$.data.id").toString());
+        long second = Long.parseLong(JsonPath.read(post("/open/webhook",
+                "{\"name\":\"订阅二\",\"url\":\"https://example.com/two\"}"), "$.data.id").toString());
+        jdbc.execute("DELETE FROM t_webhook_delivery");
+        insertDelivery(first, "open.apikey.created", "FAILED");
+        insertDelivery(first, "open.apikey.rotated", "SUCCESS");
+        insertDelivery(second, "open.apikey.created", "FAILED");
+
+        String firstPage = get("/open/webhook/deliveries/page?subscriptionId=" + first
+                + "&eventType=open.apikey.created&current=1&size=1");
+        assertThat(Integer.parseInt(JsonPath.read(firstPage, "$.data.total").toString())).isEqualTo(1);
+        assertThat(JsonPath.read(firstPage, "$.data.records[0].eventType").toString())
+                .isEqualTo("open.apikey.created");
+
+        String failed = get("/open/webhook/deliveries/page?status=FAILED&size=20");
+        assertThat(Integer.parseInt(JsonPath.read(failed, "$.data.total").toString())).isEqualTo(2);
+
+        String eventType = get("/open/webhook/deliveries/page?eventType=open.apikey.created&size=20");
+        assertThat(Integer.parseInt(JsonPath.read(eventType, "$.data.total").toString())).isEqualTo(2);
+    }
+
+    @Test
     void manualRetryResetsAndRedeliversAFailedDelivery() throws Exception {
         String created = post("/open/webhook",
                 "{\"name\":\"失败回调\",\"url\":\"http://127.0.0.1:1/hook\","
@@ -110,6 +149,12 @@ class WebhookAdminModuleTest {
             Thread.sleep(200L);
         }
         return last;
+    }
+
+    private void insertDelivery(long subscriptionId, String eventType, String status) {
+        jdbc.update("INSERT INTO t_webhook_delivery (subscription_id, event_type, payload, status,"
+                        + " attempt, next_retry_at, created_at) VALUES (?, ?, '{}', ?, 0, ?, ?)",
+                subscriptionId, eventType, status, System.currentTimeMillis(), System.currentTimeMillis());
     }
 
     private String login() throws Exception {

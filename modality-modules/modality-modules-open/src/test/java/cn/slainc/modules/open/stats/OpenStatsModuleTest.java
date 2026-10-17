@@ -34,8 +34,8 @@ class OpenStatsModuleTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_consent", "t_open_credential",
-                "t_open_app_log"}) {
+        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_scope_group", "t_open_consent",
+                "t_open_credential", "t_open_app_log"}) {
             jdbc.execute("DELETE FROM " + table);
         }
         token = JsonPath.read(login(), "$.data");
@@ -88,6 +88,32 @@ class OpenStatsModuleTest {
                 + "\"title\":\"坏等级\",\"riskLevel\":\"EXTREME\"}");
         assertThat(badRisk.statusCode()).isEqualTo(400);
         assertThat(badRisk.body()).contains("风险等级只允许");
+    }
+
+    @Test
+    void scopeGroupsSupportCrudRenameAndReferenceSafety() throws Exception {
+        post("/open/admin/scope-groups", "{\"name\":\"business\",\"description\":\"业务范围\",\"sort\":20}");
+        assertThat(get("/open/admin/scope-groups")).contains("business").contains("默认");
+
+        post("/open/admin/scopes", "{\"name\":\"stats_business\",\"title\":\"业务 Scope\","
+                + "\"group\":\"business\",\"riskLevel\":\"LOW\"}");
+        assertThat(get("/open/admin/scopes/groups")).contains("\"business\":\"1\"");
+
+        HttpResponse<String> renamed = send("PUT", "/open/admin/scope-groups/business",
+                "{\"name\":\"business_v2\",\"description\":\"更新后的业务范围\",\"sort\":10}");
+        assertThat(renamed.statusCode()).as(renamed.body()).isEqualTo(200);
+        assertThat(get("/open/admin/scopes?group=business_v2")).contains("stats_business");
+
+        HttpResponse<String> blocked = send("DELETE", "/open/admin/scope-groups/business_v2", null);
+        assertThat(blocked.statusCode()).isEqualTo(400);
+        assertThat(blocked.body()).contains("仍包含 1 个 Scope");
+
+        assertThat(send("DELETE", "/open/admin/scopes/stats_business", null).statusCode()).isEqualTo(200);
+        assertThat(send("DELETE", "/open/admin/scope-groups/business_v2", null).statusCode()).isEqualTo(200);
+
+        HttpResponse<String> defaultDelete = send("DELETE", "/open/admin/scope-groups/默认", null);
+        assertThat(defaultDelete.statusCode()).isEqualTo(400);
+        assertThat(defaultDelete.body()).contains("默认分组不允许删除");
     }
 
     private String login() throws Exception {

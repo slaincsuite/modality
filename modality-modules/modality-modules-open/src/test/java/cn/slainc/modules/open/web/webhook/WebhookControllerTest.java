@@ -46,13 +46,17 @@ class WebhookControllerTest {
 
     @Test
     void shouldExposeTheSubscriptionPage() throws Exception {
-        when(subscriptionService.page(any(), any(), org.mockito.ArgumentMatchers.anyLong(),
+        when(subscriptionService.page(any(), any(), any(), org.mockito.ArgumentMatchers.anyLong(),
                 org.mockito.ArgumentMatchers.anyLong()))
                 .thenReturn(PageResult.of(List.of(subscription()), 1L, 1L, 10L));
 
-        mockMvc.perform(get("/open/webhook/page").param("name", "demo"))
+        mockMvc.perform(get("/open/webhook/page").param("keyword", "example.com"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.records[0].name").value("demo"));
+
+        verify(subscriptionService).page(org.mockito.ArgumentMatchers.isNull(), eq("example.com"),
+                org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test
@@ -111,6 +115,21 @@ class WebhookControllerTest {
     }
 
     @Test
+    void shouldPageDeliveriesAcrossSubscriptions() throws Exception {
+        when(deliveryService.page(eq(5L), eq("open.apikey.created"), eq("FAILED"),
+                org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(PageResult.of(List.of(Map.of("id", 9L, "status", "FAILED")), 1L, 1L, 20L));
+
+        mockMvc.perform(get("/open/webhook/deliveries/page")
+                        .param("subscriptionId", "5")
+                        .param("eventType", "open.apikey.created")
+                        .param("status", "FAILED")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.records[0].id").value(9));
+    }
+
+    @Test
     void shouldRetryADelivery() throws Exception {
         when(deliveryService.retry(9L)).thenReturn(true);
 
@@ -133,7 +152,7 @@ class WebhookControllerTest {
         assertThat(WebhookController.class.getAnnotation(RequestMapping.class).value())
                 .containsExactly("/open/webhook");
 
-        assertPermission("page", new Class<?>[]{String.class, Boolean.class, long.class,
+        assertPermission("page", new Class<?>[]{String.class, String.class, Boolean.class, long.class,
                 long.class}, OpenKeys.PERMISSION_WEBHOOK_QUERY);
         assertPermission("detail", new Class<?>[]{Long.class}, OpenKeys.PERMISSION_WEBHOOK_QUERY);
         assertPermission("create", new Class<?>[]{WebhookSubscriptionRequest.class},
@@ -142,6 +161,8 @@ class WebhookControllerTest {
                 OpenKeys.PERMISSION_WEBHOOK_UPDATE);
         assertPermission("delete", new Class<?>[]{List.class}, OpenKeys.PERMISSION_WEBHOOK_DELETE);
         assertPermission("deliveries", new Class<?>[]{Long.class, String.class, String.class,
+                long.class, long.class}, OpenKeys.PERMISSION_WEBHOOK_DELIVERY_QUERY);
+        assertPermission("deliveriesPage", new Class<?>[]{Long.class, String.class, String.class,
                 long.class, long.class}, OpenKeys.PERMISSION_WEBHOOK_DELIVERY_QUERY);
         assertPermission("retry", new Class<?>[]{Long.class}, OpenKeys.PERMISSION_WEBHOOK_DELIVERY_RETRY);
         assertPermission("events", new Class<?>[]{}, OpenKeys.PERMISSION_WEBHOOK_QUERY);
