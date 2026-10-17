@@ -4,6 +4,7 @@ public final class OpenKeys {
 
     public static final String APP_TABLE = "t_open_app";
     public static final String SCOPE_TABLE = "t_open_scope";
+    public static final String SCOPE_GROUP_TABLE = "t_open_scope_group";
     public static final String CONSENT_TABLE = "t_open_consent";
     public static final String CREDENTIAL_TABLE = "t_open_credential";
     public static final String APP_LOG_TABLE = "t_open_app_log";

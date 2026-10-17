@@ -1,8 +1,7 @@
 package cn.slainc.modules.open.excel;
 
 import cn.idev.excel.annotation.ExcelProperty;
-import cn.slainc.openapi.domain.App;
-import cn.slainc.openapi.domain.ConsentRecord;
+import cn.slainc.modules.open.dto.ConsentView;
 import cn.slainc.utils.date.DateUtils;
 
 import java.util.Optional;
@@ -33,19 +32,23 @@ public class ConsentExportRow {
     @ExcelProperty("来源")
     private String source;
 
+    @ExcelProperty("解约原因")
+    private String revokeReason;
+
     public ConsentExportRow() {
     }
 
-    public ConsentExportRow(ConsentRecord record, App app) {
-        this.id = record.getId();
-        this.userId = record.getUserId();
-        this.appId = record.getAppId();
-        this.appName = app == null ? "" : app.getName();
-        this.scopes = String.join(", ", record.getScopes());
-        this.grantedAt = DateUtils.format(DateUtils.fromEpochMilli(record.getGrantedAt()));
-        this.revokedAt = Optional.ofNullable(record.getRevokedAt())
+    public ConsentExportRow(ConsentView record) {
+        this.id = record.id();
+        this.userId = record.userId();
+        this.appId = record.appId();
+        this.appName = record.appName() == null ? "" : record.appName();
+        this.scopes = String.join(", ", record.scopes());
+        this.grantedAt = DateUtils.format(DateUtils.fromEpochMilli(record.grantedAt()));
+        this.revokedAt = Optional.ofNullable(record.revokedAt())
                 .map(millis -> DateUtils.format(DateUtils.fromEpochMilli(millis))).orElse("");
-        this.source = record.getSource();
+        this.source = record.source();
+        this.revokeReason = record.revokeReason();
     }
 
     public String getId() {
@@ -110,5 +113,13 @@ public class ConsentExportRow {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    public String getRevokeReason() {
+        return revokeReason;
+    }
+
+    public void setRevokeReason(String revokeReason) {
+        this.revokeReason = revokeReason;
     }
 }

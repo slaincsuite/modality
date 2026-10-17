@@ -6,8 +6,11 @@ import cn.slainc.logger.oplog.AuditLog;
 import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.modules.open.dto.ReviewRequest;
+import cn.slainc.modules.open.excel.AppExportService;
 import cn.slainc.modules.open.service.app.OpenAppAdminService;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.web.http.DownloadResponses;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,8 +30,11 @@ public class OpenAppAdminController {
 
     private final OpenAppAdminService adminService;
 
-    public OpenAppAdminController(OpenAppAdminService adminService) {
+    private final AppExportService exportService;
+
+    public OpenAppAdminController(OpenAppAdminService adminService, AppExportService exportService) {
         this.adminService = adminService;
+        this.exportService = exportService;
     }
 
     @GetMapping("/page")
@@ -41,6 +47,20 @@ public class OpenAppAdminController {
                        @RequestParam(defaultValue = "1") long current,
                        @RequestParam(defaultValue = "10") long size) {
         return adminService.page(keyword, category, appType, status, ownerId, current, size);
+    }
+
+    @GetMapping("/export")
+    @RequirePermission(permissions = OpenKeys.PERMISSION_APP_QUERY)
+    @AuditLog(value = "导出开放平台应用清单", operation = AuditOperation.EXPORT, category = AuditCategory.DATA,
+            module = "open")
+    public void export(@RequestParam(required = false) String keyword,
+                       @RequestParam(required = false) String category,
+                       @RequestParam(required = false) String appType,
+                       @RequestParam(required = false) String status,
+                       @RequestParam(required = false) String ownerId,
+                       HttpServletResponse response) {
+        exportService.export(DownloadResponses.attachmentStream(response, "open-apps.xlsx",
+                DownloadResponses.CONTENT_TYPE_EXCEL), keyword, category, appType, status, ownerId);
     }
 
     @GetMapping("/{appId}")

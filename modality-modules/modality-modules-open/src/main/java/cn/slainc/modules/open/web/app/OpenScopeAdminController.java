@@ -7,6 +7,7 @@ import cn.slainc.logger.oplog.AuditLog;
 import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.open.OpenKeys;
 import cn.slainc.modules.open.dto.ScopeRequest;
+import cn.slainc.modules.open.service.app.ScopeGroupService;
 import cn.slainc.openapi.domain.OpenScope;
 import cn.slainc.openapi.domain.ScopeRiskLevel;
 import cn.slainc.openapi.spi.ScopeService;
@@ -33,8 +34,11 @@ public class OpenScopeAdminController {
 
     private final ScopeService scopeService;
 
-    public OpenScopeAdminController(ScopeService scopeService) {
+    private final ScopeGroupService groupService;
+
+    public OpenScopeAdminController(ScopeService scopeService, ScopeGroupService groupService) {
         this.scopeService = scopeService;
+        this.groupService = groupService;
     }
 
     @GetMapping
@@ -47,6 +51,9 @@ public class OpenScopeAdminController {
     @RequirePermission(permissions = OpenKeys.PERMISSION_SCOPE_QUERY)
     public Object groups() {
         Map<String, Long> counts = new LinkedHashMap<>();
+        for (var group : groupService.list()) {
+            counts.put(group.name(), 0L);
+        }
         for (OpenScope scope : scopeService.list()) {
             counts.merge(scope.getGroup(), 1L, Long::sum);
         }
@@ -92,8 +99,12 @@ public class OpenScopeAdminController {
         scope.setName(request.name());
         scope.setTitle(request.title().trim());
         scope.setDescription(request.description());
-        scope.setGroup(request.group() == null || request.group().isBlank()
-                ? OpenKeys.DEFAULT_SCOPE_GROUP : request.group().trim());
+        String group = request.group() == null || request.group().isBlank()
+                ? OpenKeys.DEFAULT_SCOPE_GROUP : request.group().trim();
+        if (group.length() > 64) {
+            throw new BizException(ResultCode.PARAM_BIND_ERROR, "Scope 分组名称不能超过 64 个字符");
+        }
+        scope.setGroup(group);
         scope.setRequiresAudit(requiresAudit);
         if (request.riskLevel() != null && !request.riskLevel().isBlank()) {
             try {

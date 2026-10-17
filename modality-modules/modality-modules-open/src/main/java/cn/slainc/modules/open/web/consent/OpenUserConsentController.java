@@ -34,7 +34,7 @@ public class OpenUserConsentController {
     public Object myConsents(@RequestParam(required = false) String appId,
                              @RequestParam(required = false) Boolean active) {
         String userId = requireUserId();
-        return consentAdminService.page(userId, appId, null, active, null, null, 1, 200).records();
+        return consentAdminService.listForUser(userId, appId, active);
     }
 
     @PostMapping("/{appId}")

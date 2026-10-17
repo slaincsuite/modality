@@ -7,6 +7,7 @@ import cn.slainc.modules.open.store.JdbcAppLogStore;
 import cn.slainc.modules.open.store.JdbcAppStore;
 import cn.slainc.modules.open.store.JdbcConsentStore;
 import cn.slainc.modules.open.store.JdbcCredentialStore;
+import cn.slainc.modules.open.store.JdbcScopeGroupStore;
 import cn.slainc.modules.open.store.JdbcScopeStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -44,6 +45,12 @@ public class OpenStoreAutoConfiguration {
     @ConditionalOnMissingBean(cn.slainc.openapi.spi.ScopeStore.class)
     public JdbcScopeStore openScopeStore(JdbcTemplate jdbcTemplate) {
         return new JdbcScopeStore(jdbcTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public JdbcScopeGroupStore openScopeGroupStore(JdbcTemplate jdbcTemplate) {
+        return new JdbcScopeGroupStore(jdbcTemplate);
     }
 
     @Bean
