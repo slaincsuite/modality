@@ -1,5 +1,6 @@
 package cn.slainc.thirdauth;
 
+import cn.slainc.core.exception.ThirdPartyException;
 import cn.slainc.thirdauth.binding.InMemoryThirdAccountBindingStore;
 import cn.slainc.thirdauth.config.ThirdAuthConfigRegistry;
 import cn.slainc.thirdauth.config.ThirdAuthProperties;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ThirdAuthQrFlowTest {
@@ -21,6 +23,8 @@ class ThirdAuthQrFlowTest {
     private ThirdAuthService service;
 
     private MemoryQrTicketStore qrTicketStore;
+
+    private InMemoryThirdAccountBindingStore bindingStore;
 
     @BeforeEach
     void setUp() {
@@ -34,9 +38,9 @@ class ThirdAuthQrFlowTest {
         config.setRedirectUri("https://cb.example.com/thirdauth/callback/feishu");
         properties.getPlatform().put(ThirdPartyPlatform.FEISHU.code(), config);
         qrTicketStore = new MemoryQrTicketStore();
+        bindingStore = new InMemoryThirdAccountBindingStore();
         service = new ThirdAuthService(new ThirdAuthConfigRegistry(properties, null), List.of(provider),
-                new MemoryStateStore(), qrTicketStore,
-                new InMemoryThirdAccountBindingStore(), properties);
+                new MemoryStateStore(), qrTicketStore, bindingStore, properties);
     }
 
     @Test
@@ -104,5 +108,34 @@ class ThirdAuthQrFlowTest {
         expired.setExpireAt(System.currentTimeMillis() - 1000);
         qrTicketStore.save(expired, 1);
         assertEquals(QrTicket.Status.EXPIRED.name(), service.pollQr("expired-ticket").getStatus());
+    }
+
+    @Test
+    void bindingQrBindsTargetAndCannotBeConsumedAsLogin() {
+        ThirdAuthService.ThirdAuthLoginContext context = service.beginQrBinding(ThirdPartyPlatform.FEISHU, "7001",
+                "TENANT_USER");
+        String ticketId = context.state();
+        QrTicket waiting = service.pollBindingQr(ThirdPartyPlatform.FEISHU, ticketId, "7001", "TENANT_USER")
+                .orElseThrow();
+        assertEquals(QrTicket.Purpose.BIND.name(), waiting.getPurpose());
+        assertEquals("7001", waiting.getTargetUserId());
+
+        service.handleCallback("feishu", Map.of("code", "bind-code", "state", ticketId));
+
+        QrTicket confirmed = service.pollBindingQr(ThirdPartyPlatform.FEISHU, ticketId, "7001", "TENANT_USER")
+                .orElseThrow();
+        assertEquals(QrTicket.Status.CONFIRMED.name(), confirmed.getStatus());
+        assertEquals("7001", service.bindingResult(confirmed).orElseThrow().getUserId());
+        assertTrue(service.consumeQr(ticketId).isEmpty(), "绑定二维码不能兑换登录会话");
+        assertEquals(1, bindingStore.listByUser("7001").size());
+    }
+
+    @Test
+    void bindingQrCannotBePolledByAnotherUser() {
+        String ticketId = service.beginQrBinding(ThirdPartyPlatform.FEISHU, "7001", "TENANT_USER").state();
+        assertThrows(ThirdPartyException.class,
+                () -> service.pollBindingQr(ThirdPartyPlatform.FEISHU, ticketId, "7002", "TENANT_USER"));
+        assertThrows(ThirdPartyException.class,
+                () -> service.pollBindingQr(ThirdPartyPlatform.FEISHU, ticketId, "7001", "PLATFORM_USER"));
     }
 }
