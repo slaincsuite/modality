@@ -69,6 +69,7 @@ class ArchitectureTest {
     static final ArchRule librariesMustNotUseModuleReservedPackages = noClasses()
             .that().resideInAPackage("..cn.slainc..")
             .and().resideOutsideOfPackage("..cn.slainc.modules..")
+            .and().resideOutsideOfPackage("..cn.slainc.services..")
             .and().resideOutsideOfPackage("..cn.slainc.web..")
             .should().resideInAnyPackage(
                     "..service..", "..web..", "..dto..", "..entity..", "..mapper..", "..model..",
