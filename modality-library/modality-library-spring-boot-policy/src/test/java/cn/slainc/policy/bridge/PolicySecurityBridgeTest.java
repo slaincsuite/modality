@@ -11,6 +11,7 @@ import cn.slainc.policy.domain.PolicyDocument;
 import cn.slainc.policy.domain.PolicyStatement;
 import cn.slainc.policy.domain.PolicySubjectType;
 import cn.slainc.policy.storage.InMemoryPolicyStore;
+import cn.slainc.policy.spi.PolicyGroupProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -62,5 +63,14 @@ class PolicySecurityBridgeTest {
     void emptyPolicyYieldsEmptyListsAndRolesAlwaysEmpty() {
         assertEquals(List.of(), bridge.getPermissions("1001", LoginType.TENANT_USER));
         assertEquals(List.of(), bridge.getRoles("1001", LoginType.TENANT_USER));
+    }
+
+    @Test
+    void groupProviderParticipatesInPermissionResolution() {
+        PolicyGroupProvider provider = (loginId, type) -> List.of("team-a");
+        PolicyEngine engine = new PolicyEngine(store, SingleProvider.of(new FakeConfigService()), new PolicyProperties());
+        PolicySecurityBridge groupBridge = new PolicySecurityBridge(engine, SingleProvider.of(provider));
+        savePolicy(PolicySubjectType.GROUP, "team-a", null, Effect.ALLOW, List.of("modality:team:*"));
+        assertEquals(List.of("modality:team:*"), groupBridge.getPermissions("1001", LoginType.TENANT_USER));
     }
 }
