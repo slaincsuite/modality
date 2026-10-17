@@ -8,11 +8,21 @@ public class LiveMonitorProperties {
 
     private boolean enabled = true;
 
+    private long maxPageSize = 100L;
+
     public boolean isEnabled() {
         return enabled;
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public long getMaxPageSize() {
+        return maxPageSize;
+    }
+
+    public void setMaxPageSize(long maxPageSize) {
+        this.maxPageSize = maxPageSize;
     }
 }

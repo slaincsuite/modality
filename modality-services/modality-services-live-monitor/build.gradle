@@ -7,6 +7,8 @@ description = '直播监控业务服务'
 dependencies {
     api project(':modality-library:modality-library-spring-boot-web')
     api project(':modality-library:modality-library-spring-boot-security')
+    implementation project(':modality-library:modality-library-spring-boot-logger')
+    implementation project(':modality-library:modality-library-spring-boot-mybatis')
 
     compileOnly libs.springdoc.openapi.starter.webmvc.ui
     testRuntimeOnly libs.h2
