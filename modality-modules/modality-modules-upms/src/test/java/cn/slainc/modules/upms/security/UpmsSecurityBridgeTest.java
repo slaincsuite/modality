@@ -1,9 +1,11 @@
 package cn.slainc.modules.upms.security;
 
+import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
 import cn.slainc.modules.upms.UpmsKeys;
 import cn.slainc.modules.upms.entity.UserRecord;
+import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.service.access.AccessControlService;
 import cn.slainc.modules.upms.service.permission.PermissionService;
 import cn.slainc.modules.upms.service.role.RoleService;
@@ -27,6 +29,12 @@ class UpmsSecurityBridgeTest extends UpmsIntegrationTestBase {
 
     @Autowired
     private UpmsAccountPasswordUpdater passwordUpdater;
+
+    @Autowired
+    private UpmsAccountRestrictionPort restrictionPort;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private UserService userService;
@@ -96,6 +104,65 @@ class UpmsSecurityBridgeTest extends UpmsIntegrationTestBase {
         assertThat(authProvider.findAccount("login-user", LoginType.TENANT_USER)).isNull();
         assertThat(authProvider.findAccountByUserId(user.getId(), LoginType.TENANT_ADMIN)).isNotNull();
         assertThat(authProvider.findAccount("anyone", LoginType.GUEST)).isNull();
+    }
+
+    @Test
+    void authProviderAcceptsPhoneInsideLoginType() {
+        String phone = "13800001111";
+        UserRecord user = userService.create("phone-login", null, "Plain#12345", null, phone, null,
+                LoginType.TENANT_USER, 1L, "admin");
+
+        PasswordAccount byPhone = authProvider.findAccount(phone, LoginType.TENANT_USER);
+        assertThat(byPhone).isNotNull();
+        assertThat(byPhone.userId()).isEqualTo(user.getId());
+        assertThat(byPhone.username()).isEqualTo("phone-login");
+        assertThat(authProvider.findAccount(phone, LoginType.TENANT_ADMIN)).isNull();
+    }
+
+    @Test
+    void phoneLoginIsScopedToSelectedTenant() {
+        String phone = "13800002222";
+        UserRecord tenantOne = userService.create("tenant-one-phone", null, "Plain#12345", null, phone, null,
+                LoginType.TENANT_USER, 1L, "admin");
+        UserRecord tenantTwo = TenantContext.callWith(2L, () -> userService.create("tenant-two-phone", null,
+                "Plain#12345", null, phone, null, LoginType.TENANT_USER, 2L, "admin"));
+
+        PasswordAccount selectedOne = authProvider.findAccount(phone, LoginType.TENANT_USER);
+        assertThat(selectedOne).isNotNull();
+        assertThat(selectedOne.userId()).isEqualTo(tenantOne.getId());
+
+        TenantContext.runWith(2L, () -> {
+            PasswordAccount selectedTwo = authProvider.findAccount(phone, LoginType.TENANT_USER);
+            assertThat(selectedTwo).isNotNull();
+            assertThat(selectedTwo.userId()).isEqualTo(tenantTwo.getId());
+        });
+        TenantContext.runWith(3L,
+                () -> assertThat(authProvider.findAccount(phone, LoginType.TENANT_USER)).isNull());
+    }
+
+    @Test
+    void duplicatePhoneFailsClosed() {
+        String phone = "13800003333";
+        userService.create("duplicate-phone-a", null, "Plain#12345", null, phone, null,
+                LoginType.TENANT_USER, 1L, "admin");
+        userService.create("duplicate-phone-b", null, "Plain#12345", null, phone, null,
+                LoginType.TENANT_USER, 1L, "admin");
+
+        assertThat(authProvider.findAccount(phone, LoginType.TENANT_USER)).isNull();
+    }
+
+    @Test
+    void phoneLoginAppliesAccountRestrictions() {
+        String phone = "13800004444";
+        UserRecord user = userService.create("restricted-phone", null, "Plain#12345", null, phone, null,
+                LoginType.TENANT_USER, 1L, "admin");
+        user.setAllowedIps("10.0.0.*");
+        user.setAllowedDevices("PC");
+        userMapper.updateById(user);
+
+        assertThat(restrictionPort.validate(phone, LoginType.TENANT_USER, "10.0.0.8", "PC")).isEmpty();
+        assertThat(restrictionPort.validate(phone, LoginType.TENANT_USER, "172.16.0.8", "MOBILE"))
+                .containsExactly("当前 IP 不在账号允许的 IP 范围内", "当前设备类型未被账号允许");
     }
 
     @Test

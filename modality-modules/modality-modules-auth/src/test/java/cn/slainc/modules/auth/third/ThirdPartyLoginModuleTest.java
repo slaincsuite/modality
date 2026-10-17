@@ -209,7 +209,8 @@ class ThirdPartyLoginModuleTest {
         assertThat(create.statusCode()).as(create.body()).isEqualTo(200);
         String ticketId = JsonPath.<String>read(create.body(), "$.data.ticketId");
         assertThat(JsonPath.<String>read(create.body(), "$.data.content")).contains(ticketId);
-        assertThat(JsonPath.<String>read(create.body(), "$.data.imageBase64")).isNotBlank();
+        assertThat(JsonPath.<String>read(create.body(), "$.data.imageBase64"))
+                .startsWith("data:image/png;base64,");
         assertThat(qrStatusOf(ticketId)).isEqualTo("WAITING");
 
         HttpResponse<String> early = post("/auth/third/feishu/qr/" + ticketId + "/exchange",

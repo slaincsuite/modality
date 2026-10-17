@@ -5,14 +5,15 @@ import cn.slainc.modules.auth.service.login.AuthLoginService;
 
 import cn.slainc.core.result.Result;
 import cn.slainc.security.StpKit;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "登录", description = "账号密码登录与验证码校验")
+@Tag(name = "登录", description = "账号或手机号密码登录与验证码校验")
 @RestController
 public class AuthLoginController {
 
@@ -22,7 +23,8 @@ public class AuthLoginController {
         this.loginService = loginService;
     }
 
-    public record LoginBody(String username, String password, String deviceType, String deviceId,
+    public record LoginBody(@Schema(description = "账号或手机号") String username, String password,
+                            String deviceType, String deviceId,
                             String captchaId, String captchaCode, Boolean remember) {
     }
 

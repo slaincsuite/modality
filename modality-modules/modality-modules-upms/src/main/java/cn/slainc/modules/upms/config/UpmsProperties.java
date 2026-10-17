@@ -9,6 +9,8 @@ public class UpmsProperties {
 
     private boolean autoCreateTable = true;
 
+    private long permissionCatalogTtlSeconds = 60;
+
     private final Account account = new Account();
 
     private final Stats stats = new Stats();
@@ -27,6 +29,14 @@ public class UpmsProperties {
 
     public void setAutoCreateTable(boolean autoCreateTable) {
         this.autoCreateTable = autoCreateTable;
+    }
+
+    public long getPermissionCatalogTtlSeconds() {
+        return permissionCatalogTtlSeconds;
+    }
+
+    public void setPermissionCatalogTtlSeconds(long permissionCatalogTtlSeconds) {
+        this.permissionCatalogTtlSeconds = permissionCatalogTtlSeconds;
     }
 
     public Account getAccount() {

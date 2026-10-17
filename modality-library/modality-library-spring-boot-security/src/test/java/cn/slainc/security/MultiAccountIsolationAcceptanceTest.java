@@ -61,7 +61,7 @@ class MultiAccountIsolationAcceptanceTest extends SecurityAcceptanceTestBase {
         var response = post("/auth/login", LoginType.GUEST, null, """
                 {"username":"anyone","password":"Password#123","deviceType":"","deviceId":""}
                 """);
-        assertThat(response.body()).contains("用户名或密码错误");
+        assertThat(response.body()).contains("账号或密码错误");
         assertThat(response.body()).doesNotContain("tokenValue");
     }
 

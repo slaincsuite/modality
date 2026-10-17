@@ -59,7 +59,9 @@ class QrLoginModuleTest {
         String content = JsonPath.<String>read(create.body(), "$.data.content");
         String image = JsonPath.<String>read(create.body(), "$.data.imageBase64");
         assertThat(content).contains(ticketId);
-        byte[] png = Base64.getDecoder().decode(image);
+        String prefix = "data:image/png;base64,";
+        assertThat(image).startsWith(prefix);
+        byte[] png = Base64.getDecoder().decode(image.substring(prefix.length()));
         assertThat(png.length).isGreaterThan(200);
         assertThat(new String(new byte[]{png[1], png[2], png[3]}, "US-ASCII")).isEqualTo("PNG");
 

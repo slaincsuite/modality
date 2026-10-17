@@ -45,6 +45,7 @@ import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
+import cn.slainc.modules.upms.service.permission.PermissionDelegationGuard;
 import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.security.kick.KickService;
 
@@ -91,13 +92,15 @@ public class UserService {
 
     private final ObjectProvider<PolicyBindingService> policyBindingService;
 
+    private final PermissionDelegationGuard delegationGuard;
+
     public UserService(UserMapper userMapper, UserRoleMapper userRoleMapper, UserGroupMemberMapper groupMemberMapper,
                        DeptMapper deptMapper, AccessControlMapper accessControlMapper,
                        PolicyBindingMapper policyBindingMapper,
                        UserLoginRecordMapper loginRecordMapper,
                        UpmsPermissionCacheInvalidator cacheInvalidator, ApplicationEventPublisher publisher) {
         this(userMapper, userRoleMapper, groupMemberMapper, deptMapper, accessControlMapper, policyBindingMapper,
-                loginRecordMapper, cacheInvalidator, publisher, null, null);
+                loginRecordMapper, cacheInvalidator, publisher, null, null, null);
     }
 
     public UserService(UserMapper userMapper, UserRoleMapper userRoleMapper, UserGroupMemberMapper groupMemberMapper,
@@ -105,7 +108,8 @@ public class UserService {
                        PolicyBindingMapper policyBindingMapper,
                        UserLoginRecordMapper loginRecordMapper,
                        UpmsPermissionCacheInvalidator cacheInvalidator, ApplicationEventPublisher publisher,
-                       KickService kickService, ObjectProvider<PolicyBindingService> policyBindingService) {
+                       KickService kickService, ObjectProvider<PolicyBindingService> policyBindingService,
+                       PermissionDelegationGuard delegationGuard) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.groupMemberMapper = groupMemberMapper;
@@ -117,6 +121,7 @@ public class UserService {
         this.publisher = publisher;
         this.kickService = kickService;
         this.policyBindingService = policyBindingService;
+        this.delegationGuard = delegationGuard;
     }
 
     public UserRecord create(String username, String nickname, String password, String email, String phone,
@@ -391,6 +396,9 @@ public class UserService {
     public void assignRoles(Long userId, List<Long> roleIds) {
         UserRecord user = requireActive(userId);
         List<Long> target = roleIds == null ? List.of() : roleIds;
+        if (delegationGuard != null) {
+            delegationGuard.requireAssignableRoles(target);
+        }
         List<UserRoleRecord> existing = userRoleMapper.selectList(
                 new LambdaQueryWrapper<UserRoleRecord>().eq(UserRoleRecord::getUserId, userId));
         Set<Long> keep = new LinkedHashSet<>(target);

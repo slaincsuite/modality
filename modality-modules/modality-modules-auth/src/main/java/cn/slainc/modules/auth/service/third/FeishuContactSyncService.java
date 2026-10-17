@@ -8,6 +8,7 @@ import cn.slainc.modules.auth.third.FeishuSyncRecord;
 import cn.slainc.thirdauth.ThirdPartyPlatform;
 import cn.slainc.thirdauth.config.ThirdAuthProperties;
 import cn.slainc.utils.json.JsonUtils;
+import tools.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,14 +140,17 @@ public class FeishuContactSyncService {
         String pageToken = null;
         for (int page = 0; page < MAX_PAGE_COUNT; page++) {
             String body = getUsers(token, pageToken);
-            int code = intValue(JsonUtils.path(body, "code"), -1);
+            JsonNode root = JsonUtils.readTree(body);
+            int code = responseCode(root);
             if (code != 0) {
-                throw new BizException(ResultCode.BAD_REQUEST, "飞书通讯录接口返回错误，错误码 " + code);
+                throw new BizException(ResultCode.BAD_REQUEST,
+                        "飞书通讯录接口返回错误，错误码 " + code + responseMessage(root));
             }
-            List<?> items = JsonUtils.path(body, "data.items", List.class);
-            total += items == null ? 0 : items.size();
-            boolean hasMore = Boolean.TRUE.equals(JsonUtils.path(body, "data.has_more", Boolean.class));
-            pageToken = JsonUtils.path(body, "data.page_token", String.class);
+            JsonNode data = root == null ? null : root.get("data");
+            JsonNode items = data == null ? null : data.get("items");
+            total += items != null && items.isArray() ? items.size() : 0;
+            boolean hasMore = data != null && data.path("has_more").asBoolean(false);
+            pageToken = text(data == null ? null : data.get("page_token"));
             if (!hasMore) {
                 return total;
             }
@@ -165,10 +169,12 @@ public class FeishuContactSyncService {
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
         String body = send(request);
-        int code = intValue(JsonUtils.path(body, "code"), -1);
-        String token = JsonUtils.path(body, "tenant_access_token", String.class);
+        JsonNode root = JsonUtils.readTree(body);
+        int code = responseCode(root);
+        String token = text(root == null ? null : root.get("tenant_access_token"));
         if (code != 0 || token == null || token.isBlank()) {
-            throw new BizException(ResultCode.BAD_REQUEST, "飞书租户访问令牌获取失败，错误码 " + code);
+            throw new BizException(ResultCode.BAD_REQUEST,
+                    "飞书租户访问令牌获取失败，错误码 " + code + responseMessage(root));
         }
         return token;
     }
@@ -190,8 +196,10 @@ public class FeishuContactSyncService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                String detail = responseDetail(response.body());
+                log.warn("飞书接口请求失败：HTTP {}，{}", response.statusCode(), detail);
                 throw new BizException(ResultCode.BAD_REQUEST,
-                        "飞书接口请求失败，HTTP 状态码 " + response.statusCode());
+                        "飞书接口请求失败，HTTP 状态码 " + response.statusCode() + detail);
             }
             return response.body();
         } catch (BizException e) {
@@ -208,19 +216,36 @@ public class FeishuContactSyncService {
         return Duration.ofSeconds(Math.max(1, properties.getRequestTimeoutSeconds()));
     }
 
-    private static int intValue(String value, int defaultValue) {
-        if (value == null || value.isBlank()) {
-            return defaultValue;
-        }
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
+    private static int responseCode(JsonNode root) {
+        return root == null ? -1 : root.path("code").asInt(-1);
     }
 
-    private static int intValue(Object value, int defaultValue) {
-        return value instanceof Number number ? number.intValue() : defaultValue;
+    static int responseCode(String body) {
+        return responseCode(JsonUtils.readTree(body));
+    }
+
+    static String responseDetail(String body) {
+        JsonNode root;
+        try {
+            root = JsonUtils.readTree(body);
+        } catch (RuntimeException e) {
+            return "";
+        }
+        int code = responseCode(root);
+        String message = responseMessage(root);
+        if (code < 0 && message.isBlank()) {
+            return "";
+        }
+        return (code < 0 ? "" : "，错误码 " + code) + message;
+    }
+
+    private static String responseMessage(JsonNode root) {
+        String message = root == null ? null : text(root.get("msg"));
+        return message == null || message.isBlank() ? "" : "：" + message;
+    }
+
+    private static String text(JsonNode node) {
+        return node == null || node.isNull() ? null : node.asString();
     }
 
     private static int value(Integer value) {

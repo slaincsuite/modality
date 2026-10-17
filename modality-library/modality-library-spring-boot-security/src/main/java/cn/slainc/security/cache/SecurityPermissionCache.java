@@ -5,10 +5,12 @@ import cn.slainc.security.config.SecurityConfigReader;
 import cn.slainc.security.config.SecurityKeys;
 import cn.slainc.security.spi.SecurityPermissionProvider;
 import cn.slainc.security.spi.SecurityPolicyProvider;
+import cn.slainc.security.spi.SecurityPermissionFilter;
 import cn.slainc.utils.json.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.time.Duration;
 import java.util.LinkedHashSet;
@@ -26,12 +28,21 @@ public class SecurityPermissionCache implements SecurityPermissionCacheRefresher
 
     private final SecurityConfigReader config;
 
+    private final ObjectProvider<SecurityPermissionFilter> permissionFilter;
+
     public SecurityPermissionCache(StringRedisTemplate redis, SecurityPermissionProvider permissionProvider,
                                    SecurityPolicyProvider policyProvider, SecurityConfigReader config) {
+        this(redis, permissionProvider, policyProvider, config, null);
+    }
+
+    public SecurityPermissionCache(StringRedisTemplate redis, SecurityPermissionProvider permissionProvider,
+                                   SecurityPolicyProvider policyProvider, SecurityConfigReader config,
+                                   ObjectProvider<SecurityPermissionFilter> permissionFilter) {
         this.redis = redis;
         this.permissionProvider = permissionProvider;
         this.policyProvider = policyProvider;
         this.config = config;
+        this.permissionFilter = permissionFilter;
     }
 
     public GrantedSet load(Object loginId, LoginType type) {
@@ -80,7 +91,13 @@ public class SecurityPermissionCache implements SecurityPermissionCacheRefresher
         if (policyRoles != null) {
             roles.addAll(policyRoles);
         }
-        return new GrantedSet(List.copyOf(permissions), List.copyOf(roles));
+        List<String> effectivePermissions = List.copyOf(permissions);
+        SecurityPermissionFilter filter = permissionFilter == null ? null : permissionFilter.getIfAvailable();
+        if (filter != null) {
+            List<String> filtered = filter.filter(loginId, type, effectivePermissions);
+            effectivePermissions = filtered == null ? List.of() : List.copyOf(filtered);
+        }
+        return new GrantedSet(effectivePermissions, List.copyOf(roles));
     }
 
     @Override

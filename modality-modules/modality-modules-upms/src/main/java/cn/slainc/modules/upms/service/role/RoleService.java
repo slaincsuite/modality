@@ -1,6 +1,7 @@
 package cn.slainc.modules.upms.service.role;
 
 import cn.slainc.modules.upms.service.common.SubtreeUtils;
+import cn.slainc.modules.upms.service.permission.PermissionDelegationGuard;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.exception.BizException;
@@ -71,12 +72,15 @@ public class RoleService {
 
     private final UpmsPermissionCacheInvalidator cacheInvalidator;
 
+    private final PermissionDelegationGuard delegationGuard;
+
     public RoleService(RoleMapper roleMapper, RolePermissionMapper rolePermissionMapper, UserRoleMapper userRoleMapper,
                        RoleDataScopeMapper roleDataScopeMapper, RoleGroupMapper roleGroupMapper,
                        UserGroupMapper groupMapper, UserGroupMemberMapper groupMemberMapper,
                        UserMapper userMapper, PermissionMapper permissionMapper,
                        PolicyBindingMapper policyBindingMapper,
-                       UpmsPermissionCacheInvalidator cacheInvalidator) {
+                       UpmsPermissionCacheInvalidator cacheInvalidator,
+                       PermissionDelegationGuard delegationGuard) {
         this.roleMapper = roleMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.userRoleMapper = userRoleMapper;
@@ -88,6 +92,7 @@ public class RoleService {
         this.permissionMapper = permissionMapper;
         this.policyBindingMapper = policyBindingMapper;
         this.cacheInvalidator = cacheInvalidator;
+        this.delegationGuard = delegationGuard;
     }
 
     public RoleRecord create(String code, String name, Long parentId, String dataScope, Integer sort, String tags,
@@ -214,6 +219,7 @@ public class RoleService {
     public void assignPermissions(Long roleId, List<Long> permissionIds) {
         RoleRecord role = require(roleId);
         List<Long> target = permissionIds == null ? List.of() : permissionIds;
+        delegationGuard.requireGrantablePermissions(target);
         List<RolePermissionRecord> existing = rolePermissionMapper.selectList(
                 new LambdaQueryWrapper<RolePermissionRecord>().eq(RolePermissionRecord::getRoleId, roleId));
         Set<Long> keep = new LinkedHashSet<>(target);
@@ -310,6 +316,7 @@ public class RoleService {
     @Transactional
     public void assignGroups(Long roleId, List<Long> groupIds) {
         RoleRecord role = require(roleId);
+        delegationGuard.requireAssignableRoles(List.of(roleId));
         List<Long> target = groupIds == null ? List.of() : new ArrayList<>(new LinkedHashSet<>(groupIds));
         if (!target.isEmpty()) {
             long count = groupMapper.selectCount(new LambdaQueryWrapper<UserGroupRecord>()

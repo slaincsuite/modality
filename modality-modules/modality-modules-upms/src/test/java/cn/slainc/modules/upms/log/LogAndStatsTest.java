@@ -46,7 +46,7 @@ class LogAndStatsTest extends UpmsIntegrationTestBase {
                 "admin");
         publisher.publishEvent(LoginEvent.success(user.getId(), "logger", LoginType.TENANT_USER, "10.1.1.1"));
         publisher.publishEvent(cn.slainc.core.event.LoginEvent.failure("logger", LoginType.TENANT_USER, "10.1.1.2",
-                "用户名或密码错误"));
+                "账号或密码错误"));
         List<cn.slainc.modules.upms.entity.UserLoginRecordRecord> records = loginRecordService.list(null, "logger",
                 null, null, null, null, null, 10);
         assertThat(records).hasSize(2);

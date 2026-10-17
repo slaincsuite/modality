@@ -113,4 +113,46 @@ class UserSettingsPreferenceBoundaryTest extends UpmsIntegrationTestBase {
                 new PermissionBoundaryRequest(List.of("boundary:missing"), List.of())))
                 .isInstanceOf(BizException.class).hasMessageContaining("不存在");
     }
+
+    @Test
+    void permissionBoundarySupportsWildcardsAndRefreshesCatalogAfterPermissionCreation() {
+        permissionService.create("catalog:read", "目录读", "API", null, null, null);
+        permissionService.create("catalog:write", "目录写", "API", null, null, null);
+        UserRecord user = userService.create("wildcard-user", null, null, null, null, null,
+                LoginType.TENANT_USER, 1L, "admin");
+        RoleRecord role = roleService.create("wildcard-role", "通配角色", null, null, null, null, null);
+        roleService.assignPermissions(role.getId(), permissionService.search(null, null).stream()
+                .filter(permission -> permission.getCode().startsWith("catalog:"))
+                .map(PermissionRecord::getId).toList());
+        userService.assignRoles(user.getId(), List.of(role.getId()));
+
+        boundaryService.update(user.getId(),
+                new PermissionBoundaryRequest(List.of("catalog:*"), List.of("catalog:write")));
+        assertThat(boundaryService.allows(user.getId(), "catalog:read")).isTrue();
+        assertThat(boundaryService.allows(user.getId(), "catalog:write")).isFalse();
+
+        permissionService.create("catalog:delete", "目录删", "API", null, null, null);
+        boundaryService.update(user.getId(),
+                new PermissionBoundaryRequest(List.of("catalog:delete"), List.of()));
+        assertThat(boundaryService.allows(user.getId(), "catalog:delete")).isTrue();
+
+        assertThatThrownBy(() -> boundaryService.update(user.getId(),
+                new PermissionBoundaryRequest(List.of("missing:*"), List.of())))
+                .isInstanceOf(BizException.class).hasMessageContaining("通配符没有匹配");
+    }
+
+    @Test
+    void permissionBoundaryAlsoFiltersPolicyGrantedPermissionsAndKeepsPolicyDenies() {
+        permissionService.create("merged:read", "合并读", "API", null, null, null);
+        permissionService.create("merged:delete", "合并删", "API", null, null, null);
+        UserRecord user = userService.create("merged-user", null, null, null, null, null,
+                LoginType.TENANT_USER, 1L, "admin");
+        boundaryService.update(user.getId(),
+                new PermissionBoundaryRequest(List.of("merged:read"), List.of("merged:delete")));
+
+        List<String> filtered = boundaryService.filter(user.getId(), LoginType.TENANT_USER,
+                List.of("merged:read", "merged:write", "merged:delete", "!merged:write"));
+
+        assertThat(filtered).containsExactly("merged:read", "!merged:write");
+    }
 }

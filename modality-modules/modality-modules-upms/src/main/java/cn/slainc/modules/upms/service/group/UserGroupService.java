@@ -15,6 +15,7 @@ import cn.slainc.modules.upms.mapper.UserGroupMapper;
 import cn.slainc.modules.upms.mapper.UserGroupMemberMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
+import cn.slainc.modules.upms.service.permission.PermissionDelegationGuard;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,15 +39,19 @@ public class UserGroupService {
 
     private final UpmsPermissionCacheInvalidator cacheInvalidator;
 
+    private final PermissionDelegationGuard delegationGuard;
+
     public UserGroupService(UserGroupMapper groupMapper, UserGroupMemberMapper memberMapper, UserMapper userMapper,
                             RoleMapper roleMapper, RoleGroupMapper roleGroupMapper,
-                            UpmsPermissionCacheInvalidator cacheInvalidator) {
+                            UpmsPermissionCacheInvalidator cacheInvalidator,
+                            PermissionDelegationGuard delegationGuard) {
         this.groupMapper = groupMapper;
         this.memberMapper = memberMapper;
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.roleGroupMapper = roleGroupMapper;
         this.cacheInvalidator = cacheInvalidator;
+        this.delegationGuard = delegationGuard;
     }
 
     public UserGroupRecord create(String name, String remark) {
@@ -97,6 +102,9 @@ public class UserGroupService {
     @Transactional
     public void assignMembers(Long groupId, List<Long> userIds) {
         require(groupId);
+        delegationGuard.requireAssignableRoles(roleGroupMapper.selectList(
+                        new LambdaQueryWrapper<RoleGroupRecord>().eq(RoleGroupRecord::getGroupId, groupId))
+                .stream().map(RoleGroupRecord::getRoleId).toList());
         List<Long> target = userIds == null ? List.of() : userIds;
         List<UserGroupMemberRecord> existing = memberMapper.selectList(
                 new LambdaQueryWrapper<UserGroupMemberRecord>().eq(UserGroupMemberRecord::getGroupId, groupId));
@@ -199,6 +207,7 @@ public class UserGroupService {
     public void assignRoles(Long groupId, List<Long> roleIds) {
         UserGroupRecord group = require(groupId);
         List<Long> target = roleIds == null ? List.of() : roleIds.stream().distinct().toList();
+        delegationGuard.requireAssignableRoles(target);
         if (!target.isEmpty()) {
             long count = roleMapper.selectCount(new LambdaQueryWrapper<RoleRecord>()
                     .in(RoleRecord::getId, target));

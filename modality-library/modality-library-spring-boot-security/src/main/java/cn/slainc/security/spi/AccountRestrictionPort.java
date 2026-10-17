@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface AccountRestrictionPort {
 
-    List<String> validate(String username, LoginType type, String clientIp, String deviceType);
+    List<String> validate(String loginIdentity, LoginType type, String clientIp, String deviceType);
 }

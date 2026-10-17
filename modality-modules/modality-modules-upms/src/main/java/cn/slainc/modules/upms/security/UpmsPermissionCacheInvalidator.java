@@ -90,6 +90,21 @@ public class UpmsPermissionCacheInvalidator {
         }
     }
 
+    public void invalidateAllPermissionCaches() {
+        StringRedisTemplate template = redis == null ? null : redis.getIfAvailable();
+        if (template == null) {
+            SecurityPermissionCache resolved = cache.getIfAvailable();
+            if (resolved != null) {
+                log.warn("未装配 Redis，无法批量清空策略权限缓存，将依赖短 TTL 自然失效");
+            }
+            return;
+        }
+        java.util.Set<String> keys = template.keys(SecurityKeys.PREFIX + "perm:*");
+        if (keys != null && !keys.isEmpty()) {
+            template.delete(keys);
+        }
+    }
+
     private boolean batchDelete(LoginType type, List<Long> userIds) {
         StringRedisTemplate template = redis == null ? null : redis.getIfAvailable();
         if (template == null) {

@@ -25,7 +25,9 @@ public class CurrentUserAccessController {
     @GetMapping("/permissions")
     public List<String> permissions() {
         requireLogin();
-        return List.copyOf(UserContext.permissions());
+        return UserContext.permissions().stream()
+                .filter(permission -> !permission.startsWith("!"))
+                .toList();
     }
 
     @GetMapping("/groups")

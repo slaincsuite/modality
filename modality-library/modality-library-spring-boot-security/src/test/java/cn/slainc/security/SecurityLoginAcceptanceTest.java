@@ -65,7 +65,7 @@ class SecurityLoginAcceptanceTest extends SecurityAcceptanceTestBase {
                 {"username":"ghost","password":"whatever","deviceType":"","deviceId":""}
                 """);
         assertThat(codeOf(response)).as(response.body()).isEqualTo(400100);
-        assertThat(messageOf(response)).contains("用户名或密码错误");
+        assertThat(messageOf(response)).contains("账号或密码错误");
     }
 
     @Test

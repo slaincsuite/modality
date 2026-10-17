@@ -121,7 +121,8 @@ public class SecurityProperties {
     public static class Filter {
 
         private List<String> excludePatterns = List.of("/actuator/health", "/actuator/health/**", "/actuator/info",
-                "/favicon.ico", "/error", "/captcha/**", "/auth/login", "/auth/refresh", "/auth/logout",
+                "/favicon.ico", "/error", "/captcha/**", "/auth/login", "/tenant/login-options", "/auth/refresh",
+                "/auth/logout",
                 "/auth/qrcode/**", "/auth/third/**", "/auth/token/refresh", "/oauth2/jwks", "/oauth2/token",
                 "/oauth2/userinfo", "/sso/**");
 

@@ -54,4 +54,15 @@ class FeishuContactSyncServiceTest {
                 "SELECT message FROM t_auth_third_sync_record WHERE status = 'FAILED'", String.class))
                 .contains("App ID 与 App Secret");
     }
+
+    @Test
+    void numericFeishuResponseCodeIsParsedWithoutStringCast() {
+        assertThat(FeishuContactSyncService.responseCode("{\"code\":0,\"msg\":\"ok\"}")).isZero();
+        assertThat(FeishuContactSyncService.responseCode("{\"code\":40001,\"msg\":\"invalid token\"}"))
+                .isEqualTo(40001);
+        assertThat(FeishuContactSyncService.responseDetail(
+                "{\"code\":10014,\"msg\":\"app secret invalid\"}"))
+                .contains("10014")
+                .contains("app secret invalid");
+    }
 }

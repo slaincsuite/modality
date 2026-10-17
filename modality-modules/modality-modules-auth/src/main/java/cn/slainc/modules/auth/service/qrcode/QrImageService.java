@@ -47,7 +47,7 @@ public class QrImageService {
             }
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             ImageIO.write(image, "png", output);
-            return Base64.getEncoder().encodeToString(output.toByteArray());
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(output.toByteArray());
         } catch (BizException e) {
             throw e;
         } catch (Exception e) {

@@ -101,6 +101,7 @@ public class SecurityLoginService {
                 return fail(request, type, clientIp, credentialFailureMessage(lockService.recordFailure(type,
                         request.username())));
             }
+            Long tenantId = resolveTenant(type, account);
             Object loginId = account.userId() == null ? account.username() : account.userId();
             if (!account.enabled()) {
                 return fail(request, type, clientIp, "账号已被禁用，禁止登录");
@@ -120,9 +121,9 @@ public class SecurityLoginService {
             }
             String deviceId = resolveDeviceId(request);
             SaLoginParameter parameter = buildParameter(type, request, account, clientIp, userAgent, deviceType,
-                    deviceId);
+                    deviceId, tenantId);
             StpKit.of(type).login(loginId, parameter);
-            bindSessionTenant(type);
+            bindSessionTenant(type, tenantId);
             checkDeviceOverflowAfterLogin(type, loginId, deviceType);
             checkTravelAlarm(type, loginId, clientIp);
             lockService.reset(type, loginId);
@@ -141,11 +142,10 @@ public class SecurityLoginService {
     }
 
     private static String credentialFailureMessage(int remaining) {
-        return remaining <= 0 ? "用户名或密码错误，账号已锁定" : "用户名或密码错误，剩余尝试次数 " + remaining;
+        return remaining <= 0 ? "账号或密码错误，账号已锁定" : "账号或密码错误，剩余尝试次数 " + remaining;
     }
 
-    private void bindSessionTenant(LoginType type) {
-        Long tenantId = TenantContext.get();
+    private void bindSessionTenant(LoginType type, Long tenantId) {
         if (tenantId == null) {
             return;
         }
@@ -163,15 +163,16 @@ public class SecurityLoginService {
     }
 
     private SaLoginParameter buildParameter(LoginType type, LoginRequest request, PasswordAccount account,
-                                            String clientIp, String userAgent, String deviceType, String deviceId) {
+                                            String clientIp, String userAgent, String deviceType, String deviceId,
+                                            Long tenantId) {
         SaLoginParameter parameter = new SaLoginParameter();
         parameter.setDeviceType(deviceType);
         parameter.setDeviceId(deviceId);
         parameter.setExtra("username", account.username());
-        if (TenantContext.get() != null) {
-            parameter.setExtra("tenantId", TenantContext.get());
+        if (tenantId != null) {
+            parameter.setExtra("tenantId", tenantId);
             // 账号级 extra 在默认 StpLogic 下不会落库，租户还必须写进 terminal extraData 才能被会话查询与按租户统计读到
-            parameter.setTerminalExtra("tenantId", TenantContext.get());
+            parameter.setTerminalExtra("tenantId", tenantId);
         }
         parameter.setTerminalExtra("ip", clientIp == null ? "" : clientIp);
         parameter.setTerminalExtra("ua", userAgent == null ? "" : userAgent);
@@ -184,6 +185,18 @@ public class SecurityLoginService {
         parameter.setIsShare(false);
         parameter.setMaxLoginCount(-1);
         return parameter;
+    }
+
+    private Long resolveTenant(LoginType type, PasswordAccount account) {
+        Long selected = TenantContext.get();
+        if (selected == null) {
+            return account.tenantId();
+        }
+        if (type != LoginType.PLATFORM_ADMIN && account.tenantId() != null
+                && !selected.equals(account.tenantId())) {
+            throw new BizException("账号不属于所选租户，请重新选择租户");
+        }
+        return selected;
     }
 
     private String resolveDeviceId(LoginRequest request) {

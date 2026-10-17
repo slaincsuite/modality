@@ -6,6 +6,7 @@ import cn.slainc.modules.tenant.plan.TenantPlanAdapter;
 import cn.slainc.modules.tenant.service.manage.TenantManageService;
 import cn.slainc.modules.tenant.service.plan.TenantPlanService;
 import cn.slainc.modules.tenant.web.lifecycle.TenantLifecycleController;
+import cn.slainc.modules.tenant.web.login.LoginTenantController;
 import cn.slainc.modules.tenant.web.manage.TenantManageController;
 import cn.slainc.modules.tenant.web.plan.TenantPlanBindController;
 import cn.slainc.modules.tenant.web.plan.TenantPlanController;
@@ -35,7 +36,7 @@ import org.springframework.context.annotation.Import;
 @EnableConfigurationProperties(TenantModuleProperties.class)
 @Import({TenantManageController.class, TenantLifecycleController.class, TenantQueryController.class,
         TenantQuotaController.class, TenantStatsController.class, TenantPlanController.class,
-        TenantPlanBindController.class})
+        TenantPlanBindController.class, LoginTenantController.class})
 public class TenantModuleAutoConfiguration {
 
     @Bean

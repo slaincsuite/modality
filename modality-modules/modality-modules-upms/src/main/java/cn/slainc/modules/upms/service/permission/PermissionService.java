@@ -40,21 +40,26 @@ public class PermissionService {
 
     private final UpmsPermissionCacheInvalidator cacheInvalidator;
 
+    private final PermissionCodeCatalog permissionCodeCatalog;
+
     public PermissionService(PermissionMapper permissionMapper, RolePermissionMapper rolePermissionMapper,
                              UserRoleMapper userRoleMapper, RoleMapper roleMapper, MenuMapper menuMapper,
-                             UpmsPermissionCacheInvalidator cacheInvalidator) {
+                             UpmsPermissionCacheInvalidator cacheInvalidator,
+                             PermissionCodeCatalog permissionCodeCatalog) {
         this.permissionMapper = permissionMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.userRoleMapper = userRoleMapper;
         this.roleMapper = roleMapper;
         this.menuMapper = menuMapper;
         this.cacheInvalidator = cacheInvalidator;
+        this.permissionCodeCatalog = permissionCodeCatalog;
     }
 
     public PermissionRecord create(String code, String name, String type, Long parentId, Integer sort, String remark) {
         if (code == null || code.isBlank() || name == null || name.isBlank()) {
             throw new BizException("权限编码与名称不能为空");
         }
+        validateCode(code);
         requireType(type == null ? PermissionRecord.TYPE_MENU : type);
         requireParentAlive(parentId);
         long now = System.currentTimeMillis();
@@ -73,6 +78,7 @@ public class PermissionService {
         } catch (org.springframework.dao.DuplicateKeyException e) {
             throw new BizException("权限编码 " + code + " 已存在");
         }
+        permissionCodeCatalog.invalidate();
         return permission;
     }
 
@@ -105,6 +111,7 @@ public class PermissionService {
         }
         permission.setUpdateTime(System.currentTimeMillis());
         permissionMapper.updateById(permission);
+        permissionCodeCatalog.invalidate();
         invalidateHoldersOf(id);
         return permission;
     }
@@ -123,6 +130,7 @@ public class PermissionService {
         permissionMapper.deleteById(id);
         rolePermissionMapper.delete(new LambdaQueryWrapper<RolePermissionRecord>()
                 .eq(RolePermissionRecord::getPermissionId, id));
+        permissionCodeCatalog.invalidate();
         invalidateUsersOfRoles(holderRoles);
     }
 
@@ -249,6 +257,20 @@ public class PermissionService {
         if (!PermissionRecord.TYPE_MENU.equals(type) && !PermissionRecord.TYPE_BUTTON.equals(type)
                 && !PermissionRecord.TYPE_API.equals(type) && !PermissionRecord.TYPE_DATA.equals(type)) {
             throw new BizException("非法的权限类型: " + type + "，只允许 MENU、BUTTON、API、DATA");
+        }
+    }
+
+    private void validateCode(String code) {
+        String value = code.trim();
+        if (value.length() > 128) {
+            throw new BizException("权限编码最多 128 个字符");
+        }
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (current == '!' || current == '*' || Character.isWhitespace(current)
+                    || Character.isISOControl(current)) {
+                throw new BizException("权限编码不能包含通配符、否定前缀、空白或控制字符");
+            }
         }
     }
 }

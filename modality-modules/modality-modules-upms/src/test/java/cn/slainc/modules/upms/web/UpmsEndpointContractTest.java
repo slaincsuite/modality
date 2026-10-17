@@ -8,11 +8,13 @@ import cn.slainc.modules.upms.web.menu.MenuManageController;
 import cn.slainc.modules.upms.web.permission.PermissionManageController;
 import cn.slainc.modules.upms.web.role.RoleManageController;
 import cn.slainc.modules.upms.web.self.UserPreferencesController;
+import cn.slainc.modules.upms.web.self.SelfProfileController;
 import cn.slainc.modules.upms.web.settings.UserSettingsController;
 import cn.slainc.modules.upms.web.user.TenantUserController;
 import cn.slainc.modules.upms.web.user.UserManageController;
 import cn.slainc.modules.upms.web.user.UserStatsController;
 import cn.slainc.security.annotation.RequirePermission;
+import cn.slainc.security.annotation.RequireLogin;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
@@ -78,6 +80,18 @@ class UpmsEndpointContractTest {
         }
         Method preferences = endpoint("UserPreferencesController#update");
         assertThat(preferences.getAnnotation(RequirePermission.class)).isNull();
+
+        for (String name : new String[]{"get", "update", "updateAvatar"}) {
+            Method method = endpoint("SelfProfileController#" + name);
+            assertThat(method.getAnnotation(RequireLogin.class)).as(name + " 应仅要求登录").isNotNull();
+            assertThat(method.getAnnotation(RequirePermission.class)).as(name + " 不应要求管理权限").isNull();
+        }
+        assertThat(endpoint("SelfProfileController#get").getReturnType().getSimpleName())
+                .isEqualTo("SelfProfileView");
+        assertThat(endpoint("SelfProfileController#update").getReturnType().getSimpleName())
+                .isEqualTo("SelfProfileView");
+        assertThat(endpoint("SelfProfileController#update").getAnnotation(AuditLog.class)).isNotNull();
+        assertThat(endpoint("SelfProfileController#updateAvatar").getAnnotation(AuditLog.class)).isNotNull();
     }
 
     private Method endpoint(String key) {
@@ -91,6 +105,7 @@ class UpmsEndpointContractTest {
             case "UserManageController" -> UserManageController.class;
             case "UserSettingsController" -> UserSettingsController.class;
             case "UserPreferencesController" -> UserPreferencesController.class;
+            case "SelfProfileController" -> SelfProfileController.class;
             case "TenantUserController" -> TenantUserController.class;
             case "UserStatsController" -> UserStatsController.class;
             default -> throw new IllegalArgumentException("未知控制器: " + parts[0]);

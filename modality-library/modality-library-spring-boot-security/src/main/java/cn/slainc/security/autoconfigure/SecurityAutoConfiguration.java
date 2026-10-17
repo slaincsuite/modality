@@ -32,6 +32,7 @@ import cn.slainc.security.spi.AccountPasswordUpdater;
 import cn.slainc.security.spi.ConfigAccountAuthProvider;
 import cn.slainc.security.spi.SecurityPermissionProvider;
 import cn.slainc.security.spi.SecurityPolicyProvider;
+import cn.slainc.security.spi.SecurityPermissionFilter;
 import cn.slainc.security.stp.SecurityStpLogic;
 import cn.slainc.security.stp.StpInterfaceImpl;
 import org.springframework.beans.factory.ObjectProvider;
@@ -171,8 +172,10 @@ public class SecurityAutoConfiguration {
     public SecurityPermissionCache securityPermissionCache(StringRedisTemplate redisTemplate,
                                                            SecurityPermissionProvider permissionProvider,
                                                            SecurityPolicyProvider policyProvider,
-                                                           SecurityConfigReader config) {
-        return new SecurityPermissionCache(redisTemplate, permissionProvider, policyProvider, config);
+                                                          SecurityConfigReader config,
+                                                          ObjectProvider<SecurityPermissionFilter> permissionFilter) {
+        return new SecurityPermissionCache(redisTemplate, permissionProvider, policyProvider, config,
+                permissionFilter);
     }
 
     @Bean

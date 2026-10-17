@@ -97,7 +97,8 @@ class UserServiceTest extends UpmsIntegrationTestBase {
     @Test
     void softDeleteRemovesRoleBindingsAndBlocksReuse() {
         UserRecord user = userService.create("dave", null, null, null, null, null, LoginType.TENANT_USER, 1L, "admin");
-        userService.assignRoles(user.getId(), List.of(1L));
+        RoleRecord role = roleService.create("delete-role", "注销角色", null, null, null, null, null);
+        userService.assignRoles(user.getId(), List.of(role.getId()));
         userService.delete(user.getId());
         assertThat(userRoleMapper.selectCount(new LambdaQueryWrapper<UserRoleRecord>()
                 .eq(UserRoleRecord::getUserId, user.getId()))).isZero();
@@ -126,10 +127,12 @@ class UserServiceTest extends UpmsIntegrationTestBase {
                 "admin");
         UserRecord target = userService.create("hank", null, null, null, null, null, LoginType.TENANT_USER, 1L,
                 "admin");
-        userService.assignRoles(source.getId(), List.of(9L));
+        RoleRecord role = roleService.create("merge-role", "合并角色", null, null, null, null, null);
+        userService.assignRoles(source.getId(), List.of(role.getId()));
         userService.merge(source.getId(), target.getId());
         assertThat(userRoleMapper.selectCount(new LambdaQueryWrapper<UserRoleRecord>()
-                .eq(UserRoleRecord::getUserId, target.getId()).eq(UserRoleRecord::getRoleId, 9L))).isEqualTo(1);
+                .eq(UserRoleRecord::getUserId, target.getId()).eq(UserRoleRecord::getRoleId, role.getId())))
+                .isEqualTo(1);
         assertThat(userRoleMapper.selectCount(new LambdaQueryWrapper<UserRoleRecord>()
                 .eq(UserRoleRecord::getUserId, source.getId()))).isZero();
         UserRecord merged = userService.get(target.getId());

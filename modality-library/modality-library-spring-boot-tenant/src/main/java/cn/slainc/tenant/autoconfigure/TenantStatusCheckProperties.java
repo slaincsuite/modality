@@ -12,7 +12,7 @@ public class TenantStatusCheckProperties {
     private boolean enabled = true;
 
     private List<String> allowedPaths = new ArrayList<>(List.of("/actuator/health", "/actuator/info", "/actuator/health/**",
-            "/auth/login", "/auth/logout", "/auth/captcha", "/auth/refresh"));
+            "/auth/login", "/tenant/login-options", "/auth/logout", "/auth/captcha", "/auth/refresh"));
 
     private long cacheMaximumSize = 10_000L;
 

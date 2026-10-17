@@ -37,12 +37,15 @@ import cn.slainc.modules.upms.security.UpmsAccountPasswordUpdater;
 import cn.slainc.modules.upms.security.UpmsAccountRestrictionPort;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
 import cn.slainc.modules.upms.security.UpmsPermissionProvider;
+import cn.slainc.modules.upms.security.PolicyPermissionCacheListener;
 import cn.slainc.modules.upms.service.access.AccessControlService;
 import cn.slainc.modules.upms.service.dept.DeptService;
 import cn.slainc.modules.upms.service.menu.MenuService;
 import cn.slainc.modules.upms.service.self.FavoriteService;
 import cn.slainc.modules.upms.service.self.RecentVisitService;
 import cn.slainc.modules.upms.service.permission.PermissionService;
+import cn.slainc.modules.upms.service.permission.PermissionCodeCatalog;
+import cn.slainc.modules.upms.service.permission.PermissionDelegationGuard;
 import cn.slainc.modules.upms.service.role.RoleService;
 import cn.slainc.modules.upms.service.policy.UpmsPolicyBindingStore;
 import cn.slainc.modules.upms.service.registry.SystemRegistryService;
@@ -69,6 +72,7 @@ import cn.slainc.modules.upms.web.user.UserStatsController;
 import cn.slainc.modules.upms.web.self.FavoriteController;
 import cn.slainc.modules.upms.web.self.RecentVisitController;
 import cn.slainc.modules.upms.web.self.CurrentUserAccessController;
+import cn.slainc.modules.upms.web.self.SelfProfileController;
 import cn.slainc.modules.upms.web.self.UserPreferencesController;
 import cn.slainc.modules.upms.web.settings.UserSettingsController;
 import cn.slainc.modules.upms.web.user.TenantUserController;
@@ -110,7 +114,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
         SystemRegistryController.class, AccessControlController.class, PolicyBindingController.class,
         OperationLogController.class, LoginRecordController.class, UserStatsController.class,
         FavoriteController.class, RecentVisitController.class, UserSettingsController.class,
-        UserPreferencesController.class, CurrentUserAccessController.class, TenantUserController.class})
+        UserPreferencesController.class, CurrentUserAccessController.class, SelfProfileController.class,
+        TenantUserController.class})
 public class UpmsAutoConfiguration {
 
     @Bean
@@ -143,8 +148,8 @@ public class UpmsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(AccountRestrictionPort.class)
-    public UpmsAccountRestrictionPort upmsAccountRestrictionPort(UserService userService) {
-        return new UpmsAccountRestrictionPort(userService);
+    public UpmsAccountRestrictionPort upmsAccountRestrictionPort(UserService userService, UserMapper userMapper) {
+        return new UpmsAccountRestrictionPort(userService, userMapper);
     }
 
     @Bean
@@ -173,14 +178,38 @@ public class UpmsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public PolicyPermissionCacheListener policyPermissionCacheListener(
+            UpmsPermissionCacheInvalidator invalidator) {
+        return new PolicyPermissionCacheListener(invalidator);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PermissionDelegationGuard permissionDelegationGuard(RoleMapper roleMapper,
+                                                               RolePermissionMapper rolePermissionMapper,
+                                                               PermissionMapper permissionMapper) {
+        return new PermissionDelegationGuard(roleMapper, rolePermissionMapper, permissionMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public RoleService roleService(RoleMapper roleMapper, RolePermissionMapper rolePermissionMapper,
                                    UserRoleMapper userRoleMapper, RoleDataScopeMapper roleDataScopeMapper,
                                    RoleGroupMapper roleGroupMapper, UserGroupMapper groupMapper,
                                    UserGroupMemberMapper groupMemberMapper, UserMapper userMapper,
                                    PermissionMapper permissionMapper, PolicyBindingMapper policyBindingMapper,
-                                   UpmsPermissionCacheInvalidator cacheInvalidator) {
+                                   UpmsPermissionCacheInvalidator cacheInvalidator,
+                                   PermissionDelegationGuard delegationGuard) {
         return new RoleService(roleMapper, rolePermissionMapper, userRoleMapper, roleDataScopeMapper, roleGroupMapper,
-                groupMapper, groupMemberMapper, userMapper, permissionMapper, policyBindingMapper, cacheInvalidator);
+                groupMapper, groupMemberMapper, userMapper, permissionMapper, policyBindingMapper, cacheInvalidator,
+                delegationGuard);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PermissionCodeCatalog permissionCodeCatalog(PermissionMapper permissionMapper,
+                                                       UpmsProperties properties) {
+        return new PermissionCodeCatalog(permissionMapper, properties.getPermissionCatalogTtlSeconds());
     }
 
     @Bean
@@ -190,9 +219,10 @@ public class UpmsAutoConfiguration {
                                                UserRoleMapper userRoleMapper,
                                                RoleMapper roleMapper,
                                                cn.slainc.modules.upms.mapper.MenuMapper menuMapper,
-                                               UpmsPermissionCacheInvalidator cacheInvalidator) {
+                                               UpmsPermissionCacheInvalidator cacheInvalidator,
+                                               PermissionCodeCatalog permissionCodeCatalog) {
         return new PermissionService(permissionMapper, rolePermissionMapper, userRoleMapper, roleMapper, menuMapper,
-                cacheInvalidator);
+                cacheInvalidator, permissionCodeCatalog);
     }
 
     @Bean
@@ -226,9 +256,10 @@ public class UpmsAutoConfiguration {
                                              cn.slainc.modules.upms.mapper.UserGroupMemberMapper memberMapper,
                                              UserMapper userMapper, RoleMapper roleMapper,
                                              RoleGroupMapper roleGroupMapper,
-                                             UpmsPermissionCacheInvalidator cacheInvalidator) {
+                                             UpmsPermissionCacheInvalidator cacheInvalidator,
+                                             PermissionDelegationGuard delegationGuard) {
         return new UserGroupService(groupMapper, memberMapper, userMapper, roleMapper, roleGroupMapper,
-                cacheInvalidator);
+                cacheInvalidator, delegationGuard);
     }
 
     @Bean
@@ -257,10 +288,11 @@ public class UpmsAutoConfiguration {
                                    UpmsPermissionCacheInvalidator cacheInvalidator,
                                    ApplicationEventPublisher publisher,
                                    ObjectProvider<KickService> kickService,
-                                   ObjectProvider<PolicyBindingService> policyBindingService) {
+                                   ObjectProvider<PolicyBindingService> policyBindingService,
+                                   PermissionDelegationGuard delegationGuard) {
         return new UserService(userMapper, userRoleMapper, groupMemberMapper, deptMapper, accessControlMapper,
                 policyBindingMapper, loginRecordMapper, cacheInvalidator, publisher,
-                kickService.getIfAvailable(), policyBindingService);
+                kickService.getIfAvailable(), policyBindingService, delegationGuard);
     }
 
     @Bean
@@ -332,8 +364,9 @@ public class UpmsAutoConfiguration {
     @ConditionalOnMissingBean
     public UserPermissionBoundaryService userPermissionBoundaryService(
             UserPermissionBoundaryMapper boundaryMapper, PermissionMapper permissionMapper, UserMapper userMapper,
-            UpmsPermissionCacheInvalidator cacheInvalidator) {
-        return new UserPermissionBoundaryService(boundaryMapper, permissionMapper, userMapper, cacheInvalidator);
+            UpmsPermissionCacheInvalidator cacheInvalidator, PermissionCodeCatalog permissionCodeCatalog) {
+        return new UserPermissionBoundaryService(boundaryMapper, userMapper, cacheInvalidator,
+                permissionCodeCatalog);
     }
 
     @Bean

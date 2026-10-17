@@ -5,6 +5,7 @@ import cn.slainc.modules.auth.service.mfa.AuthSecondFactorGate;
 import cn.slainc.captcha.CaptchaInput;
 import cn.slainc.captcha.CaptchaService;
 import cn.slainc.captcha.CaptchaVerifyResult;
+import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.enums.LoginType;
 import cn.slainc.core.event.LoginEvent;
 import cn.slainc.core.exception.BizException;
@@ -110,6 +111,7 @@ public class AuthLoginService {
         if (gate != null && gate.appliesTo(type)) {
             PasswordAccount account = findAccount(type, command.username());
             if (account != null && gate.required(type, account.userId(), account.username())) {
+                requireTenant(type, account);
                 verifyPassword(type, command, account, clientIp);
                 String challengeId = gate.challenge(type, account.userId(), account.username(),
                         command.deviceType(), command.deviceId(), command.remember());
@@ -155,6 +157,14 @@ public class AuthLoginService {
         }
     }
 
+    private void requireTenant(LoginType type, PasswordAccount account) {
+        Long selected = TenantContext.get();
+        if (selected != null && type != LoginType.PLATFORM_ADMIN && account.tenantId() != null
+                && !selected.equals(account.tenantId())) {
+            throw new BizException("账号不属于所选租户，请重新选择租户");
+        }
+    }
+
     // MFA 分支在签发挑战前就地完成密码裁决：封禁、锁定、失败计数与事件口径与 security 密码登录保持一致
     private void verifyPassword(LoginType type, LoginCommand command, PasswordAccount account, String clientIp) {
         Object loginId = account.userId() == null ? account.username() : account.userId();
@@ -182,9 +192,9 @@ public class AuthLoginService {
 
     private String credentialFailureMessage(int remaining) {
         if (remaining < 0) {
-            return "用户名或密码错误";
+            return "账号或密码错误";
         }
-        return remaining <= 0 ? "用户名或密码错误，账号已锁定" : "用户名或密码错误，剩余尝试次数 " + remaining;
+        return remaining <= 0 ? "账号或密码错误，账号已锁定" : "账号或密码错误，剩余尝试次数 " + remaining;
     }
 
     private void checkCaptcha(LoginType type, LoginCommand command, String clientIp) {

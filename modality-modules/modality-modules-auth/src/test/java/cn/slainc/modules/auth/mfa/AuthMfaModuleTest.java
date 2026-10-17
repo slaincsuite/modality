@@ -125,7 +125,7 @@ class AuthMfaModuleTest {
         HttpResponse<String> wrong = post("/auth/login",
                 "{\"username\":\"mfabob\",\"password\":\"Wrong#123\"}", null);
         assertThat(wrong.statusCode()).as(wrong.body()).isEqualTo(400);
-        assertThat(wrong.body()).contains("用户名或密码错误");
+        assertThat(wrong.body()).contains("账号或密码错误");
 
         String challengeId = loginForChallenge("mfabob");
         HttpResponse<String> wrongCode = post("/auth/mfa/verify",

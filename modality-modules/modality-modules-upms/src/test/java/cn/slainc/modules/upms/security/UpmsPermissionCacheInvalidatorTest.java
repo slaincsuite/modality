@@ -4,6 +4,7 @@ import cn.slainc.core.enums.LoginType;
 import cn.slainc.modules.upms.UpmsIntegrationTestBase;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.service.user.UserService;
+import cn.slainc.policy.event.PolicyChangedEvent;
 import cn.slainc.security.config.SecurityKeys;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,5 +43,19 @@ class UpmsPermissionCacheInvalidatorTest extends UpmsIntegrationTestBase {
         assertThat(Boolean.FALSE.equals(redis.hasKey(tenantKey))).isTrue();
         assertThat(Boolean.FALSE.equals(redis.hasKey(platformKey))).isTrue();
         assertThat(Boolean.FALSE.equals(redis.hasKey(untouchedKey))).isFalse();
+    }
+
+    @Test
+    void policyChangeClearsEveryPermissionCache() {
+        String tenantKey = SecurityKeys.permissionKey(LoginType.TENANT_USER.value(), 11L);
+        String adminKey = SecurityKeys.permissionKey(LoginType.PLATFORM_ADMIN.value(), 12L);
+        redis.opsForValue().set(tenantKey, "{\"permissions\":[]}");
+        redis.opsForValue().set(adminKey, "{\"permissions\":[]}");
+
+        new PolicyPermissionCacheListener(invalidator)
+                .onPolicyChanged(new PolicyChangedEvent("pol_test", "UPDATE", System.currentTimeMillis()));
+
+        assertThat(Boolean.FALSE.equals(redis.hasKey(tenantKey))).isTrue();
+        assertThat(Boolean.FALSE.equals(redis.hasKey(adminKey))).isTrue();
     }
 }

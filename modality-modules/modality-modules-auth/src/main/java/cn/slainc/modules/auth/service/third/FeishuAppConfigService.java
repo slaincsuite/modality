@@ -34,7 +34,9 @@ public class FeishuAppConfigService implements ThirdAuthConfigProvider {
     }
 
     public record AppConfigView(String platform, String appId, String appSecret, String verificationToken,
-                                String encryptKey, String callback, boolean enabled, boolean configured) {
+                                String encryptKey, String callback, boolean enabled, boolean configured,
+                                boolean secretReadable, boolean verificationTokenReadable,
+                                boolean encryptKeyReadable) {
     }
 
     public AppConfigView get() {
@@ -47,10 +49,14 @@ public class FeishuAppConfigService implements ThirdAuthConfigProvider {
         String callback = firstText(stored == null ? null : stored.getCallbackUrl(), callbackOf(fallback));
         boolean enabled = stored != null ? Boolean.TRUE.equals(stored.getEnabled()) : fallback.isEnabled();
         boolean secretConfigured = hasText(appSecretCipher) || hasText(fallback.getAppSecret());
+        boolean secretReadable = readable(appSecretCipher, hasText(fallback.getAppSecret()));
+        boolean verificationTokenReadable = readable(verificationCipher, false);
+        boolean encryptKeyReadable = readable(encryptCipher, false);
         return new AppConfigView(PLATFORM, appId, secretConfigured ? MASK : null,
                 hasText(verificationCipher) ? MASK : null,
                 hasText(encryptCipher) ? MASK : null,
-                callback, enabled, hasText(appId) && secretConfigured);
+                callback, enabled, hasText(appId) && secretConfigured && secretReadable,
+                secretReadable, verificationTokenReadable, encryptKeyReadable);
     }
 
     public AppConfigView update(FeishuConfigRequest request) {
@@ -145,7 +151,19 @@ public class FeishuAppConfigService implements ThirdAuthConfigProvider {
     private boolean configured(FeishuAppConfig config) {
         ThirdAuthProperties.Platform fallback = fallback();
         String appId = firstText(config.getAppId(), fallback.getAppKey());
-        return hasText(appId) && (hasText(config.getAppSecretCipher()) || hasText(fallback.getAppSecret()));
+        return hasText(appId) && readable(config.getAppSecretCipher(), hasText(fallback.getAppSecret()));
+    }
+
+    private boolean readable(String cipher, boolean fallbackConfigured) {
+        if (!hasText(cipher)) {
+            return fallbackConfigured;
+        }
+        try {
+            secretCodec.decrypt(cipher);
+            return true;
+        } catch (BizException e) {
+            return false;
+        }
     }
 
     private ThirdAuthProperties.Platform fallback() {

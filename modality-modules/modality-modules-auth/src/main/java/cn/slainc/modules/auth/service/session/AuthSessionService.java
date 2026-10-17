@@ -120,15 +120,16 @@ public class AuthSessionService {
             if (!account.enabled()) {
                 throw new BizException("账号已被禁用，禁止登录");
             }
+            Long tenantId = resolveTenant(type, account);
             if (banService.isBanned(type, loginId)) {
                 throw new BizException("账号已被封禁，禁止登录");
             }
             checkUserRestrictions(type, account, clientIp, resolvedDeviceType);
             checkDeviceLimitBeforeLogin(type, loginId, resolvedDeviceType);
             SaLoginParameter parameter = buildParameter(type, account, clientIp, userAgent, resolvedDeviceType,
-                    deviceId);
+                    deviceId, tenantId);
             StpKit.of(type).login(loginId, parameter);
-            bindSessionTenant(type);
+            bindSessionTenant(type, tenantId);
             checkDeviceOverflowAfterLogin(type, loginId, resolvedDeviceType);
             checkTravelAlarm(type, loginId, clientIp);
             SaTokenInfo info = StpKit.of(type).getTokenInfo();
@@ -164,8 +165,7 @@ public class AuthSessionService {
         }
     }
 
-    private void bindSessionTenant(LoginType type) {
-        Long tenantId = TenantContext.get();
+    private void bindSessionTenant(LoginType type, Long tenantId) {
         if (tenantId == null) {
             return;
         }
@@ -173,14 +173,15 @@ public class AuthSessionService {
     }
 
     private SaLoginParameter buildParameter(LoginType type, PasswordAccount account, String clientIp,
-                                            String userAgent, String deviceType, String deviceId) {
+                                            String userAgent, String deviceType, String deviceId,
+                                            Long tenantId) {
         SaLoginParameter parameter = new SaLoginParameter();
         parameter.setDeviceType(deviceType);
         parameter.setDeviceId(deviceId);
         parameter.setExtra("username", account.username());
-        if (TenantContext.get() != null) {
-            parameter.setExtra("tenantId", TenantContext.get());
-            parameter.setTerminalExtra("tenantId", TenantContext.get());
+        if (tenantId != null) {
+            parameter.setExtra("tenantId", tenantId);
+            parameter.setTerminalExtra("tenantId", tenantId);
         }
         parameter.setTerminalExtra("ip", clientIp == null ? "" : clientIp);
         parameter.setTerminalExtra("ua", userAgent == null ? "" : userAgent);
@@ -193,6 +194,18 @@ public class AuthSessionService {
         parameter.setIsShare(false);
         parameter.setMaxLoginCount(-1);
         return parameter;
+    }
+
+    private Long resolveTenant(LoginType type, PasswordAccount account) {
+        Long selected = TenantContext.get();
+        if (selected == null) {
+            return account.tenantId();
+        }
+        if (type != LoginType.PLATFORM_ADMIN && account.tenantId() != null
+                && !selected.equals(account.tenantId())) {
+            throw new BizException("账号不属于所选租户，请重新选择租户");
+        }
+        return selected;
     }
 
     private void checkDeviceLimitBeforeLogin(LoginType type, Object loginId, String deviceType) {

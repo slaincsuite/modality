@@ -6,13 +6,14 @@ import cn.slainc.core.context.UserContext;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.modules.upms.dto.PermissionBoundaryRequest;
 import cn.slainc.modules.upms.dto.PermissionBoundaryView;
-import cn.slainc.modules.upms.entity.PermissionRecord;
 import cn.slainc.modules.upms.entity.UserPermissionBoundaryRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
-import cn.slainc.modules.upms.mapper.PermissionMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserPermissionBoundaryMapper;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
+import cn.slainc.modules.upms.service.permission.PermissionCodeCatalog;
+import cn.slainc.security.util.PermissionWildcardMatcher;
+import cn.slainc.security.spi.SecurityPermissionFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,22 +22,23 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class UserPermissionBoundaryService {
+public class UserPermissionBoundaryService implements SecurityPermissionFilter {
 
     private final UserPermissionBoundaryMapper boundaryMapper;
-
-    private final PermissionMapper permissionMapper;
 
     private final UserMapper userMapper;
 
     private final UpmsPermissionCacheInvalidator cacheInvalidator;
 
-    public UserPermissionBoundaryService(UserPermissionBoundaryMapper boundaryMapper, PermissionMapper permissionMapper,
-                                         UserMapper userMapper, UpmsPermissionCacheInvalidator cacheInvalidator) {
+    private final PermissionCodeCatalog permissionCodeCatalog;
+
+    public UserPermissionBoundaryService(UserPermissionBoundaryMapper boundaryMapper,
+                                         UserMapper userMapper, UpmsPermissionCacheInvalidator cacheInvalidator,
+                                         PermissionCodeCatalog permissionCodeCatalog) {
         this.boundaryMapper = boundaryMapper;
-        this.permissionMapper = permissionMapper;
         this.userMapper = userMapper;
         this.cacheInvalidator = cacheInvalidator;
+        this.permissionCodeCatalog = permissionCodeCatalog;
     }
 
     public PermissionBoundaryView get(Long userId) {
@@ -85,12 +87,29 @@ public class UserPermissionBoundaryService {
         Set<String> denied = new LinkedHashSet<>(codes(records, UserPermissionBoundaryRecord.EFFECT_DENY));
         List<String> effective = new ArrayList<>();
         for (String permission : permissions) {
-            if (denied.contains(permission) || (!allowed.isEmpty() && !allowed.contains(permission))) {
+            if (permission != null && permission.startsWith("!")) {
+                effective.add(permission);
+                continue;
+            }
+            if (PermissionWildcardMatcher.matchesAny(denied, permission)
+                    || (!allowed.isEmpty() && !PermissionWildcardMatcher.matchesAny(allowed, permission))) {
                 continue;
             }
             effective.add(permission);
         }
         return effective;
+    }
+
+    @Override
+    public List<String> filter(Object loginId, LoginType type, List<String> permissions) {
+        if (loginId == null || permissions == null || permissions.isEmpty()) {
+            return permissions == null ? List.of() : permissions;
+        }
+        try {
+            return apply(Long.valueOf(String.valueOf(loginId)), permissions);
+        } catch (NumberFormatException exception) {
+            return permissions;
+        }
     }
 
     public boolean allows(Long userId, String permissionCode) {
@@ -112,10 +131,13 @@ public class UserPermissionBoundaryService {
         if (codes.isEmpty()) {
             return;
         }
-        long count = permissionMapper.selectCount(new LambdaQueryWrapper<PermissionRecord>()
-                .in(PermissionRecord::getCode, codes));
-        if (count != codes.size()) {
-            throw new BizException("权限边界包含不存在的权限码");
+        for (String code : codes) {
+            if (code.contains("*") && !permissionCodeCatalog.matches(code)) {
+                throw new BizException("权限边界通配符没有匹配任何权限码: " + code);
+            }
+            if (!code.contains("*") && !permissionCodeCatalog.contains(code)) {
+                throw new BizException("权限边界包含不存在的权限码: " + code);
+            }
         }
     }
 
@@ -128,9 +150,23 @@ public class UserPermissionBoundaryService {
             if (value == null || value.isBlank()) {
                 throw new BizException(label + "不能包含空值");
             }
-            result.add(value.trim());
+            String code = value.trim();
+            validateSyntax(code, label);
+            result.add(code);
         }
         return result;
+    }
+
+    private void validateSyntax(String code, String label) {
+        if (code.length() > 128) {
+            throw new BizException(label + "中的权限码最多 128 个字符: " + code);
+        }
+        for (int index = 0; index < code.length(); index++) {
+            char current = code.charAt(index);
+            if (current == '!' || Character.isWhitespace(current) || Character.isISOControl(current)) {
+                throw new BizException(label + "不能包含否定前缀、空白或控制字符: " + code);
+            }
+        }
     }
 
     private List<UserPermissionBoundaryRecord> records(Long userId) {

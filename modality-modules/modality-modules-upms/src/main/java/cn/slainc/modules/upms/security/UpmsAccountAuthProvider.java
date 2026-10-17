@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-// 登录账号数据源：t_user 表按 login_type + username 全局唯一，替掉配置文件的 ConfigAccountAuthProvider
+// 登录账号数据源：支持账号或手机号，手机号严格限定在当前租户与账号体系内
 public class UpmsAccountAuthProvider implements AccountAuthProvider {
 
     private final UserMapper userMapper;
@@ -22,14 +22,7 @@ public class UpmsAccountAuthProvider implements AccountAuthProvider {
 
     @Override
     public PasswordAccount findAccount(String username, LoginType type) {
-        if (username == null || type == null || type == LoginType.GUEST) {
-            return null;
-        }
-        UserRecord user = userMapper.selectOne(new LambdaQueryWrapper<UserRecord>()
-                .eq(UserRecord::getUsername, username)
-                .eq(UserRecord::getLoginType, type.value())
-                .eq(UserRecord::getDeleted, false)
-                .last("LIMIT 1"));
+        UserRecord user = UpmsLoginIdentityLookup.resolve(userMapper, username, type);
         return toAccount(user);
     }
 
@@ -53,6 +46,6 @@ public class UpmsAccountAuthProvider implements AccountAuthProvider {
         LocalDateTime changedAt = user.getPasswordChangedAt() == null ? null
                 : LocalDateTime.ofInstant(Instant.ofEpochMilli(user.getPasswordChangedAt()), ZoneId.systemDefault());
         return new PasswordAccount(user.getId(), user.getUsername(), user.getPasswordHash(), user.enabled(),
-                changedAt, Boolean.TRUE.equals(user.getMustChangePassword()));
+                changedAt, Boolean.TRUE.equals(user.getMustChangePassword()), user.getTenantId());
     }
 }
