@@ -2,9 +2,8 @@ package cn.slainc.modules.audit.excel;
 
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.slainc.excel.ExcelUtils;
-import cn.slainc.session.SessionInfo;
+import cn.slainc.modules.audit.dto.online.OnlineSessionView;
 import cn.slainc.utils.date.DateUtils;
-import cn.slainc.utils.string.StringUtils;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,12 +11,11 @@ import java.util.List;
 
 public class OnlineUserExcelService {
 
-    public void export(OutputStream outputStream, List<SessionInfo> sessions) {
+    public void export(OutputStream outputStream, List<OnlineSessionView> sessions) {
         List<OnlineUserExportRow> rows = new ArrayList<>();
-        for (SessionInfo session : sessions) {
-            rows.add(new OnlineUserExportRow(session.loginType(), session.loginId(),
-                    StringUtils.mask(session.tokenValue(), 4, 4),
-                    session.deviceType(), session.deviceId(), session.clientIp(),
+        for (OnlineSessionView session : sessions) {
+            rows.add(new OnlineUserExportRow(session.sessionId(), session.loginType(), session.loginId(),
+                    session.tokenValue(), session.deviceType(), session.deviceId(), session.clientIp(),
                     DateUtils.format(session.loginTime()),
                     DateUtils.format(session.lastActiveTime()),
                     session.remainingSeconds()));
@@ -26,6 +24,9 @@ public class OnlineUserExcelService {
     }
 
     public static class OnlineUserExportRow {
+
+        @ExcelProperty("会话标识")
+        private String sessionId;
 
         @ExcelProperty("账号体系")
         private String loginType;
@@ -57,9 +58,10 @@ public class OnlineUserExcelService {
         public OnlineUserExportRow() {
         }
 
-        public OnlineUserExportRow(String loginType, String loginId, String tokenValue, String deviceType,
-                                   String deviceId, String clientIp, String loginTime, String lastActiveTime,
-                                   long remainingSeconds) {
+        public OnlineUserExportRow(String sessionId, String loginType, String loginId, String tokenValue,
+                                   String deviceType, String deviceId, String clientIp, String loginTime,
+                                   String lastActiveTime, long remainingSeconds) {
+            this.sessionId = sessionId;
             this.loginType = loginType;
             this.loginId = loginId;
             this.tokenValue = tokenValue;
@@ -69,6 +71,14 @@ public class OnlineUserExcelService {
             this.loginTime = loginTime;
             this.lastActiveTime = lastActiveTime;
             this.remainingSeconds = remainingSeconds;
+        }
+
+        public String getSessionId() {
+            return sessionId;
+        }
+
+        public void setSessionId(String sessionId) {
+            this.sessionId = sessionId;
         }
 
         public String getLoginType() {

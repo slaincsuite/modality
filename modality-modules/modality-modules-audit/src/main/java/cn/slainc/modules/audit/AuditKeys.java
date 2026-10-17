@@ -12,6 +12,7 @@ public final class AuditKeys {
     public static final String PERMISSION_API_LOG_QUERY = "audit:api-log:query";
     public static final String PERMISSION_API_LOG_EXPORT = "audit:api-log:export";
     public static final String PERMISSION_POLICY_LOG_QUERY = "audit:policy-log:query";
+    public static final String PERMISSION_POLICY_LOG_EXPORT = "audit:policy-log:export";
     public static final String PERMISSION_ONLINE_QUERY = "audit:online:query";
     public static final String PERMISSION_ONLINE_EXPORT = "audit:online:export";
     public static final String PERMISSION_ONLINE_KICK = "audit:online:kick";

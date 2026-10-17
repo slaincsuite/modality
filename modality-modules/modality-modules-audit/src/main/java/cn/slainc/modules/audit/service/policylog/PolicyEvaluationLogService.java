@@ -1,6 +1,7 @@
 package cn.slainc.modules.audit.service.policylog;
 
 import cn.slainc.core.result.PageResult;
+import cn.slainc.modules.audit.service.oplog.AuditLogService;
 import cn.slainc.modules.audit.entity.PolicyEvaluationLogRecord;
 import cn.slainc.modules.audit.mapper.PolicyEvaluationLogMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -24,12 +25,19 @@ public class PolicyEvaluationLogService {
     }
 
     public PageResult<PolicyEvaluationLogRecord> search(String loginId, String loginType, String action,
-                                                        String resource, String decision, Long from, Long to,
-                                                        long current, long size) {
+                                                        String resource, String keyword, String decision, Long from,
+                                                        Long to, long current, long size) {
         Page<PolicyEvaluationLogRecord> page = mapper.selectPage(Page.of(current, size),
-                baseWrapper(loginId, loginType, action, resource, decision, from, to)
+                baseWrapper(loginId, loginType, action, resource, keyword, decision, from, to)
                         .orderByDesc(PolicyEvaluationLogRecord::getId));
         return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    public List<PolicyEvaluationLogRecord> list(String loginId, String loginType, String action, String resource,
+                                                String keyword, String decision, Long from, Long to, int limit) {
+        return mapper.selectList(baseWrapper(loginId, loginType, action, resource, keyword, decision, from, to)
+                .orderByDesc(PolicyEvaluationLogRecord::getId)
+                .last("LIMIT " + AuditLogService.clampLimit(limit)));
     }
 
     public Map<String, Object> decisionStats(Long from, Long to) {
@@ -75,13 +83,20 @@ public class PolicyEvaluationLogService {
     }
 
     private LambdaQueryWrapper<PolicyEvaluationLogRecord> baseWrapper(String loginId, String loginType, String action,
-                                                                      String resource, String decision, Long from,
-                                                                      Long to) {
+                                                                      String resource, String keyword,
+                                                                      String decision, Long from, Long to) {
+        String trimmedKeyword = keyword == null ? null : keyword.trim();
         return new LambdaQueryWrapper<PolicyEvaluationLogRecord>()
                 .eq(loginId != null && !loginId.isBlank(), PolicyEvaluationLogRecord::getLoginId, loginId)
                 .eq(loginType != null && !loginType.isBlank(), PolicyEvaluationLogRecord::getLoginType, loginType)
                 .like(action != null && !action.isBlank(), PolicyEvaluationLogRecord::getAction, action)
                 .like(resource != null && !resource.isBlank(), PolicyEvaluationLogRecord::getResource, resource)
+                .and(trimmedKeyword != null && !trimmedKeyword.isEmpty(),
+                        w -> w.like(PolicyEvaluationLogRecord::getLoginId, trimmedKeyword)
+                                .or()
+                                .like(PolicyEvaluationLogRecord::getAction, trimmedKeyword)
+                                .or()
+                                .like(PolicyEvaluationLogRecord::getResource, trimmedKeyword))
                 .eq(decision != null && !decision.isBlank(), PolicyEvaluationLogRecord::getDecision, decision)
                 .ge(from != null, PolicyEvaluationLogRecord::getCreateTime, from)
                 .le(to != null, PolicyEvaluationLogRecord::getCreateTime, to);

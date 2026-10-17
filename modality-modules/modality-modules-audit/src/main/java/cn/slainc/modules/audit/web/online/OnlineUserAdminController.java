@@ -1,21 +1,23 @@
 package cn.slainc.modules.audit.web.online;
 
 import cn.slainc.core.enums.LoginType;
+import cn.slainc.core.exception.BizException;
+import cn.slainc.core.result.ResultCode;
 import cn.slainc.logger.oplog.AuditCategory;
 import cn.slainc.logger.oplog.AuditLevel;
 import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.audit.AuditKeys;
+import cn.slainc.modules.audit.dto.online.OnlineSessionView;
+import cn.slainc.modules.audit.dto.online.SessionKickRequest;
 import cn.slainc.modules.audit.entity.AuditLogRecord;
 import cn.slainc.modules.audit.excel.OnlineUserExcelService;
+import cn.slainc.modules.audit.service.online.OnlineSessionService;
 import cn.slainc.modules.audit.service.oplog.AuditLogService;
 import cn.slainc.security.StpKit;
 import cn.slainc.security.annotation.RequirePermission;
 import cn.slainc.session.OnlineQuery;
-import cn.slainc.session.OnlineUserPage;
-import cn.slainc.session.SessionInfo;
 import cn.slainc.session.SessionSortField;
 import cn.slainc.session.kick.KickSessionService;
-import cn.slainc.session.online.OnlineUserService;
 import cn.slainc.session.stats.SessionStats;
 import cn.slainc.session.stats.SessionStatsService;
 import cn.slainc.web.http.DownloadResponses;
@@ -42,7 +44,7 @@ public class OnlineUserAdminController {
 
     private static final String LOGIN_TYPE_HEADER = "X-Login-Type";
 
-    private final OnlineUserService onlineUserService;
+    private final OnlineSessionService onlineSessionService;
 
     private final KickSessionService kickSessionService;
 
@@ -52,10 +54,10 @@ public class OnlineUserAdminController {
 
     private final SessionStatsService sessionStatsService;
 
-    public OnlineUserAdminController(OnlineUserService onlineUserService, KickSessionService kickSessionService,
-                                     AuditLogService auditLogService, OnlineUserExcelService excelService,
-                                     SessionStatsService sessionStatsService) {
-        this.onlineUserService = onlineUserService;
+    public OnlineUserAdminController(OnlineSessionService onlineSessionService,
+                                     KickSessionService kickSessionService, AuditLogService auditLogService,
+                                     OnlineUserExcelService excelService, SessionStatsService sessionStatsService) {
+        this.onlineSessionService = onlineSessionService;
         this.kickSessionService = kickSessionService;
         this.auditLogService = auditLogService;
         this.excelService = excelService;
@@ -74,7 +76,7 @@ public class OnlineUserAdminController {
                        @RequestParam(defaultValue = "20") int size,
                        @RequestParam(defaultValue = "LOGIN_TIME") String sortField,
                        @RequestParam(defaultValue = "true") boolean descending) {
-        return onlineUserService.pageWithSummary(toQuery(type, tenantId, deviceType, loginAfter, loginBefore,
+        return onlineSessionService.page(toQuery(type, tenantId, deviceType, loginAfter, loginBefore,
                 keyword, page, size, sortField, descending));
     }
 
@@ -109,7 +111,7 @@ public class OnlineUserAdminController {
                        HttpServletResponse response) {
         OnlineQuery query = toQuery(type, tenantId, deviceType, loginAfter, loginBefore, keyword, 1,
                 OnlineQuery.MAX_SIZE, sortField, descending);
-        List<SessionInfo> sessions = onlineUserService.list(query);
+        List<OnlineSessionView> sessions = onlineSessionService.list(query);
         excelService.export(DownloadResponses.attachmentStream(response, "online-users.xlsx",
                 DownloadResponses.CONTENT_TYPE_EXCEL), sessions);
     }
@@ -117,11 +119,7 @@ public class OnlineUserAdminController {
     @PostMapping("/kick")
     @RequirePermission(permissions = AuditKeys.PERMISSION_ONLINE_KICK)
     public Object kick(@RequestBody KickRequest request, HttpServletRequest httpRequest) {
-        LoginType type = request.type() == null || request.type().isBlank() ? LoginType.TENANT_USER
-                : LoginType.of(request.type());
-        if (type == null) {
-            throw new IllegalArgumentException("未知的账号体系：" + request.type());
-        }
+        LoginType type = loginType(request.type());
         boolean kicked;
         if (request.token() != null && !request.token().isBlank()) {
             kicked = kickSessionService.kickoutByToken(type, request.token(), request.reason());
@@ -141,11 +139,7 @@ public class OnlineUserAdminController {
     @PostMapping("/kick/batch")
     @RequirePermission(permissions = AuditKeys.PERMISSION_ONLINE_KICK)
     public Object kickBatch(@RequestBody BatchKickRequest request, HttpServletRequest httpRequest) {
-        LoginType type = request.type() == null || request.type().isBlank() ? LoginType.TENANT_USER
-                : LoginType.of(request.type());
-        if (type == null) {
-            throw new IllegalArgumentException("未知的账号体系：" + request.type());
-        }
+        LoginType type = loginType(request.type());
         int count = kickSessionService.batchKickout(type, request.loginIds(), request.reason());
         recordAdminKick(httpRequest, type, "批量 " + count + " 个账号", request.reason(), count);
         Map<String, Object> result = new LinkedHashMap<>();
@@ -156,15 +150,25 @@ public class OnlineUserAdminController {
     @PostMapping("/kick/tenant")
     @RequirePermission(permissions = AuditKeys.PERMISSION_ONLINE_KICK)
     public Object kickTenant(@RequestBody TenantKickRequest request, HttpServletRequest httpRequest) {
-        LoginType type = request.type() == null || request.type().isBlank() ? LoginType.TENANT_USER
-                : LoginType.of(request.type());
-        if (type == null) {
-            throw new IllegalArgumentException("未知的账号体系：" + request.type());
-        }
+        LoginType type = loginType(request.type());
         int count = kickSessionService.kickoutByTenant(type, request.tenantId(), request.reason());
         recordAdminKick(httpRequest, type, "租户 " + request.tenantId(), request.reason(), count);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("kicked", count);
+        return result;
+    }
+
+    @PostMapping("/kick/session")
+    @RequirePermission(permissions = AuditKeys.PERMISSION_ONLINE_KICK)
+    public Object kickSession(@RequestBody SessionKickRequest request, HttpServletRequest httpRequest) {
+        if (request == null || request.sessionId() == null || request.sessionId().isBlank()) {
+            throw new BizException(ResultCode.BAD_REQUEST, "会话标识不能为空");
+        }
+        LoginType type = loginType(request.type());
+        boolean kicked = onlineSessionService.kickBySessionId(type, request.sessionId().trim(), request.reason());
+        recordAdminKick(httpRequest, type, request.sessionId().trim(), request.reason(), kicked ? 1 : 0);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("kicked", kicked);
         return result;
     }
 
@@ -176,6 +180,14 @@ public class OnlineUserAdminController {
                 : SessionSortField.valueOf(sortField);
         return new OnlineQuery(loginType, blankToNull(tenantId), blankToNull(deviceType),
                 parseTime(loginAfter), parseTime(loginBefore), blankToNull(keyword), page, size, sort, descending);
+    }
+
+    private LoginType loginType(String type) {
+        LoginType loginType = type == null || type.isBlank() ? LoginType.TENANT_USER : LoginType.of(type);
+        if (loginType == null) {
+            throw new BizException(ResultCode.BAD_REQUEST, "未知的账号体系：" + type);
+        }
+        return loginType;
     }
 
     private void recordAdminKick(HttpServletRequest request, LoginType type, Object target, String reason, int count) {

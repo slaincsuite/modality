@@ -19,9 +19,10 @@ public class AuditLogExportService {
     }
 
     public void export(OutputStream outputStream, String category, String operation, String level, String module,
-                       String username, String loginType, Boolean success, Long from, Long to, int limit) {
-        List<AuditLogRecord> records = auditLogService.list(category, operation, level, module, username, loginType,
-                success, from, to, Math.max(1, limit));
+                       String username, String description, String loginType, Boolean success, Long from, Long to,
+                       int limit) {
+        List<AuditLogRecord> records = auditLogService.list(category, operation, level, module, username,
+                description, loginType, success, from, to, Math.max(1, limit));
         List<AuditLogExportRow> rows = new ArrayList<>();
         for (AuditLogRecord record : records) {
             rows.add(new AuditLogExportRow(record.getCategory(), record.getOperation(), record.getLevel(),
