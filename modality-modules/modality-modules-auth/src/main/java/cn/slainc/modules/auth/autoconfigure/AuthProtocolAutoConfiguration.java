@@ -8,17 +8,21 @@ import cn.slainc.jwt.revoke.RevocationService;
 import cn.slainc.jwt.verify.JwtVerifier;
 import cn.slainc.modules.auth.config.AuthProperties;
 import cn.slainc.modules.auth.web.token.JwksController;
+import cn.slainc.modules.auth.web.oauth2.OAuth2ClientAdminController;
 import cn.slainc.modules.auth.web.oauth2.OAuth2ProtocolController;
 import cn.slainc.modules.auth.web.oauth2.OAuth2ConsentController;
 import cn.slainc.modules.auth.web.oauth2.OidcUserInfoController;
+import cn.slainc.modules.auth.web.sso.SsoClientAdminController;
 import cn.slainc.modules.auth.web.sso.SsoProtocolController;
 import cn.slainc.modules.auth.web.token.AuthTokenController;
 import cn.slainc.modules.auth.service.token.AuthTokenService;
 import cn.slainc.modules.auth.service.token.TokenClientAuthenticator;
 import cn.slainc.modules.auth.service.token.TokenEndpointGuard;
+import cn.slainc.oauth2.client.ClientAdminService;
 import cn.slainc.oauth2.userinfo.Oauth2UserInfoService;
 import cn.slainc.oauth2.protocol.Oauth2ServerDelegate;
 import cn.slainc.redis.ratelimit.RateLimiter;
+import cn.slainc.sso.client.SsoClientAdminService;
 import cn.slainc.sso.protocol.SsoServerDelegate;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -42,6 +46,12 @@ public class AuthProtocolAutoConfiguration {
     }
 
     @Configuration(proxyBeanMethods = false)
+    @ConditionalOnBean(ClientAdminService.class)
+    @Import(OAuth2ClientAdminController.class)
+    static class Oauth2ClientAdminEndpoints {
+    }
+
+    @Configuration(proxyBeanMethods = false)
     @ConditionalOnBean(JwksService.class)
     @Import(JwksController.class)
     static class JwksEndpoints {
@@ -57,6 +67,12 @@ public class AuthProtocolAutoConfiguration {
     @ConditionalOnBean(SsoServerDelegate.class)
     @Import(SsoProtocolController.class)
     static class SsoEndpoints {
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnBean(SsoClientAdminService.class)
+    @Import(SsoClientAdminController.class)
+    static class SsoClientAdminEndpoints {
     }
 
     @Configuration(proxyBeanMethods = false)

@@ -42,6 +42,14 @@ public final class AuthKeys {
 
     public static final String PERMISSION_THIRD_SYNC_EXPORT = "auth:third-sync:export";
 
+    public static final String PERMISSION_OAUTH2_CLIENT_QUERY = "auth:oauth2-client:query";
+
+    public static final String PERMISSION_OAUTH2_CLIENT_UPDATE = "auth:oauth2-client:update";
+
+    public static final String PERMISSION_SSO_CLIENT_QUERY = "auth:sso-client:query";
+
+    public static final String PERMISSION_SSO_CLIENT_UPDATE = "auth:sso-client:update";
+
     public static final String DYNAMIC_ACTIVE_TIMEOUT_KEY = "modality.security.session.active-timeout";
 
     public static final List<String> DYNAMIC_SESSION_TIMEOUT_KEYS = List.of(

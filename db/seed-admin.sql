@@ -187,6 +187,10 @@ SELECT code, code, 'API', 0, 0, 'enabled', @now, @now FROM (
   SELECT 'auth:third-sync:execute' UNION ALL
   SELECT 'auth:third-sync:export' UNION ALL
   SELECT 'auth:third-sync:query' UNION ALL
+  SELECT 'auth:oauth2-client:query' UNION ALL
+  SELECT 'auth:oauth2-client:update' UNION ALL
+  SELECT 'auth:sso-client:query' UNION ALL
+  SELECT 'auth:sso-client:update' UNION ALL
   SELECT 'live:stream:check' UNION ALL
   SELECT 'live:stream:create' UNION ALL
   SELECT 'live:stream:delete' UNION ALL

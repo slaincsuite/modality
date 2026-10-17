@@ -133,7 +133,9 @@ public class TestAccountRegistry implements AccountAuthProvider, AccountPassword
                 AuthKeys.PERMISSION_SESSION_POLICY_QUERY, AuthKeys.PERMISSION_SESSION_POLICY_UPDATE,
                 AuthKeys.PERMISSION_THIRD_CONFIG_QUERY, AuthKeys.PERMISSION_THIRD_CONFIG_UPDATE,
                 AuthKeys.PERMISSION_THIRD_SYNC_EXECUTE, AuthKeys.PERMISSION_THIRD_SYNC_QUERY,
-                AuthKeys.PERMISSION_THIRD_SYNC_EXPORT);
+                AuthKeys.PERMISSION_THIRD_SYNC_EXPORT,
+                AuthKeys.PERMISSION_OAUTH2_CLIENT_QUERY, AuthKeys.PERMISSION_OAUTH2_CLIENT_UPDATE,
+                AuthKeys.PERMISSION_SSO_CLIENT_QUERY, AuthKeys.PERMISSION_SSO_CLIENT_UPDATE);
     }
 
     @Override

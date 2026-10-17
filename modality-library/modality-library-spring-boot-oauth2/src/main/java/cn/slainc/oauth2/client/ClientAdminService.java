@@ -79,6 +79,17 @@ public class ClientAdminService {
         if (input.getClientTokenTimeout() > 0) {
             existing.setClientTokenTimeout(input.getClientTokenTimeout());
         }
+        if (input.getMaxAccessTokenCount() >= 0) {
+            existing.setMaxAccessTokenCount(input.getMaxAccessTokenCount());
+        }
+        if (input.getMaxRefreshTokenCount() >= 0) {
+            existing.setMaxRefreshTokenCount(input.getMaxRefreshTokenCount());
+        }
+        if (input.getMaxClientTokenCount() >= 0) {
+            existing.setMaxClientTokenCount(input.getMaxClientTokenCount());
+        }
+        existing.setNewRefresh(input.isNewRefresh());
+        existing.setAutoConfirm(input.isAutoConfirm());
         if (input.getIpWhitelist() != null) {
             existing.setIpWhitelist(input.getIpWhitelist());
         }

@@ -4,11 +4,15 @@ import cn.slainc.core.config.DynamicConfigService;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.net.URI;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 
 public class SsoClientAdminService {
 
     public static final String CLIENT_REFRESH_KEY = "modality.sso.client.refresh";
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ObjectProvider<SsoClientRecordRepository> repository;
 
@@ -60,6 +64,7 @@ public class SsoClientAdminService {
         if (input.getStatus() != null) {
             existing.setStatus(input.getStatus());
         }
+        validate(existing);
         store.update(existing);
         afterChange();
         return existing;
@@ -116,6 +121,12 @@ public class SsoClientAdminService {
                 throw new IllegalArgumentException("allow_url 必须是 http/https 地址：" + url);
             }
         }
+    }
+
+    public static String randomSecret() {
+        byte[] bytes = new byte[32];
+        RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private SsoClientRecordRepository requireStore() {
