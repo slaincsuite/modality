@@ -2,6 +2,7 @@ package cn.slainc.modules.policy.manage;
 
 import cn.slainc.modules.policy.PolicyModuleApplication;
 import cn.slainc.modules.policy.PolicyTestBodies;
+import cn.slainc.utils.json.JsonUtils;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,7 +38,8 @@ class PolicyManageModuleTest {
     @BeforeEach
     void setUp() throws Exception {
         for (String table : new String[]{"t_policy", "t_policy_version", "t_policy_audit", "t_policy_meta",
-                "t_policy_test_case", "t_policy_binding"}) {
+                "t_policy_test_case", "t_policy_binding", "t_policy_template", "t_policy_boundary",
+                "t_policy_binding_source"}) {
             try {
                 jdbc.execute("DELETE FROM " + table);
             } catch (org.springframework.dao.DataAccessException ignored) {
@@ -122,6 +125,106 @@ class PolicyManageModuleTest {
                 PolicyTestBodies.createRequest("坏策略", "global", null, null, "{\"version\":\"9.9\"}"));
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.body()).contains("策略文档版本只支持 2.0");
+    }
+
+    @Test
+    void systemFilterAndCatalogAreServedByBackend() throws Exception {
+        post("/policy/manage/system/seed", null, "$.data.length()");
+        post("/policy/manage", PolicyTestBodies.createRequest("普通策略", "global", null, null,
+                PolicyTestBodies.document("custom", "allow", "modality:demo:get")), "$.data.id");
+
+        assertThat(Integer.parseInt(JsonPath.read(get("/policy/manage/page?system=true"),
+                "$.data.total").toString())).isEqualTo(4);
+        assertThat(Integer.parseInt(JsonPath.read(get("/policy/manage/page?system=false"),
+                "$.data.total").toString())).isEqualTo(1);
+        assertThat(get("/policy/products")).contains("身份与访问控制").contains("policies");
+        assertThat(get("/policy/services")).contains("\"code\":\"upms\"");
+        assertThat(get("/policy/services/upms/actions")).contains("modality:upms:user:query");
+        assertThat(get("/policy/resources/tree")).contains("\"type\":\"SERVICE\"")
+                .contains("modality:policy:policy/*");
+
+        HttpResponse<String> missing = send("GET", "/policy/services/not-found/actions", null);
+        assertThat(missing.statusCode()).isEqualTo(400);
+        assertThat(missing.body()).contains("策略服务 not-found 不存在");
+    }
+
+    @Test
+    void parseValidatesWithoutCreatingPolicy() throws Exception {
+        String document = PolicyTestBodies.document("parse", "allow", "modality:demo:get");
+        String parsed = post("/policy/manage/parse",
+                JsonUtils.toJson(Map.of("documentJson", document)), "$.data.valid");
+        assertThat(parsed).isEqualTo("true");
+        assertThat(Integer.parseInt(JsonPath.read(get("/policy/manage/page"), "$.data.total").toString()))
+                .isZero();
+
+        HttpResponse<String> invalid = send("POST", "/policy/manage/parse",
+                JsonUtils.toJson(Map.of("documentJson", "{\"version\":\"9.9\"}")));
+        assertThat(invalid.statusCode()).isEqualTo(400);
+        assertThat(invalid.body()).contains("策略文档版本只支持 2.0");
+
+        HttpResponse<String> malformed = send("POST", "/policy/manage/parse",
+                JsonUtils.toJson(Map.of("documentJson", "{not-json")));
+        assertThat(malformed.statusCode()).isEqualTo(400);
+        assertThat(malformed.body()).contains("不是合法的 JSON");
+    }
+
+    @Test
+    void customTemplateCrudCoexistsWithPresets() throws Exception {
+        String document = PolicyTestBodies.document("custom-template", "allow", "modality:demo:get");
+        String templateId = post("/policy/manage/templates/custom",
+                JsonUtils.toJson(Map.of("name", "只读自定义模板", "description", "测试模板",
+                        "documentJson", document)), "$.data.id");
+        assertThat(templateId).startsWith("tpl_");
+        assertThat(get("/policy/manage/templates")).contains("readonly").contains("custom:" + templateId);
+        assertThat(get("/policy/manage/templates/custom")).contains("只读自定义模板");
+
+        String updatedDocument = PolicyTestBodies.document("custom-template", "deny", "modality:demo:delete");
+        HttpResponse<String> updated = send("PUT", "/policy/manage/templates/custom/" + templateId,
+                JsonUtils.toJson(Map.of("name", "危险操作模板", "description", "已更新",
+                        "documentJson", updatedDocument)));
+        assertThat(updated.statusCode()).isEqualTo(200);
+        assertThat(updated.body()).contains("危险操作模板");
+
+        HttpResponse<String> bodyUpdated = send("PUT", "/policy/manage/templates/custom",
+                JsonUtils.toJson(Map.of("id", templateId, "name", "危险操作模板二",
+                        "description", "按主键更新", "documentJson", updatedDocument)));
+        assertThat(bodyUpdated.statusCode()).isEqualTo(200);
+        assertThat(bodyUpdated.body()).contains("危险操作模板二");
+
+        String created = post("/policy/manage/from-template",
+                JsonUtils.toJson(Map.of("template", "custom:" + templateId, "name", "模板创建策略",
+                        "subjectType", "global")), "$.data.id");
+        assertThat(created).startsWith("pol_");
+
+        HttpResponse<String> deleted = send("DELETE", "/policy/manage/templates/custom/" + templateId, null);
+        assertThat(deleted.statusCode()).isEqualTo(200);
+        assertThat(Integer.parseInt(JsonPath.read(get("/policy/manage/templates/custom"),
+                "$.data.length()").toString())).isZero();
+
+        HttpResponse<String> missingDelete = send("DELETE", "/policy/manage/templates/custom?id=" + templateId,
+                null);
+        assertThat(missingDelete.statusCode()).isEqualTo(400);
+
+        HttpResponse<String> missing = send("PUT", "/policy/manage/templates/custom/not-found",
+                JsonUtils.toJson(Map.of("name", "不存在", "documentJson", document)));
+        assertThat(missing.statusCode()).isEqualTo(400);
+        assertThat(missing.body()).contains("不存在");
+    }
+
+    @Test
+    void policyBoundaryCanBeRecordedAndQueried() throws Exception {
+        String policyId = post("/policy/manage", PolicyTestBodies.createRequest("边界策略", "global", null,
+                null, PolicyTestBodies.document("allow", "allow", "modality:demo:get")), "$.data.id");
+        String boundary = PolicyTestBodies.document("boundary", "deny", "modality:demo:delete");
+        String saved = post("/policy/manage/" + policyId + "/boundary",
+                JsonUtils.toJson(Map.of("documentJson", boundary)), "$.data.policyId");
+        assertThat(saved).isEqualTo(policyId);
+        assertThat(get("/policy/manage/" + policyId + "/boundary")).contains("modality:demo:delete");
+
+        HttpResponse<String> invalid = send("POST", "/policy/manage/" + policyId + "/boundary",
+                JsonUtils.toJson(Map.of("documentJson", "{\"version\":\"2.0\",\"statements\":[]}")));
+        assertThat(invalid.statusCode()).isEqualTo(400);
+        assertThat(invalid.body()).contains("至少需要一条语句");
     }
 
     private String login() throws Exception {
