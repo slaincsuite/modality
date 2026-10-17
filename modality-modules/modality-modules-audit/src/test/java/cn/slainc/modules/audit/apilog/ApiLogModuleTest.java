@@ -34,12 +34,15 @@ class ApiLogModuleTest {
 
     private String token;
 
+    private String restrictedToken;
+
     @BeforeEach
     void setUp() throws Exception {
         TenantContext.set(1L);
         http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
         jdbc.execute("DELETE FROM t_audit_api_log");
-        token = loginToken();
+        token = loginToken(null);
+        restrictedToken = loginToken(91002L);
     }
 
     @Test
@@ -101,9 +104,80 @@ class ApiLogModuleTest {
         assertThat((int) com.jayway.jsonpath.JsonPath.read(errors.body(), "$.data.total")).isEqualTo(0);
     }
 
-    private String loginToken() throws Exception {
+    @Test
+    void pageFiltersByStatusRangeAndKeepsExactStatusCompatibility() throws Exception {
+        long now = System.currentTimeMillis();
+        insertApiLog("/range-400", 400, false, false, now);
+        insertApiLog("/range-500", 500, false, true, now);
+        insertApiLog("/range-200", 200, false, false, now);
+
+        HttpResponse<String> clientErrors = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port
+                                + "/audit/api-logs/page?path=/range-&statusRange=4xx"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> exact = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port
+                                + "/audit/api-logs/page?path=/range-&statusRange=5xx&statusCode=500"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> invalid = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/audit/api-logs/page?statusRange=3xx"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofString());
+
+        assertThat((int) com.jayway.jsonpath.JsonPath.read(clientErrors.body(), "$.data.total")).isEqualTo(1);
+        assertThat((int) com.jayway.jsonpath.JsonPath.read(exact.body(), "$.data.total")).isEqualTo(1);
+        assertThat(invalid.statusCode()).isEqualTo(400);
+    }
+
+    @Test
+    void exportSupportsSlowAndErrorScopes() throws Exception {
+        long now = System.currentTimeMillis();
+        insertApiLog("/scope-slow", 200, true, false, now);
+        insertApiLog("/scope-error", 500, false, true, now);
+
+        HttpResponse<byte[]> slow = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port
+                                + "/audit/api-logs/export?scope=slow&path=/scope-slow"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<byte[]> error = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port
+                                + "/audit/api-logs/export?scope=error&path=/scope-error"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        HttpResponse<String> invalid = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/audit/api-logs/export?scope=unknown"))
+                .header("satoken", token).GET().build(), HttpResponse.BodyHandlers.ofString());
+
+        assertThat(slow.statusCode()).isEqualTo(200);
+        assertThat(slow.body()[0]).isEqualTo((byte) 'P');
+        assertThat(error.statusCode()).isEqualTo(200);
+        assertThat(error.body()[0]).isEqualTo((byte) 'P');
+        assertThat(invalid.statusCode()).isEqualTo(400);
+    }
+
+    @Test
+    void restrictedAccountCannotQueryOrExport() throws Exception {
+        HttpResponse<String> page = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/audit/api-logs/page"))
+                .header("satoken", restrictedToken).GET().build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> export = http.send(HttpRequest.newBuilder(
+                        URI.create("http://127.0.0.1:" + port + "/audit/api-logs/export"))
+                .header("satoken", restrictedToken).GET().build(), HttpResponse.BodyHandlers.ofString());
+
+        assertThat(page.statusCode()).isEqualTo(403);
+        assertThat(export.statusCode()).isEqualTo(403);
+    }
+
+    private void insertApiLog(String path, int statusCode, boolean slow, boolean error, long createTime) {
+        jdbc.update("INSERT INTO t_audit_api_log(trace_id, login_id, login_type, tenant_id, client_ip,"
+                        + " http_method, request_path, status_code, cost_millis, slow, error, create_time)"
+                        + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                "trace-" + path, "91001", "TENANT_USER", 1L, "127.0.0.1", "GET", path, statusCode, 10L,
+                slow, error, createTime);
+    }
+
+    private String loginToken(Long userId) throws Exception {
+        String path = userId == null ? "/audit-test/login" : "/audit-test/login/" + userId;
         HttpResponse<String> response = http.send(
-                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/audit-test/login")).GET().build(),
+                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
         return com.jayway.jsonpath.JsonPath.read(response.body(), "$.data");
     }
