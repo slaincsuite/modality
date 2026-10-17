@@ -34,12 +34,12 @@ class TenantManageModuleTest {
 
     private String token;
 
+    private String restrictedToken;
+
     @BeforeEach
     void login() throws Exception {
-        HttpResponse<String> response = HTTP.send(
-                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/tenant-test/login")).GET().build(),
-                HttpResponse.BodyHandlers.ofString());
-        token = JsonPath.read(response.body(), "$.data");
+        token = loginToken(null);
+        restrictedToken = loginToken(93002L);
     }
 
     private HttpResponse<String> post(String path, Map<String, Object> body) throws Exception {
@@ -79,6 +79,14 @@ class TenantManageModuleTest {
                 .header("satoken", token)
                 .DELETE().build(),
                 HttpResponse.BodyHandlers.ofString());
+    }
+
+    private String loginToken(Long userId) throws Exception {
+        String path = userId == null ? "/tenant-test/login" : "/tenant-test/login/" + userId;
+        HttpResponse<String> response = HTTP.send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        return JsonPath.read(response.body(), "$.data");
     }
 
     private Long idOf(String json) {
@@ -182,6 +190,35 @@ class TenantManageModuleTest {
         assertThat(String.valueOf((Object) JsonPath.read(response.body(), "$.data.maxStorage"))).isNotBlank();
         assertThat(String.valueOf((Object) JsonPath.read(response.body(), "$.data.maxApiQps"))).isNotBlank();
         assertThat(String.valueOf((Object) JsonPath.read(response.body(), "$.data.maxApiDaily"))).isNotBlank();
+    }
+
+    @Test
+    void queriesUsageFromProviderAndQuota() throws Exception {
+        Long id = idOf(post("/tenant", body("usage-co", "用量对象")).body());
+
+        HttpResponse<String> response = get("/tenant/" + id + "/usage");
+
+        assertThat((int) JsonPath.read(response.body(), "$.code")).isEqualTo(200);
+        assertThat(longOf(response.body(), "$.data.tenantId")).isEqualTo(id);
+        assertThat(longOf(response.body(), "$.data.userCount")).isEqualTo(12L);
+        assertThat(longOf(response.body(), "$.data.activeUserCount")).isEqualTo(9L);
+        assertThat(longOf(response.body(), "$.data.disabledUserCount")).isEqualTo(3L);
+        assertThat(String.valueOf((Object) JsonPath.read(response.body(), "$.data.maxUsers"))).isNotBlank();
+    }
+
+    @Test
+    void restrictedAccountCannotQueryUsageOrExport() throws Exception {
+        Long id = idOf(post("/tenant", body("forbidden-co", "越权对象")).body());
+
+        HttpResponse<String> usage = HTTP.send(HttpRequest.newBuilder(
+                        URI.create("http://localhost:" + port + "/tenant/" + id + "/usage"))
+                .header("satoken", restrictedToken).GET().build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> export = HTTP.send(HttpRequest.newBuilder(
+                        URI.create("http://localhost:" + port + "/tenant/export"))
+                .header("satoken", restrictedToken).GET().build(), HttpResponse.BodyHandlers.ofString());
+
+        assertThat(usage.statusCode()).isEqualTo(403);
+        assertThat(export.statusCode()).isEqualTo(403);
     }
 
     @Test
