@@ -3,6 +3,8 @@ package cn.slainc.modules.tenant;
 import cn.dev33.satoken.stp.StpInterface;
 import cn.slainc.core.config.DynamicConfigService;
 import cn.slainc.core.result.Result;
+import cn.slainc.core.spi.UserUsage;
+import cn.slainc.core.spi.UserUsageProvider;
 import cn.slainc.security.StpKit;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -24,6 +26,12 @@ public class TenantModuleApplication {
         @GetMapping("/tenant-test/login")
         public Result<String> login() {
             StpKit.tenantUser().login(93001L);
+            return Result.ok(StpKit.tenantUser().getTokenValue());
+        }
+
+        @GetMapping("/tenant-test/login/{userId}")
+        public Result<String> login(@org.springframework.web.bind.annotation.PathVariable Long userId) {
+            StpKit.tenantUser().login(userId);
             return Result.ok(StpKit.tenantUser().getTokenValue());
         }
     }
@@ -125,6 +133,11 @@ public class TenantModuleApplication {
         };
     }
 
+    @Bean
+    public UserUsageProvider tenantTestUserUsageProvider() {
+        return tenantId -> new UserUsage(12L, 9L, 3L);
+    }
+
     // 无 Redis 环境没有 SecurityPermissionCache，直接以 sa-token 的 StpInterface 提供测试权限
     @Bean
     public StpInterface tenantTestPermissionProvider() {
@@ -132,7 +145,7 @@ public class TenantModuleApplication {
 
             @Override
             public List<String> getPermissionList(Object loginId, String loginType) {
-                return List.of("*");
+                return "93002".equals(String.valueOf(loginId)) ? List.of() : List.of("*");
             }
 
             @Override

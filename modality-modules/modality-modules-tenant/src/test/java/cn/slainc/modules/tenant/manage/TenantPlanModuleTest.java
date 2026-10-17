@@ -153,12 +153,20 @@ class TenantPlanModuleTest {
         long id = createPlan("menu-" + System.currentTimeMillis());
 
         HttpResponse<String> assigned = put("/tenant/plan/" + id + "/menus",
-                Map.of("menuIds", List.of(100, 112, 100)));
+                Map.of("menuIds", List.of(100, 110, 111, 112, 120, 100)));
         assertThat((int) JsonPath.read(assigned.body(), "$.code")).isEqualTo(200);
-        assertThat(longOf(assigned.body(), "$.data.length()")).isEqualTo(2);
+        assertThat(longOf(assigned.body(), "$.data.length()")).isEqualTo(5);
 
         HttpResponse<String> menus = get("/tenant/plan/" + id + "/menus");
-        assertThat(longOf(menus.body(), "$.data.length()")).isEqualTo(2);
+        assertThat(longOf(menus.body(), "$.data.length()")).isEqualTo(5);
+        List<Object> storedMenuIds = JsonPath.read(menus.body(), "$.data");
+        assertThat(storedMenuIds.stream().map(String::valueOf))
+                .containsExactly("100", "110", "111", "112", "120");
+
+        HttpResponse<String> overwritten = put("/tenant/plan/" + id + "/menus",
+                Map.of("menuIds", List.of(110, 112)));
+        assertThat((int) JsonPath.read(overwritten.body(), "$.code")).isEqualTo(200);
+        assertThat(longOf(get("/tenant/plan/" + id + "/menus").body(), "$.data.length()")).isEqualTo(2);
 
         Long rows = jdbc.queryForObject("SELECT COUNT(*) FROM t_tenant_plan_menu WHERE plan_id = ?", Long.class, id);
         assertThat(rows).isEqualTo(2);
