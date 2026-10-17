@@ -28,6 +28,7 @@ class JdbcMfaFactorStoreTest {
         DataSource dataSource = new EmbeddedDatabaseBuilder().setType(EmbeddedDatabaseType.H2)
                 .setName("mfaFactorStore" + System.nanoTime()).build();
         try (Connection connection = dataSource.getConnection()) {
+            connection.createStatement().execute("SET MODE MySQL");
             ScriptUtils.executeSqlScript(connection, new ClassPathResource("auth-schema.sql"));
         }
         jdbcTemplate = new JdbcTemplate(dataSource);

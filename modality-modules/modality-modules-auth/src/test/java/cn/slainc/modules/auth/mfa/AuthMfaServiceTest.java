@@ -12,6 +12,7 @@ import cn.slainc.mfa.support.MfaSecretCodec;
 import cn.slainc.mfa.totp.TotpEngine;
 import cn.slainc.modules.auth.service.login.AuthLoginService;
 import cn.slainc.modules.auth.service.mfa.AuthMfaService;
+import cn.slainc.modules.auth.service.policy.SecurityPolicyService;
 import cn.slainc.modules.auth.service.session.AuthSessionService;
 import cn.slainc.modules.auth.store.AuthTicketStore;
 import cn.slainc.modules.auth.store.MfaFactorStore;
@@ -105,6 +106,22 @@ class AuthMfaServiceTest {
         assertThat(status.activated()).isTrue();
         assertThat(status.recoveryCodesRemaining()).isZero();
         assertThat(factorStore.raw(USER_ID).getLastUsedAt()).isNotNull();
+    }
+
+    @Test
+    void loginProtectSwitchCanDisableSecondFactorRequirement() {
+        SecurityPolicyService policy = mock(SecurityPolicyService.class);
+        when(policy.loginProtectEnabled()).thenReturn(false);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<SecurityPolicyService> policyProvider = mock(ObjectProvider.class);
+        when(policyProvider.getIfAvailable()).thenReturn(policy);
+        AuthMfaService guarded = new AuthMfaService(config, totp, recoveryCodeGenerator, new MfaSecretCodec(null),
+                gate, factorStore, ticketStore, sessionService, loginService, providerOf(new StubAccountProvider()),
+                null, policyProvider);
+        gate.required = true;
+
+        assertThat(guarded.required(LoginType.TENANT_USER, USER_ID, "alice")).isFalse();
+        assertThat(gate.lastRequiredUser).isNull();
     }
 
     @Test

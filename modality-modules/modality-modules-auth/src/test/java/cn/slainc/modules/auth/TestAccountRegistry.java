@@ -7,6 +7,7 @@ import cn.slainc.security.spi.AccountAuthProvider;
 import cn.slainc.security.spi.AccountPasswordUpdater;
 import cn.slainc.security.spi.AccountRestrictionPort;
 import cn.slainc.security.spi.PasswordAccount;
+import cn.slainc.security.spi.SecurityPermissionProvider;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 // 模块级测试的内存账号源：替掉真实 upms，提供账号查询、改密落库、注销软删与用户级登录限制裁决
 public class TestAccountRegistry implements AccountAuthProvider, AccountPasswordUpdater, AccountAdminPort,
-        AccountRestrictionPort {
+        AccountRestrictionPort, SecurityPermissionProvider {
 
     public static final String PASSWORD = "Password#123";
 
@@ -29,6 +30,8 @@ public class TestAccountRegistry implements AccountAuthProvider, AccountPassword
     private final Set<Long> deleteFailures = ConcurrentHashMap.newKeySet();
 
     private final Map<String, List<String>> restrictions = new ConcurrentHashMap<>();
+
+    private final Map<Long, List<String>> permissionOverrides = new ConcurrentHashMap<>();
 
     private final AtomicLong sequence = new AtomicLong(9000);
 
@@ -47,6 +50,14 @@ public class TestAccountRegistry implements AccountAuthProvider, AccountPassword
     // 预置用户级登录限制：非空时该用户的下一次密码登录被拒
     public void restrict(String username, List<String> violations) {
         restrictions.put(username, List.copyOf(violations));
+    }
+
+    public void setPermissions(String username, List<String> permissions) {
+        PasswordAccount account = findAccount(username, LoginType.TENANT_USER);
+        if (account == null) {
+            throw new IllegalArgumentException("测试账号不存在：" + username);
+        }
+        permissionOverrides.put(account.userId(), List.copyOf(permissions));
     }
 
     public boolean isDeleted(Long userId) {
@@ -101,6 +112,33 @@ public class TestAccountRegistry implements AccountAuthProvider, AccountPassword
     @Override
     public List<String> validate(String username, LoginType type, String clientIp, String deviceType) {
         return restrictions.getOrDefault(username, List.of());
+    }
+
+    @Override
+    public List<String> getPermissions(Object loginId, LoginType type) {
+        Long userId = loginId instanceof Number number ? number.longValue() : null;
+        if (userId == null && loginId != null) {
+            try {
+                userId = Long.parseLong(loginId.toString());
+            } catch (NumberFormatException ignored) {
+                userId = null;
+            }
+        }
+        if (userId != null && permissionOverrides.containsKey(userId)) {
+            return permissionOverrides.get(userId);
+        }
+        return List.of(AuthKeys.PERMISSION_USER_QUERY, AuthKeys.PERMISSION_USER_UPDATE,
+                AuthKeys.PERMISSION_MFA_POLICY_QUERY, AuthKeys.PERMISSION_MFA_POLICY_UPDATE,
+                AuthKeys.PERMISSION_LOGIN_POLICY_QUERY, AuthKeys.PERMISSION_LOGIN_POLICY_UPDATE,
+                AuthKeys.PERMISSION_SESSION_POLICY_QUERY, AuthKeys.PERMISSION_SESSION_POLICY_UPDATE,
+                AuthKeys.PERMISSION_THIRD_CONFIG_QUERY, AuthKeys.PERMISSION_THIRD_CONFIG_UPDATE,
+                AuthKeys.PERMISSION_THIRD_SYNC_EXECUTE, AuthKeys.PERMISSION_THIRD_SYNC_QUERY,
+                AuthKeys.PERMISSION_THIRD_SYNC_EXPORT);
+    }
+
+    @Override
+    public List<String> getRoles(Object loginId, LoginType type) {
+        return List.of("test-admin");
     }
 
     private String key(String username, LoginType type) {
