@@ -1,1 +1,2 @@
 cn.slainc.services.livemonitor.autoconfigure.LiveMonitorAutoConfiguration
+cn.slainc.services.livemonitor.autoconfigure.LiveMonitorMybatisAutoConfiguration
