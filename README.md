@@ -34,7 +34,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 ### 认证与安全
 
 - **七套账号体系**：平台管理员 / 平台用户 / 租户管理员 / 租户用户 / 应用 / 服务 / 访客，各自独立令牌、独立会话、互不干扰，踢人只影响本体系
-- **授权模型（IAM 范畴）**：RBAC 骨架（用户 / 角色 / 权限码 / 用户组 / 数据范围）+ 策略文档型 ABAC（策略语义对齐 AWS IAM Policy / 腾讯云 CAM 策略，自研实现、不依赖云厂商 SDK）；细粒度判定见「审计与策略」的策略引擎
+- **授权模型（IAM 范畴）**：RBAC 骨架（用户 / 角色 / 权限码 / 用户组 / 数据范围）+ 策略文档型 ABAC（策略语义对齐 AWS IAM Policy / 腾讯云 CAM 策略，自研实现、不依赖云厂商 SDK）；支持通配权限、合并后用户边界、拒绝优先与不可越权转授
 - 登录安全：验证码（默认开启）、失败锁定、封禁、异地登录告警、IP / 时段 / 设备登录限制（**密码、扫码、第三方回调、绑定四条链路同样裁决**）
 - 会话安全：默认 2 小时绝对有效期 + 30 分钟空闲超时，可按体系配置；Cookie `HttpOnly` + `Secure` + `SameSite`
 - 令牌安全：JWT 支持 HS256 / RS256 / ES256、密钥轮换、JWKS 发布；吊销前强制验签，吊销键 TTL 钳制，`introspect` 按 RFC 7662 要求客户端鉴权
@@ -69,7 +69,7 @@ modality 把企业后台里反复要写的那一层沉淀成**可复用、可关
 ### 审计与策略
 
 - 审计中心：登录日志、操作日志、API 访问日志、策略评估日志，统计全部 SQL 聚合下推，导出限流限长
-- 策略引擎：基于属性的访问控制，deny 优先、无 allow 即默认拒；支持仿真推演、版本管理、导入导出、测试用例
+- 策略引擎：基于属性的访问控制，deny 优先、无 allow 即默认拒；支持租户内角色/用户组主体、MFA/IP/请求上下文条件、仿真推演、版本管理、导入导出、测试用例与可视化生成器
 - 告警与通知：站内信 + Webhook（钉钉 / 飞书 / 企业微信 / 自定义），Webhook 地址做 SSRF 校验，失败退避重试
 - **字段级变更审计**：`@ChangeAudited(type, id=SpEL)` 切面采集 before/after，JaVers 逐字段差异（内置回退引擎）、敏感字段自动掩码、事务提交后落库（内置 JDBC 表 `t_change_audit_record`，`modality.change-audit.store=noop` 可关闭，`ChangeRecorder` SPI 可替换）
 - **定时任务中心**：Quartz 内核（cron / misfire / 重试退避）+ 任务定义、手动触发、执行日志、节点注册管理端点；分布式锁用平台 Redisson，集群存储表自动建表
@@ -135,6 +135,8 @@ cd modality
 
 # 本机 Redis 有密码时必须导出，否则会以“无密码”连接而失败
 export MODALITY_REDIS_PASSWORD=<你的 Redis 密码>
+# 首次可用 openssl rand -base64 16 生成，保存到 .env 后长期复用同一个值
+export MODALITY_CRYPTO_KEYS_DEFAULT=<固定的 16 字节 Base64 密钥>
 
 ./gradlew :modality-boot:bootRun
 ```
@@ -183,6 +185,9 @@ vim .env          # 至少改掉三个密码
 | `MYSQL_ROOT_PASSWORD` | MySQL root 口令 |
 | `MYSQL_PASSWORD` | 应用连 MySQL 的口令 |
 | `MODALITY_REDIS_PASSWORD` | Redis 口令（平台强制要求非空） |
+| `MODALITY_CRYPTO_KEYS_DEFAULT` | 平台敏感字段加密密钥，固定 16 字节 Base64；重启后不得更换 |
+| `MODALITY_OAUTH2_CLIENT_SECRET_ENCRYPTION_KEY` | OAuth2 Client Secret 加密口令；重启后不得更换 |
+| `MODALITY_SSO_SERVER_SECRET_KEY` | SSO Server 票据签名密钥；为空会禁用 SSO 服务端能力 |
 
 启动：
 
@@ -262,6 +267,7 @@ docker run -d --name modality \
 | `modality.tenant.resolver.header.enabled` | `false` | 仅在前端可信场景开启 `X-Tenant-Id`；开启后仍会与登录会话租户做一致性校验 |
 | `modality.tenant.resolver.domain.root-domain` | 空 | 多租户 SaaS 建议配置根域名，按子域解析租户 |
 | `modality.web.cors.allowed-origin-patterns` | 空 | 配置前端实际域名，例如 `https://admin.example.com`；留空即不下发 CORS 授权头 |
+| `modality.security.origin.allowed-origins` | 空 | 跨域部署时同步配置可信前端来源；前后端同源部署可留空 |
 | `modality.web.cors.allow-credentials` | `false` | 确需携带 Cookie 跨域时改为 `true`，此时**不能**使用通配源 |
 | `modality.security.cookie.secure` | `true` | 全站 HTTPS 时保持 `true`；纯 HTTP 内网可临时改 `false` |
 | `modality.security.session.timeout-*` | `7200` | 按账号体系收紧（管理端建议 2 小时以内） |
@@ -352,6 +358,7 @@ curl -s 'http://localhost:8080/upms/user/page?current=1&size=20' -H "satoken: $T
 
 - 令牌：`POST /auth/token/refresh` 刷新（匿名）、`POST /auth/token/revoke` 吊销、`POST /auth/logout` 登出、`POST /auth/token/introspect` 校验（RFC 7662，需客户端鉴权）
 - OAuth2：`POST /oauth2/token`，支持 `authorization_code` / `implicit` / `password` / `client_credentials` / `refresh_token`；API Key 调用带 `X-API-Key` 请求头；请求签名见 `sign` 库
+- 系统访问：控制台「开放平台 → 系统访问」管理 OAuth2/OIDC 客户端与 SSO 客户端；接口分别为 `/auth/oauth2/clients/**`、`/auth/sso/clients/**`，使用 `auth:oauth2-client:*`、`auth:sso-client:*` 权限码，密钥只在创建和轮换时返回一次
 - 工单中心：端点见 Swagger「工单中心」分组，编号按「前缀+日期+序号」自动生成，主链路「创建 → 分派 → 解决 → 关闭 → 重开」，流转类管理端点见 `WorkOrderFlowController`
 
 ### 4. 以库的方式引入
