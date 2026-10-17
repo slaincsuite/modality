@@ -7,6 +7,7 @@ import cn.slainc.logger.oplog.AuditOperation;
 import cn.slainc.modules.policy.PolicyCenterKeys;
 import cn.slainc.modules.policy.dto.BindingBatchRequest;
 import cn.slainc.modules.policy.dto.BindingClientRequest;
+import cn.slainc.modules.policy.dto.BindingGroupRequest;
 import cn.slainc.modules.policy.dto.BindingRoleRequest;
 import cn.slainc.modules.policy.dto.BindingUserRequest;
 import cn.slainc.modules.policy.service.binding.PolicyBindingPortalService;
@@ -57,6 +58,14 @@ public class PolicyBindingPortalController {
             module = "policy")
     public Object bindClient(@RequestBody BindingClientRequest request) {
         return bindingService.bindToClient(request.policyId(), request.clientId(), UserContext.username());
+    }
+
+    @PostMapping("/group")
+    @RequirePermission(permissions = PolicyCenterKeys.PERMISSION_BINDING_BIND)
+    @AuditLog(value = "绑定用户组策略", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "policy")
+    public Object bindGroup(@RequestBody BindingGroupRequest request) {
+        return bindingService.bindToGroup(request.policyId(), request.groupKey(), UserContext.username());
     }
 
     @PostMapping("/batch")
