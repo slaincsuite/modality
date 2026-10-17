@@ -22,6 +22,8 @@ public final class UpmsKeys {
 
     public static final String ROLE_DATA_SCOPE_TABLE = "t_role_data_scope";
 
+    public static final String ROLE_GROUP_TABLE = "t_role_group";
+
     public static final String SYSTEM_REGISTRY_TABLE = "t_system_registry";
 
     public static final String ACCESS_CONTROL_TABLE = "t_access_control";
@@ -33,6 +35,10 @@ public final class UpmsKeys {
     public static final String LOGIN_RECORD_TABLE = "t_user_login_record";
     public static final String FAVORITE_TABLE = "t_favorite";
     public static final String RECENT_VISIT_TABLE = "t_recent_visit";
+    public static final String USER_PREFERENCES_TABLE = "t_user_preferences";
+    public static final String USER_PERMISSION_BOUNDARY_TABLE = "t_user_permission_boundary";
+    public static final String USER_SETTINGS_TABLE = "t_user_settings";
+    public static final String USER_SETTINGS_HISTORY_TABLE = "t_user_settings_history";
 
     // 管理端点权限码：控制器一律引用常量，不写字面量
 
@@ -70,6 +76,8 @@ public final class UpmsKeys {
     public static final String PERMISSION_UPMS_ROLE_DELETE = "upms:role:delete";
     public static final String PERMISSION_UPMS_ROLE_QUERY = "upms:role:query";
     public static final String PERMISSION_UPMS_ROLE_UPDATE = "upms:role:update";
+    public static final String PERMISSION_UPMS_SETTINGS_QUERY = "upms:settings:query";
+    public static final String PERMISSION_UPMS_SETTINGS_UPDATE = "upms:settings:update";
     public static final String PERMISSION_UPMS_STATS_QUERY = "upms:stats:query";
     public static final String PERMISSION_UPMS_SYSTEM_CREATE = "upms:system:create";
     public static final String PERMISSION_UPMS_SYSTEM_DELETE = "upms:system:delete";
@@ -83,8 +91,10 @@ public final class UpmsKeys {
     public static final String PERMISSION_UPMS_USER_EXPORT = "upms:user:export";
     public static final String PERMISSION_UPMS_USER_IMPORT = "upms:user:import";
     public static final String PERMISSION_UPMS_USER_MERGE = "upms:user:merge";
+    public static final String PERMISSION_UPMS_USER_PERMISSION_BOUNDARY = "upms:user:permission-boundary";
     public static final String PERMISSION_UPMS_USER_QUERY = "upms:user:query";
     public static final String PERMISSION_UPMS_USER_RESET_PASSWORD = "upms:user:reset-password";
+    public static final String PERMISSION_UPMS_USER_SECURITY = "upms:user:security";
     public static final String PERMISSION_UPMS_USER_UPDATE = "upms:user:update";
 
     public static final String ACCESS_PERMISSION_SUFFIX = ":access";

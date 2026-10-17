@@ -9,7 +9,7 @@ import org.springframework.beans.factory.InitializingBean;
 
 import java.util.List;
 
-// 权限/菜单/系统注册/操作日志/登录记录是平台级全局表，需并入租户忽略集并强制重建快照（MapperFactoryBean 时序坑见规范 §16.3）
+// 权限/菜单/系统注册/操作日志/登录记录/用户设置是平台级全局表，需并入租户忽略集并强制重建快照
 public class UpmsTableWhitelist implements InitializingBean {
 
     private static final Logger log = LoggerFactory.getLogger(UpmsTableWhitelist.class);

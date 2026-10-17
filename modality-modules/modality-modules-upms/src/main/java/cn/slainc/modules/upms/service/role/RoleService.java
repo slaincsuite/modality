@@ -6,16 +6,28 @@ import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.upms.UpmsKeys;
+import cn.slainc.modules.upms.dto.RolePermissionSourceView;
+import cn.slainc.modules.upms.dto.RoleUserBindingView;
 import cn.slainc.modules.upms.entity.DataScopeType;
+import cn.slainc.modules.upms.entity.PolicyBindingRecord;
 import cn.slainc.modules.upms.entity.PermissionRecord;
 import cn.slainc.modules.upms.entity.RoleDataScopeRecord;
+import cn.slainc.modules.upms.entity.RoleGroupRecord;
 import cn.slainc.modules.upms.entity.RolePermissionRecord;
 import cn.slainc.modules.upms.entity.RoleRecord;
+import cn.slainc.modules.upms.entity.UserGroupMemberRecord;
+import cn.slainc.modules.upms.entity.UserGroupRecord;
+import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.entity.UserRoleRecord;
+import cn.slainc.modules.upms.mapper.PolicyBindingMapper;
 import cn.slainc.modules.upms.mapper.PermissionMapper;
 import cn.slainc.modules.upms.mapper.RoleDataScopeMapper;
+import cn.slainc.modules.upms.mapper.RoleGroupMapper;
 import cn.slainc.modules.upms.mapper.RoleMapper;
 import cn.slainc.modules.upms.mapper.RolePermissionMapper;
+import cn.slainc.modules.upms.mapper.UserGroupMapper;
+import cn.slainc.modules.upms.mapper.UserGroupMemberMapper;
+import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
 import cn.slainc.modules.upms.security.UpmsPermissionCacheInvalidator;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -45,18 +57,36 @@ public class RoleService {
 
     private final RoleDataScopeMapper roleDataScopeMapper;
 
+    private final RoleGroupMapper roleGroupMapper;
+
+    private final UserGroupMapper groupMapper;
+
+    private final UserGroupMemberMapper groupMemberMapper;
+
+    private final UserMapper userMapper;
+
     private final PermissionMapper permissionMapper;
+
+    private final PolicyBindingMapper policyBindingMapper;
 
     private final UpmsPermissionCacheInvalidator cacheInvalidator;
 
     public RoleService(RoleMapper roleMapper, RolePermissionMapper rolePermissionMapper, UserRoleMapper userRoleMapper,
-                       RoleDataScopeMapper roleDataScopeMapper, PermissionMapper permissionMapper,
+                       RoleDataScopeMapper roleDataScopeMapper, RoleGroupMapper roleGroupMapper,
+                       UserGroupMapper groupMapper, UserGroupMemberMapper groupMemberMapper,
+                       UserMapper userMapper, PermissionMapper permissionMapper,
+                       PolicyBindingMapper policyBindingMapper,
                        UpmsPermissionCacheInvalidator cacheInvalidator) {
         this.roleMapper = roleMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.userRoleMapper = userRoleMapper;
         this.roleDataScopeMapper = roleDataScopeMapper;
+        this.roleGroupMapper = roleGroupMapper;
+        this.groupMapper = groupMapper;
+        this.groupMemberMapper = groupMemberMapper;
+        this.userMapper = userMapper;
         this.permissionMapper = permissionMapper;
+        this.policyBindingMapper = policyBindingMapper;
         this.cacheInvalidator = cacheInvalidator;
     }
 
@@ -119,14 +149,14 @@ public class RoleService {
         }
         role.setUpdateTime(System.currentTimeMillis());
         roleMapper.updateById(role);
-        cacheInvalidator.invalidateUsers(userIdsOf(id));
+        cacheInvalidator.invalidateUsers(new ArrayList<>(effectiveUserIdsOf(id)));
         return role;
     }
 
     @Transactional
     public void delete(Long id) {
         require(id);
-        List<Long> users = userIdsOf(id);
+        Set<Long> users = effectiveUserIdsOf(id);
         for (RoleRecord child : roleMapper.selectList(
                 new LambdaQueryWrapper<RoleRecord>().eq(RoleRecord::getParentId, id))) {
             child.setParentId(0L);
@@ -138,7 +168,8 @@ public class RoleService {
         userRoleMapper.delete(new LambdaQueryWrapper<UserRoleRecord>().eq(UserRoleRecord::getRoleId, id));
         roleDataScopeMapper.delete(new LambdaQueryWrapper<RoleDataScopeRecord>()
                 .eq(RoleDataScopeRecord::getRoleId, id));
-        cacheInvalidator.invalidateUsers(users);
+        roleGroupMapper.delete(new LambdaQueryWrapper<RoleGroupRecord>().eq(RoleGroupRecord::getRoleId, id));
+        cacheInvalidator.invalidateUsers(new ArrayList<>(users));
     }
 
     @Transactional
@@ -159,10 +190,12 @@ public class RoleService {
     }
 
     public PageResult<RoleRecord> search(String name, String code, String status, long current, long size) {
-        Page<RoleRecord> page = roleMapper.selectPage(Page.of(current, size),
+        String safeName = safeTrim(name);
+        String safeCode = safeTrim(code);
+        Page<RoleRecord> page = roleMapper.selectPage(Page.of(Math.max(1, current), Math.min(Math.max(1, size), 200)),
                 new LambdaQueryWrapper<RoleRecord>()
-                        .like(name != null && !name.isBlank(), RoleRecord::getName, name.trim())
-                        .like(code != null && !code.isBlank(), RoleRecord::getCode, code.trim())
+                        .like(safeName != null && !safeName.isBlank(), RoleRecord::getName, safeName)
+                        .like(safeCode != null && !safeCode.isBlank(), RoleRecord::getCode, safeCode)
                         .eq(status != null && !status.isBlank(), RoleRecord::getStatus, status)
                         .orderByAsc(RoleRecord::getSort).orderByAsc(RoleRecord::getId));
         return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
@@ -200,7 +233,7 @@ public class RoleService {
             binding.setCreateTime(now);
             rolePermissionMapper.insert(binding);
         }
-        cacheInvalidator.invalidateUsers(userIdsOf(roleId));
+        cacheInvalidator.invalidateUsers(new ArrayList<>(effectiveUserIdsOf(roleId)));
     }
 
     public List<Long> permissionIdsOf(Long roleId) {
@@ -240,6 +273,102 @@ public class RoleService {
                 .stream().map(UserRoleRecord::getUserId).toList();
     }
 
+    public List<RoleUserBindingView> userBindingsOf(Long roleId) {
+        require(roleId);
+        List<UserRoleRecord> bindings = userRoleMapper.selectList(new LambdaQueryWrapper<UserRoleRecord>()
+                .eq(UserRoleRecord::getRoleId, roleId)
+                .orderByDesc(UserRoleRecord::getId));
+        if (bindings.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Long> boundAt = new LinkedHashMap<>();
+        bindings.forEach(binding -> boundAt.put(binding.getUserId(), binding.getCreateTime()));
+        List<Long> userIds = new ArrayList<>(boundAt.keySet());
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, UserRecord> users = new LinkedHashMap<>();
+        userMapper.selectByIds(userIds).forEach(user -> users.put(user.getId(), user));
+        return bindings.stream()
+                .map(binding -> new RoleUserBindingView(users.get(binding.getUserId()), binding.getCreateTime()))
+                .filter(view -> view.user() != null && !Boolean.TRUE.equals(view.user().getDeleted()))
+                .toList();
+    }
+
+    public List<UserGroupRecord> groupsOf(Long roleId) {
+        require(roleId);
+        List<Long> groupIds = roleGroupMapper.selectList(new LambdaQueryWrapper<RoleGroupRecord>()
+                        .eq(RoleGroupRecord::getRoleId, roleId))
+                .stream().map(RoleGroupRecord::getGroupId).toList();
+        if (groupIds.isEmpty()) {
+            return List.of();
+        }
+        return groupMapper.selectList(new LambdaQueryWrapper<UserGroupRecord>()
+                .in(UserGroupRecord::getId, groupIds).orderByAsc(UserGroupRecord::getId));
+    }
+
+    @Transactional
+    public void assignGroups(Long roleId, List<Long> groupIds) {
+        RoleRecord role = require(roleId);
+        List<Long> target = groupIds == null ? List.of() : new ArrayList<>(new LinkedHashSet<>(groupIds));
+        if (!target.isEmpty()) {
+            long count = groupMapper.selectCount(new LambdaQueryWrapper<UserGroupRecord>()
+                    .in(UserGroupRecord::getId, target));
+            if (count != target.size()) {
+                throw new BizException("用户组不存在或不属于当前租户");
+            }
+        }
+        List<RoleGroupRecord> existing = roleGroupMapper.selectList(new LambdaQueryWrapper<RoleGroupRecord>()
+                .eq(RoleGroupRecord::getRoleId, roleId));
+        Set<Long> previousGroups = new LinkedHashSet<>();
+        existing.forEach(binding -> previousGroups.add(binding.getGroupId()));
+        Set<Long> keep = new LinkedHashSet<>(target);
+        for (RoleGroupRecord binding : existing) {
+            if (!keep.contains(binding.getGroupId())) {
+                roleGroupMapper.deleteById(binding.getId());
+            } else {
+                keep.remove(binding.getGroupId());
+            }
+        }
+        long now = System.currentTimeMillis();
+        for (Long groupId : keep) {
+            RoleGroupRecord binding = new RoleGroupRecord();
+            binding.setTenantId(role.getTenantId());
+            binding.setRoleId(roleId);
+            binding.setGroupId(groupId);
+            binding.setCreateTime(now);
+            roleGroupMapper.insert(binding);
+        }
+        previousGroups.addAll(target);
+        invalidateGroupMembers(previousGroups);
+    }
+
+    public List<RoleRecord> rolesOfDept(Long deptId) {
+        List<Long> roleIds = roleDataScopeMapper.selectList(new LambdaQueryWrapper<RoleDataScopeRecord>()
+                        .eq(RoleDataScopeRecord::getDeptId, deptId))
+                .stream().map(RoleDataScopeRecord::getRoleId).distinct().toList();
+        if (roleIds.isEmpty()) {
+            return List.of();
+        }
+        return roleMapper.selectList(new LambdaQueryWrapper<RoleRecord>().in(RoleRecord::getId, roleIds)
+                .orderByAsc(RoleRecord::getSort).orderByAsc(RoleRecord::getId));
+    }
+
+    public RolePermissionSourceView permissionSourcesOf(Long roleId) {
+        require(roleId);
+        List<Long> permissionIds = permissionIdsOf(roleId);
+        List<PermissionRecord> permissions = permissionIds.isEmpty() ? List.of()
+                : permissionMapper.selectList(new LambdaQueryWrapper<PermissionRecord>()
+                        .in(PermissionRecord::getId, permissionIds)
+                        .orderByAsc(PermissionRecord::getSort).orderByAsc(PermissionRecord::getId));
+        List<PolicyBindingRecord> policies = policyBindingMapper.selectList(
+                new LambdaQueryWrapper<PolicyBindingRecord>()
+                        .eq(PolicyBindingRecord::getSubjectType, PolicyBindingRecord.SUBJECT_ROLE)
+                        .eq(PolicyBindingRecord::getSubjectId, String.valueOf(roleId))
+                        .orderByDesc(PolicyBindingRecord::getId));
+        return new RolePermissionSourceView(permissions, policies);
+    }
+
     @Transactional
     public void setDataScope(Long roleId, String dataScope, List<Long> deptIds) {
         RoleRecord role = require(roleId);
@@ -258,7 +387,7 @@ public class RoleService {
                 roleDataScopeMapper.insert(record);
             }
         }
-        cacheInvalidator.invalidateUsers(userIdsOf(roleId));
+        cacheInvalidator.invalidateUsers(new ArrayList<>(effectiveUserIdsOf(roleId)));
     }
 
     public List<Long> customDeptIdsOf(Long roleId) {
@@ -326,9 +455,17 @@ public class RoleService {
     }
 
     public List<RoleRecord> directRolesOf(Long userId) {
-        List<Long> roleIds = userRoleMapper.selectList(
+        Set<Long> roleIds = new LinkedHashSet<>(userRoleMapper.selectList(
                         new LambdaQueryWrapper<UserRoleRecord>().eq(UserRoleRecord::getUserId, userId))
-                .stream().map(UserRoleRecord::getRoleId).toList();
+                .stream().map(UserRoleRecord::getRoleId).toList());
+        List<Long> groupIds = groupMemberMapper.selectList(new LambdaQueryWrapper<UserGroupMemberRecord>()
+                        .eq(UserGroupMemberRecord::getUserId, userId))
+                .stream().map(UserGroupMemberRecord::getGroupId).toList();
+        if (!groupIds.isEmpty()) {
+            roleGroupMapper.selectList(new LambdaQueryWrapper<RoleGroupRecord>()
+                            .in(RoleGroupRecord::getGroupId, groupIds))
+                    .forEach(binding -> roleIds.add(binding.getRoleId()));
+        }
         if (roleIds.isEmpty()) {
             return List.of();
         }
@@ -366,5 +503,32 @@ public class RoleService {
         if (parentId != null && parentId != 0 && roleMapper.selectById(parentId) == null) {
             throw new BizException("上级角色不存在: " + parentId);
         }
+    }
+
+    private void invalidateGroupMembers(Set<Long> groupIds) {
+        if (groupIds.isEmpty()) {
+            return;
+        }
+        List<Long> userIds = groupMemberMapper.selectList(new LambdaQueryWrapper<UserGroupMemberRecord>()
+                        .in(UserGroupMemberRecord::getGroupId, groupIds))
+                .stream().map(UserGroupMemberRecord::getUserId).distinct().toList();
+        cacheInvalidator.invalidateUsers(userIds);
+    }
+
+    private Set<Long> effectiveUserIdsOf(Long roleId) {
+        Set<Long> users = new LinkedHashSet<>(userIdsOf(roleId));
+        List<Long> groupIds = roleGroupMapper.selectList(new LambdaQueryWrapper<RoleGroupRecord>()
+                        .eq(RoleGroupRecord::getRoleId, roleId))
+                .stream().map(RoleGroupRecord::getGroupId).toList();
+        if (!groupIds.isEmpty()) {
+            groupMemberMapper.selectList(new LambdaQueryWrapper<UserGroupMemberRecord>()
+                            .in(UserGroupMemberRecord::getGroupId, groupIds))
+                    .forEach(member -> users.add(member.getUserId()));
+        }
+        return users;
+    }
+
+    private static String safeTrim(String value) {
+        return value == null ? null : value.trim();
     }
 }

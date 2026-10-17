@@ -6,6 +6,7 @@ import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.service.access.AccessControlService;
 import cn.slainc.modules.upms.service.role.RoleService;
 import cn.slainc.modules.upms.service.registry.SystemRegistryService;
+import cn.slainc.modules.upms.service.user.UserPermissionBoundaryService;
 import cn.slainc.security.spi.SecurityPermissionProvider;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.slf4j.Logger;
@@ -29,13 +30,17 @@ public class UpmsPermissionProvider implements SecurityPermissionProvider {
 
     private final AccessControlService accessControlService;
 
+    private final UserPermissionBoundaryService permissionBoundaryService;
+
     public UpmsPermissionProvider(UserMapper userMapper, RoleService roleService,
                                   SystemRegistryService systemRegistryService,
-                                  AccessControlService accessControlService) {
+                                  AccessControlService accessControlService,
+                                  UserPermissionBoundaryService permissionBoundaryService) {
         this.userMapper = userMapper;
         this.roleService = roleService;
         this.systemRegistryService = systemRegistryService;
         this.accessControlService = accessControlService;
+        this.permissionBoundaryService = permissionBoundaryService;
     }
 
     @Override
@@ -53,7 +58,7 @@ public class UpmsPermissionProvider implements SecurityPermissionProvider {
             permissions.add(system.accessPermissionCode());
         }
         permissions.addAll(accessControlService.grantedAccessCodes(userId));
-        return new ArrayList<>(permissions);
+        return permissionBoundaryService.apply(userId, new ArrayList<>(permissions));
     }
 
     @Override

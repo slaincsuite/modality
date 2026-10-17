@@ -2,14 +2,17 @@ package cn.slainc.modules.upms.service.user;
 
 import cn.slainc.core.context.TenantContext;
 import cn.slainc.core.context.UserContext;
+import cn.slainc.modules.upms.dto.ActiveUserView;
 import cn.slainc.modules.upms.config.UpmsProperties;
 import cn.slainc.modules.upms.entity.RoleRecord;
 import cn.slainc.modules.upms.entity.UserLoginRecordRecord;
+import cn.slainc.modules.upms.entity.UserOperationLogRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.entity.UserRoleRecord;
 import cn.slainc.modules.upms.mapper.RoleMapper;
 import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
+import cn.slainc.modules.upms.mapper.UserOperationLogMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -31,14 +34,18 @@ public class UserStatsService {
 
     private final UserLoginRecordMapper loginRecordMapper;
 
+    private final UserOperationLogMapper operationLogMapper;
+
     private final UpmsProperties properties;
 
     public UserStatsService(UserMapper userMapper, UserRoleMapper userRoleMapper, RoleMapper roleMapper,
-                            UserLoginRecordMapper loginRecordMapper, UpmsProperties properties) {
+                            UserLoginRecordMapper loginRecordMapper, UserOperationLogMapper operationLogMapper,
+                            UpmsProperties properties) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.roleMapper = roleMapper;
         this.loginRecordMapper = loginRecordMapper;
+        this.operationLogMapper = operationLogMapper;
         this.properties = properties;
     }
 
@@ -49,7 +56,40 @@ public class UserStatsService {
         overview.put("dau", distinctActiveUsers(dayStart));
         long mauStart = startOfDay(-(properties.getStats().getMauDays() - 1));
         overview.put("mau", distinctActiveUsers(mauStart));
+        overview.put("idpCount", 0L);
+        overview.put("highRiskPolicyCount", 0L);
+        overview.put("sensitiveOperationCount", 0L);
         return overview;
+    }
+
+    public List<ActiveUserView> activeUsers(int days) {
+        int range = Math.min(Math.max(days <= 0 ? 30 : days, 1), 365);
+        QueryWrapper<UserOperationLogRecord> query = new QueryWrapper<UserOperationLogRecord>()
+                .select("user_id", "MAX(username) AS username", "COUNT(*) AS operation_count",
+                        "MAX(create_time) AS last_active_time")
+                .isNotNull("user_id")
+                .eq("success", true)
+                .ge("create_time", startOfDay(-(range - 1)))
+                .eq(!UserContext.isSuperAdmin(), "tenant_id", TenantContext.getOrDefault())
+                .groupBy("user_id")
+                .orderByDesc("last_active_time")
+                .last("LIMIT 1000");
+        List<Map<String, Object>> rows = operationLogMapper.selectMaps(query);
+        List<ActiveUserView> result = new ArrayList<>(rows.size());
+        for (Map<String, Object> row : rows) {
+            Object userId = column(row, "user_id");
+            Object username = column(row, "username");
+            Object count = column(row, "operation_count");
+            Object lastActive = column(row, "last_active_time");
+            if (userId == null) {
+                continue;
+            }
+            result.add(new ActiveUserView(((Number) userId).longValue(),
+                    username == null ? null : String.valueOf(username),
+                    count == null ? 0L : ((Number) count).longValue(),
+                    lastActive == null ? null : ((Number) lastActive).longValue()));
+        }
+        return result;
     }
 
     public List<Map<String, Object>> newUserTrend(int days) {

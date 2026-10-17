@@ -15,6 +15,7 @@ import cn.slainc.modules.upms.mapper.DeptMapper;
 import cn.slainc.modules.upms.mapper.PermissionMapper;
 import cn.slainc.modules.upms.mapper.PolicyBindingMapper;
 import cn.slainc.modules.upms.mapper.RoleDataScopeMapper;
+import cn.slainc.modules.upms.mapper.RoleGroupMapper;
 import cn.slainc.modules.upms.mapper.RoleMapper;
 import cn.slainc.modules.upms.mapper.RolePermissionMapper;
 import cn.slainc.modules.upms.mapper.SystemRegistryMapper;
@@ -23,7 +24,11 @@ import cn.slainc.modules.upms.mapper.UserGroupMemberMapper;
 import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
 import cn.slainc.modules.upms.mapper.UserMapper;
 import cn.slainc.modules.upms.mapper.UserOperationLogMapper;
+import cn.slainc.modules.upms.mapper.UserPermissionBoundaryMapper;
+import cn.slainc.modules.upms.mapper.UserPreferencesMapper;
 import cn.slainc.modules.upms.mapper.UserRoleMapper;
+import cn.slainc.modules.upms.mapper.UserSettingsHistoryMapper;
+import cn.slainc.modules.upms.mapper.UserSettingsMapper;
 import cn.slainc.modules.upms.mapper.FavoriteMapper;
 import cn.slainc.modules.upms.mapper.RecentVisitMapper;
 import cn.slainc.modules.upms.security.UpmsAccountAdminPort;
@@ -42,7 +47,11 @@ import cn.slainc.modules.upms.service.role.RoleService;
 import cn.slainc.modules.upms.service.policy.UpmsPolicyBindingStore;
 import cn.slainc.modules.upms.service.registry.SystemRegistryService;
 import cn.slainc.modules.upms.service.group.UserGroupService;
+import cn.slainc.modules.upms.service.preference.UserPreferencesService;
+import cn.slainc.modules.upms.service.settings.UserSettingsService;
+import cn.slainc.modules.upms.service.user.UpmsUserUsageProvider;
 import cn.slainc.modules.upms.service.user.UserPasswordService;
+import cn.slainc.modules.upms.service.user.UserPermissionBoundaryService;
 import cn.slainc.modules.upms.service.user.UserService;
 import cn.slainc.modules.upms.service.user.UserStatsService;
 import cn.slainc.modules.upms.web.access.AccessControlController;
@@ -59,6 +68,12 @@ import cn.slainc.modules.upms.web.user.UserManageController;
 import cn.slainc.modules.upms.web.user.UserStatsController;
 import cn.slainc.modules.upms.web.self.FavoriteController;
 import cn.slainc.modules.upms.web.self.RecentVisitController;
+import cn.slainc.modules.upms.web.self.CurrentUserAccessController;
+import cn.slainc.modules.upms.web.self.UserPreferencesController;
+import cn.slainc.modules.upms.web.settings.UserSettingsController;
+import cn.slainc.modules.upms.web.user.TenantUserController;
+import cn.slainc.core.config.DynamicConfigService;
+import cn.slainc.core.spi.UserUsageProvider;
 import cn.slainc.mybatis.datascope.DataScopeProvider;
 import cn.slainc.policy.support.PolicyBindingService;
 import cn.slainc.policy.storage.PolicyBindingStore;
@@ -94,15 +109,18 @@ import org.springframework.data.redis.core.StringRedisTemplate;
         MenuManageController.class, DeptManageController.class, UserGroupManageController.class,
         SystemRegistryController.class, AccessControlController.class, PolicyBindingController.class,
         OperationLogController.class, LoginRecordController.class, UserStatsController.class,
-        FavoriteController.class, RecentVisitController.class})
+        FavoriteController.class, RecentVisitController.class, UserSettingsController.class,
+        UserPreferencesController.class, CurrentUserAccessController.class, TenantUserController.class})
 public class UpmsAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(SecurityPermissionProvider.class)
     public UpmsPermissionProvider upmsPermissionProvider(UserMapper userMapper, RoleService roleService,
                                                          SystemRegistryService systemRegistryService,
-                                                         AccessControlService accessControlService) {
-        return new UpmsPermissionProvider(userMapper, roleService, systemRegistryService, accessControlService);
+                                                         AccessControlService accessControlService,
+                                                         UserPermissionBoundaryService permissionBoundaryService) {
+        return new UpmsPermissionProvider(userMapper, roleService, systemRegistryService, accessControlService,
+                permissionBoundaryService);
     }
 
     @Bean
@@ -157,10 +175,12 @@ public class UpmsAutoConfiguration {
     @ConditionalOnMissingBean
     public RoleService roleService(RoleMapper roleMapper, RolePermissionMapper rolePermissionMapper,
                                    UserRoleMapper userRoleMapper, RoleDataScopeMapper roleDataScopeMapper,
-                                   PermissionMapper permissionMapper,
+                                   RoleGroupMapper roleGroupMapper, UserGroupMapper groupMapper,
+                                   UserGroupMemberMapper groupMemberMapper, UserMapper userMapper,
+                                   PermissionMapper permissionMapper, PolicyBindingMapper policyBindingMapper,
                                    UpmsPermissionCacheInvalidator cacheInvalidator) {
-        return new RoleService(roleMapper, rolePermissionMapper, userRoleMapper, roleDataScopeMapper,
-                permissionMapper, cacheInvalidator);
+        return new RoleService(roleMapper, rolePermissionMapper, userRoleMapper, roleDataScopeMapper, roleGroupMapper,
+                groupMapper, groupMemberMapper, userMapper, permissionMapper, policyBindingMapper, cacheInvalidator);
     }
 
     @Bean
@@ -168,8 +188,11 @@ public class UpmsAutoConfiguration {
     public PermissionService permissionService(PermissionMapper permissionMapper,
                                                RolePermissionMapper rolePermissionMapper,
                                                UserRoleMapper userRoleMapper,
+                                               RoleMapper roleMapper,
+                                               cn.slainc.modules.upms.mapper.MenuMapper menuMapper,
                                                UpmsPermissionCacheInvalidator cacheInvalidator) {
-        return new PermissionService(permissionMapper, rolePermissionMapper, userRoleMapper, cacheInvalidator);
+        return new PermissionService(permissionMapper, rolePermissionMapper, userRoleMapper, roleMapper, menuMapper,
+                cacheInvalidator);
     }
 
     @Bean
@@ -201,8 +224,11 @@ public class UpmsAutoConfiguration {
     @ConditionalOnMissingBean
     public UserGroupService userGroupService(UserGroupMapper groupMapper,
                                              cn.slainc.modules.upms.mapper.UserGroupMemberMapper memberMapper,
-                                             UserMapper userMapper) {
-        return new UserGroupService(groupMapper, memberMapper, userMapper);
+                                             UserMapper userMapper, RoleMapper roleMapper,
+                                             RoleGroupMapper roleGroupMapper,
+                                             UpmsPermissionCacheInvalidator cacheInvalidator) {
+        return new UserGroupService(groupMapper, memberMapper, userMapper, roleMapper, roleGroupMapper,
+                cacheInvalidator);
     }
 
     @Bean
@@ -224,15 +250,16 @@ public class UpmsAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public UserService userService(UserMapper userMapper, UserRoleMapper userRoleMapper,
-                                   UserGroupMemberMapper groupMemberMapper, AccessControlMapper accessControlMapper,
+                                   UserGroupMemberMapper groupMemberMapper, DeptMapper deptMapper,
+                                   AccessControlMapper accessControlMapper,
                                    PolicyBindingMapper policyBindingMapper,
-                                   UserLoginRecordMapper loginRecordMapper, UpmsProperties properties,
+                                   UserLoginRecordMapper loginRecordMapper,
                                    UpmsPermissionCacheInvalidator cacheInvalidator,
                                    ApplicationEventPublisher publisher,
                                    ObjectProvider<KickService> kickService,
                                    ObjectProvider<PolicyBindingService> policyBindingService) {
-        return new UserService(userMapper, userRoleMapper, groupMemberMapper, accessControlMapper,
-                policyBindingMapper, loginRecordMapper, properties, cacheInvalidator, publisher,
+        return new UserService(userMapper, userRoleMapper, groupMemberMapper, deptMapper, accessControlMapper,
+                policyBindingMapper, loginRecordMapper, cacheInvalidator, publisher,
                 kickService.getIfAvailable(), policyBindingService);
     }
 
@@ -289,8 +316,38 @@ public class UpmsAutoConfiguration {
     @ConditionalOnMissingBean
     public UserStatsService userStatsService(UserMapper userMapper, UserRoleMapper userRoleMapper,
                                              RoleMapper roleMapper, UserLoginRecordMapper loginRecordMapper,
+                                             UserOperationLogMapper operationLogMapper,
                                              UpmsProperties properties) {
-        return new UserStatsService(userMapper, userRoleMapper, roleMapper, loginRecordMapper, properties);
+        return new UserStatsService(userMapper, userRoleMapper, roleMapper, loginRecordMapper, operationLogMapper,
+                properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(UserUsageProvider.class)
+    public UpmsUserUsageProvider upmsUserUsageProvider(UserMapper userMapper) {
+        return new UpmsUserUsageProvider(userMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public UserPermissionBoundaryService userPermissionBoundaryService(
+            UserPermissionBoundaryMapper boundaryMapper, PermissionMapper permissionMapper, UserMapper userMapper,
+            UpmsPermissionCacheInvalidator cacheInvalidator) {
+        return new UserPermissionBoundaryService(boundaryMapper, permissionMapper, userMapper, cacheInvalidator);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public UserPreferencesService userPreferencesService(UserPreferencesMapper preferencesMapper) {
+        return new UserPreferencesService(preferencesMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public UserSettingsService userSettingsService(UserSettingsMapper settingsMapper,
+                                                   UserSettingsHistoryMapper historyMapper, RoleMapper roleMapper,
+                                                   ObjectProvider<DynamicConfigService> configService) {
+        return new UserSettingsService(settingsMapper, historyMapper, roleMapper, configService);
     }
 
     @Bean

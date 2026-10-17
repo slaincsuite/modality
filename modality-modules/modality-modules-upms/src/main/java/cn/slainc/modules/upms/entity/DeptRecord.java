@@ -2,8 +2,11 @@ package cn.slainc.modules.upms.entity;
 
 import cn.slainc.modules.upms.UpmsKeys;
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.util.List;
 
 @TableName(DeptRecord.TABLE_NAME)
 public class DeptRecord {
@@ -28,6 +31,9 @@ public class DeptRecord {
     private Long createTime;
 
     private Long updateTime;
+
+    @TableField(exist = false)
+    private List<DeptRecord> children;
 
     public boolean enabled() {
         return UpmsKeys.STATUS_ENABLED.equals(status);
@@ -103,5 +109,13 @@ public class DeptRecord {
 
     public void setUpdateTime(Long updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public List<DeptRecord> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<DeptRecord> children) {
+        this.children = children;
     }
 }

@@ -29,8 +29,8 @@ import cn.slainc.core.event.UserUpdatedEvent;
 import cn.slainc.core.exception.BizException;
 import cn.slainc.core.result.PageResult;
 import cn.slainc.crypto.hash.BCryptUtils;
+import cn.slainc.crypto.random.SecureRandomUtils;
 import cn.slainc.modules.upms.UpmsKeys;
-import cn.slainc.modules.upms.config.UpmsProperties;
 import cn.slainc.modules.upms.entity.AccessControlRecord;
 import cn.slainc.modules.upms.entity.PolicyBindingRecord;
 import cn.slainc.modules.upms.entity.UserGroupMemberRecord;
@@ -38,6 +38,7 @@ import cn.slainc.modules.upms.entity.UserLoginRecordRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.entity.UserRoleRecord;
 import cn.slainc.modules.upms.mapper.AccessControlMapper;
+import cn.slainc.modules.upms.mapper.DeptMapper;
 import cn.slainc.modules.upms.mapper.PolicyBindingMapper;
 import cn.slainc.modules.upms.mapper.UserGroupMemberMapper;
 import cn.slainc.modules.upms.mapper.UserLoginRecordMapper;
@@ -55,19 +56,32 @@ public class UserService {
 
     private static final int USERNAME_COLUMN_LENGTH = 64;
 
+    private static final int INITIAL_PASSWORD_MIN_LENGTH = 12;
+
+    private static final char[] UPPERCASE = "ABCDEFGHJKLMNPQRSTUVWXYZ".toCharArray();
+
+    private static final char[] LOWERCASE = "abcdefghijkmnopqrstuvwxyz".toCharArray();
+
+    private static final char[] DIGITS = "23456789".toCharArray();
+
+    private static final char[] SPECIALS = "@#$%&*!?".toCharArray();
+
+    private static final char[] PASSWORD_CHARS =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%&*!?".toCharArray();
+
     private final UserMapper userMapper;
 
     private final UserRoleMapper userRoleMapper;
 
     private final UserGroupMemberMapper groupMemberMapper;
 
+    private final DeptMapper deptMapper;
+
     private final AccessControlMapper accessControlMapper;
 
     private final PolicyBindingMapper policyBindingMapper;
 
     private final UserLoginRecordMapper loginRecordMapper;
-
-    private final UpmsProperties properties;
 
     private final UpmsPermissionCacheInvalidator cacheInvalidator;
 
@@ -78,25 +92,27 @@ public class UserService {
     private final ObjectProvider<PolicyBindingService> policyBindingService;
 
     public UserService(UserMapper userMapper, UserRoleMapper userRoleMapper, UserGroupMemberMapper groupMemberMapper,
-                       AccessControlMapper accessControlMapper, PolicyBindingMapper policyBindingMapper,
-                       UserLoginRecordMapper loginRecordMapper, UpmsProperties properties,
+                       DeptMapper deptMapper, AccessControlMapper accessControlMapper,
+                       PolicyBindingMapper policyBindingMapper,
+                       UserLoginRecordMapper loginRecordMapper,
                        UpmsPermissionCacheInvalidator cacheInvalidator, ApplicationEventPublisher publisher) {
-        this(userMapper, userRoleMapper, groupMemberMapper, accessControlMapper, policyBindingMapper, loginRecordMapper,
-                properties, cacheInvalidator, publisher, null, null);
+        this(userMapper, userRoleMapper, groupMemberMapper, deptMapper, accessControlMapper, policyBindingMapper,
+                loginRecordMapper, cacheInvalidator, publisher, null, null);
     }
 
     public UserService(UserMapper userMapper, UserRoleMapper userRoleMapper, UserGroupMemberMapper groupMemberMapper,
-                       AccessControlMapper accessControlMapper, PolicyBindingMapper policyBindingMapper,
-                       UserLoginRecordMapper loginRecordMapper, UpmsProperties properties,
+                       DeptMapper deptMapper, AccessControlMapper accessControlMapper,
+                       PolicyBindingMapper policyBindingMapper,
+                       UserLoginRecordMapper loginRecordMapper,
                        UpmsPermissionCacheInvalidator cacheInvalidator, ApplicationEventPublisher publisher,
                        KickService kickService, ObjectProvider<PolicyBindingService> policyBindingService) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.groupMemberMapper = groupMemberMapper;
+        this.deptMapper = deptMapper;
         this.accessControlMapper = accessControlMapper;
         this.policyBindingMapper = policyBindingMapper;
         this.loginRecordMapper = loginRecordMapper;
-        this.properties = properties;
         this.cacheInvalidator = cacheInvalidator;
         this.publisher = publisher;
         this.kickService = kickService;
@@ -105,13 +121,23 @@ public class UserService {
 
     public UserRecord create(String username, String nickname, String password, String email, String phone,
                              Long deptId, LoginType loginType, Long tenantId, String operator) {
+        return create(username, nickname, password, email, phone, deptId, loginType, tenantId, null, null, operator);
+    }
+
+    @Transactional
+    public UserRecord create(String username, String nickname, String password, String email, String phone,
+                             Long deptId, LoginType loginType, Long tenantId, String remark,
+                             Boolean mustChangePassword, String operator) {
         if (username == null || username.isBlank()) {
             throw new BizException("用户名不能为空");
         }
         LoginType type = loginType == null ? LoginType.TENANT_USER : loginType;
         Long tenant = tenantId == null ? TenantContext.getOrDefault() : tenantId;
-        String rawPassword = password == null || password.isBlank()
-                ? properties.getAccount().getDefaultPassword() : password;
+        if (!tenant.equals(TenantContext.getOrDefault()) && !UserContext.isSuperAdmin()) {
+            throw new BizException("无权在其他租户下创建用户");
+        }
+        boolean generated = password == null || password.isBlank();
+        String rawPassword = generated ? initialPassword() : password;
         long now = System.currentTimeMillis();
         UserRecord user = new UserRecord();
         user.setTenantId(tenant);
@@ -123,8 +149,10 @@ public class UserService {
         user.setDeptId(deptId);
         user.setLoginType(type.value());
         user.setStatus(UpmsKeys.STATUS_ENABLED);
-        user.setMustChangePassword(password == null || password.isBlank());
+        user.setMustChangePassword(mustChangePassword == null ? generated : mustChangePassword);
         user.setPasswordChangedAt(now);
+        user.setRemark(remark);
+        user.setConsoleAccess(true);
         user.setDeleted(false);
         user.setCreateTime(now);
         user.setUpdateTime(now);
@@ -134,12 +162,15 @@ public class UserService {
             throw new BizException("用户名 " + username + " 在 " + type.value() + " 体系下已存在");
         }
         publisher.publishEvent(new UserCreatedEvent(user.getId(), user.getUsername(), operator));
+        if (generated) {
+            user.setInitialPassword(rawPassword);
+        }
         return user;
     }
 
     public UserRecord update(Long id, String nickname, String email, String phone, Long deptId, String avatarUrl,
                              String tags, String extJson, String allowedIps, String allowedTimeRange,
-                             String allowedDevices) {
+                             String allowedDevices, String remark) {
         UserRecord user = requireActive(id);
         if (nickname != null) {
             user.setNickname(nickname);
@@ -171,9 +202,48 @@ public class UserService {
         if (allowedDevices != null) {
             user.setAllowedDevices(allowedDevices);
         }
+        if (remark != null) {
+            user.setRemark(remark);
+        }
         user.setUpdateTime(System.currentTimeMillis());
         userMapper.updateById(user);
         publisher.publishEvent(new UserUpdatedEvent(user.getId(), user.getUsername(), null));
+        return user;
+    }
+
+    public UserRecord updateDept(Long id, Long deptId) {
+        UserRecord user = requireActive(id);
+        if (deptId != null && deptMapper.selectById(deptId) == null) {
+            throw new BizException("部门不存在: " + deptId);
+        }
+        user.setDeptId(deptId);
+        user.setUpdateTime(System.currentTimeMillis());
+        userMapper.updateById(user);
+        publisher.publishEvent(new UserUpdatedEvent(user.getId(), user.getUsername(), null));
+        return user;
+    }
+
+    public UserRecord changeConsoleAccess(Long id, boolean enabled) {
+        UserRecord user = requireActive(id);
+        user.setConsoleAccess(enabled);
+        user.setUpdateTime(System.currentTimeMillis());
+        userMapper.updateById(user);
+        LoginType type = LoginType.of(user.getLoginType());
+        if (type != null) {
+            cacheInvalidator.invalidateUser(id, type);
+        }
+        if (!enabled) {
+            kickout(user, type, "控制台访问已被关闭");
+        }
+        return user;
+    }
+
+    public UserRecord changeMustChangePassword(Long id, boolean required) {
+        UserRecord user = requireActive(id);
+        user.setMustChangePassword(required);
+        user.setUpdateTime(System.currentTimeMillis());
+        userMapper.updateById(user);
+        cacheInvalidator.invalidateUser(id, LoginType.of(user.getLoginType()));
         return user;
     }
 
@@ -346,14 +416,30 @@ public class UserService {
     }
 
     public void setAvatar(Long id, String avatarUrl) {
-        update(id, null, null, null, null, avatarUrl, null, null, null, null, null);
+        update(id, null, null, null, null, avatarUrl, null, null, null, null, null, null);
     }
 
     public PageResult<UserRecord> search(String username, String nickname, String phone, String email, String status,
                                          Long deptId, Long roleId, Long groupId, String loginType,
                                          Long createdFrom, Long createdTo, long current, long size) {
+        return search(username, nickname, phone, email, status, deptId, roleId, groupId, loginType, createdFrom,
+                createdTo, null, current, size);
+    }
+
+    public PageResult<UserRecord> search(String username, String nickname, String phone, String email, String status,
+                                         Long deptId, Long roleId, Long groupId, String loginType,
+                                         Long createdFrom, Long createdTo, String keyword, long current, long size) {
+        return searchInTenant(username, nickname, phone, email, status, deptId, roleId, groupId, loginType,
+                createdFrom, createdTo, keyword, null, current, size);
+    }
+
+    private PageResult<UserRecord> searchInTenant(String username, String nickname, String phone, String email,
+                                                  String status, Long deptId, Long roleId, Long groupId,
+                                                  String loginType, Long createdFrom, Long createdTo,
+                                                  String keyword, Long tenantId, long current, long size) {
         LambdaQueryWrapper<UserRecord> wrapper = new LambdaQueryWrapper<UserRecord>()
                 .eq(UserRecord::getDeleted, false)
+                .eq(tenantId != null, UserRecord::getTenantId, tenantId)
                 .like(username != null && !username.isBlank(), UserRecord::getUsername, safeTrim(username))
                 .like(nickname != null && !nickname.isBlank(), UserRecord::getNickname, safeTrim(nickname))
                 .like(phone != null && !phone.isBlank(), UserRecord::getPhone, safeTrim(phone))
@@ -364,6 +450,13 @@ public class UserService {
                 .ge(createdFrom != null, UserRecord::getCreateTime, createdFrom)
                 .le(createdTo != null, UserRecord::getCreateTime, createdTo)
                 .orderByDesc(UserRecord::getId);
+        if (keyword != null && !keyword.isBlank()) {
+            String value = safeTrim(keyword);
+            wrapper.and(query -> query.like(UserRecord::getUsername, value)
+                    .or().like(UserRecord::getNickname, value)
+                    .or().like(UserRecord::getPhone, value)
+                    .or().like(UserRecord::getEmail, value));
+        }
         if (roleId != null) {
             wrapper.exists("SELECT 1 FROM t_user_role ur WHERE ur.user_id = t_user.id AND ur.role_id = {0}", roleId);
         }
@@ -371,8 +464,24 @@ public class UserService {
             wrapper.exists("SELECT 1 FROM t_user_group_member gm WHERE gm.user_id = t_user.id AND gm.group_id = {0}",
                     groupId);
         }
-        Page<UserRecord> page = userMapper.selectPage(Page.of(current, size), wrapper);
+        Page<UserRecord> page = userMapper.selectPage(Page.of(Math.max(1, current), Math.max(1, size)), wrapper);
         return PageResult.of(page.getRecords(), page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    public PageResult<UserRecord> searchForTenant(Long tenantId, String keyword, long current, long size) {
+        if (tenantId == null) {
+            throw new BizException("租户标识不能为空");
+        }
+        if (tenantId.equals(TenantContext.getOrDefault())) {
+            return searchInTenant(null, null, null, null, null, null, null, null, null, null, null, keyword,
+                    tenantId, current, size);
+        }
+        if (!UserContext.isSuperAdmin()) {
+            throw new BizException("无权查看其他租户的用户");
+        }
+        return TenantContext.callWith(tenantId,
+                () -> searchInTenant(null, null, null, null, null, null, null, null, null, null, null, keyword,
+                        tenantId, current, size));
     }
 
     public List<UserLoginRecordRecord> recentLogins(Long userId, int limit) {
@@ -486,10 +595,33 @@ public class UserService {
         return value == null ? null : value.trim();
     }
 
+    private static String initialPassword() {
+        int length = Math.max(INITIAL_PASSWORD_MIN_LENGTH, 16);
+        char[] password = new char[length];
+        password[0] = UPPERCASE[SecureRandomUtils.nextInt(UPPERCASE.length)];
+        password[1] = LOWERCASE[SecureRandomUtils.nextInt(LOWERCASE.length)];
+        password[2] = DIGITS[SecureRandomUtils.nextInt(DIGITS.length)];
+        password[3] = SPECIALS[SecureRandomUtils.nextInt(SPECIALS.length)];
+        for (int i = 4; i < length; i++) {
+            password[i] = PASSWORD_CHARS[SecureRandomUtils.nextInt(PASSWORD_CHARS.length)];
+        }
+        for (int i = password.length - 1; i > 0; i--) {
+            int index = SecureRandomUtils.nextInt(i + 1);
+            char temp = password[i];
+            password[i] = password[index];
+            password[index] = temp;
+        }
+        return new String(password);
+    }
+
     private UserRecord requireActive(Long id) {
         UserRecord user = userMapper.selectById(id);
         if (user == null || Boolean.TRUE.equals(user.getDeleted())) {
             throw new BizException("用户不存在或已注销: " + id);
+        }
+        if (user.getTenantId() != null && !user.getTenantId().equals(TenantContext.getOrDefault())
+                && !UserContext.isSuperAdmin()) {
+            throw new BizException("无权访问其他租户的用户: " + id);
         }
         return user;
     }

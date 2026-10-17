@@ -4,6 +4,9 @@ import cn.slainc.modules.upms.UpmsKeys;
 
 import cn.slainc.modules.upms.dto.GroupMembersRequest;
 import cn.slainc.modules.upms.dto.GroupRequest;
+import cn.slainc.modules.upms.dto.GroupMemberBindingView;
+import cn.slainc.modules.upms.dto.GroupRolesRequest;
+import cn.slainc.modules.upms.entity.RoleRecord;
 import cn.slainc.modules.upms.entity.UserGroupRecord;
 import cn.slainc.modules.upms.entity.UserRecord;
 import cn.slainc.modules.upms.service.group.UserGroupService;
@@ -76,5 +79,25 @@ public class UserGroupManageController {
     @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_QUERY)
     public List<UserRecord> members(@PathVariable Long id) {
         return groupService.membersOf(id);
+    }
+
+    @GetMapping("/{id}/member-bindings")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_QUERY)
+    public List<GroupMemberBindingView> memberBindings(@PathVariable Long id) {
+        return groupService.memberBindingsOf(id);
+    }
+
+    @GetMapping("/{id}/roles")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_QUERY)
+    public List<RoleRecord> roles(@PathVariable Long id) {
+        return groupService.rolesOf(id);
+    }
+
+    @PutMapping("/{id}/roles")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_GROUP_ASSIGN)
+    @AuditLog(value = "分配用户组角色", operation = AuditOperation.GRANT, category = AuditCategory.PERMISSION,
+            module = "upms")
+    public void assignRoles(@PathVariable Long id, @RequestBody GroupRolesRequest request) {
+        groupService.assignRoles(id, request.roleIds());
     }
 }

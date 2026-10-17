@@ -2,8 +2,11 @@ package cn.slainc.modules.upms.web.permission;
 
 import cn.slainc.modules.upms.UpmsKeys;
 
+import cn.slainc.core.result.PageResult;
 import cn.slainc.modules.upms.dto.PermissionRequest;
+import cn.slainc.modules.upms.entity.MenuRecord;
 import cn.slainc.modules.upms.entity.PermissionRecord;
+import cn.slainc.modules.upms.entity.RoleRecord;
 import cn.slainc.modules.upms.excel.PermissionExcelService;
 import cn.slainc.modules.upms.service.permission.PermissionService;
 import cn.slainc.security.annotation.RequirePermission;
@@ -74,6 +77,33 @@ public class PermissionManageController {
     public List<PermissionRecord> search(@RequestParam(required = false) String keyword,
                                          @RequestParam(required = false) String type) {
         return permissionService.search(keyword, type);
+    }
+
+    @GetMapping("/page")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_QUERY)
+    public PageResult<PermissionRecord> page(@RequestParam(required = false) String keyword,
+                                             @RequestParam(required = false) String type,
+                                             @RequestParam(defaultValue = "1") long current,
+                                             @RequestParam(defaultValue = "10") long size) {
+        return permissionService.page(keyword, type, current, size);
+    }
+
+    @GetMapping("/{id}")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_QUERY)
+    public PermissionRecord get(@PathVariable Long id) {
+        return permissionService.require(id);
+    }
+
+    @GetMapping("/{id}/roles")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_QUERY)
+    public List<RoleRecord> roles(@PathVariable Long id) {
+        return permissionService.rolesOf(id);
+    }
+
+    @GetMapping("/{id}/menus")
+    @RequirePermission(permissions = UpmsKeys.PERMISSION_UPMS_PERMISSION_QUERY)
+    public List<MenuRecord> menus(@PathVariable Long id) {
+        return permissionService.menusOf(id);
     }
 
     @GetMapping("/tree")
