@@ -45,8 +45,8 @@ class OpenConsentModuleTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_consent", "t_open_credential",
-                "t_open_app_log"}) {
+        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_scope_group", "t_open_consent",
+                "t_open_credential", "t_open_app_log"}) {
             jdbc.execute("DELETE FROM " + table);
         }
         coreEventCollector.events.clear();
@@ -69,6 +69,7 @@ class OpenConsentModuleTest {
 
         String mine = get("/open/my/consents");
         assertThat((Integer) JsonPath.read(mine, "$.data.length()")).isEqualTo(1);
+        assertThat(JsonPath.read(mine, "$.data[0].appName").toString()).isEqualTo("授权目标应用");
         assertThat(mine).contains("batch11_profile");
 
         HttpResponse<String> scopeRevoke = send("DELETE", "/open/my/consents/" + appId + "/scopes/batch11_profile",
@@ -106,6 +107,40 @@ class OpenConsentModuleTest {
         Integer active = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM t_open_consent WHERE app_id = ? AND revoked_at IS NULL", Integer.class, appId);
         assertThat(active).isZero();
+    }
+
+    @Test
+    void batchRevokeReasonIsRecordedAndBodyStaysOptional() throws Exception {
+        String appId = currentAppId();
+        jdbc.update("INSERT INTO t_open_consent (id, user_id, app_id, scopes, granted_at, source)"
+                + " VALUES (?, ?, ?, ?, ?, 'PORTAL')", "cst_reason_1", "93021", appId,
+                "[\"batch11_base\"]", System.currentTimeMillis());
+        jdbc.update("INSERT INTO t_open_consent (id, user_id, app_id, scopes, granted_at, source)"
+                + " VALUES (?, ?, ?, ?, ?, 'PORTAL')", "cst_reason_2", "93022", appId,
+                "[\"batch11_base\"]", System.currentTimeMillis());
+
+        String batch = post("/open/admin/consents/" + appId + "/batch-revoke",
+                "{\"reason\":\"监管要求集中解约\"}");
+        assertThat(Integer.parseInt(JsonPath.read(batch, "$.data.revoked").toString())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT revoke_reason FROM t_open_consent WHERE id = 'cst_reason_1'",
+                String.class)).isEqualTo("监管要求集中解约");
+
+        jdbc.update("INSERT INTO t_open_consent (id, user_id, app_id, scopes, granted_at, source)"
+                + " VALUES (?, ?, ?, ?, ?, 'PORTAL')", "cst_legacy", "93023", appId,
+                "[\"batch11_base\"]", System.currentTimeMillis());
+        post("/open/admin/consents/" + appId + "/batch-revoke", null);
+        assertThat(jdbc.queryForObject("SELECT revoke_reason FROM t_open_consent WHERE id = 'cst_legacy'",
+                String.class)).isNull();
+    }
+
+    @Test
+    void batchRevokeRejectsAnOverlongReason() throws Exception {
+        String appId = currentAppId();
+        HttpResponse<String> response = send("POST", "/open/admin/consents/" + appId + "/batch-revoke",
+                "{\"reason\":\"" + "原".repeat(257) + "\"}");
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.body()).contains("解约原因不能超过 256 个字符");
     }
 
     @Test

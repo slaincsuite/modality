@@ -1,6 +1,8 @@
 package cn.slainc.modules.open.app;
 
 import cn.slainc.modules.open.OpenModuleApplication;
+import cn.slainc.excel.ExcelUtils;
+import cn.slainc.modules.open.excel.AppExportRow;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,11 +11,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,8 +38,8 @@ class OpenAppLifecycleModuleTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_consent", "t_open_credential",
-                "t_open_app_log", "t_oauth_client", "t_consent_record"}) {
+        for (String table : new String[]{"t_open_app", "t_open_scope", "t_open_scope_group", "t_open_consent",
+                "t_open_credential", "t_open_app_log", "t_oauth_client", "t_consent_record"}) {
             try {
                 jdbc.execute("DELETE FROM " + table);
             } catch (org.springframework.dao.DataAccessException ignored) {
@@ -139,6 +143,33 @@ class OpenAppLifecycleModuleTest {
         assertThat((Integer) JsonPath.read(get("/open/portal/apps"), "$.data.length()")).isZero();
     }
 
+    @Test
+    void exportsFilteredAppsAndSearchesByAppId() throws Exception {
+        String mobileAppId = create("导出移动应用", "MOBILE", "https://cb.example.com/mobile");
+        create("导出网页应用", "WEB", "https://cb.example.com/web");
+
+        String byId = get("/open/admin/apps/page?keyword=" + mobileAppId);
+        assertThat(Integer.parseInt(JsonPath.read(byId, "$.data.total").toString())).isEqualTo(1);
+        assertThat(JsonPath.read(byId, "$.data.records[0].name").toString()).isEqualTo("导出移动应用");
+
+        HttpResponse<byte[]> response = sendBytes("/open/admin/apps/export?keyword=导出移动应用"
+                + "&appType=MOBILE&status=DRAFT");
+        assertThat(response.statusCode()).as("导出接口 HTTP 状态").isEqualTo(200);
+        assertThat(response.headers().firstValue("Content-Type").orElse(""))
+                .contains("spreadsheetml.sheet");
+        assertThat(response.headers().firstValue("Content-Disposition").orElse("")).contains("open-apps.xlsx");
+
+        List<AppExportRow> rows;
+        try (ByteArrayInputStream input = new ByteArrayInputStream(response.body())) {
+            rows = ExcelUtils.read(input, AppExportRow.class);
+        }
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).getAppId()).isEqualTo(mobileAppId);
+        assertThat(rows.get(0).getName()).isEqualTo("导出移动应用");
+        assertThat(rows.get(0).getAppType()).isEqualTo("移动应用");
+        assertThat(rows.get(0).getStatus()).isEqualTo("草稿");
+    }
+
     private String create(String name, String type, String redirectUri) throws Exception {
         return post("/open/portal/apps", body(name, type, redirectUri), "$.data.appId");
     }
@@ -186,5 +217,15 @@ class OpenAppLifecycleModuleTest {
         builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody()
                 : HttpRequest.BodyPublishers.ofString(body));
         return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<byte[]> sendBytes(String path) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+                .timeout(Duration.ofSeconds(15))
+                .header("X-Login-Type", "TENANT_USER")
+                .header("satoken", token)
+                .GET()
+                .build();
+        return HTTP.send(request, HttpResponse.BodyHandlers.ofByteArray());
     }
 }
